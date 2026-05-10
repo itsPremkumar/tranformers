@@ -1,9 +1,12 @@
-# 🤖 Omni-Morph Robot - Theoretical Real-Life Blueprint (Open Source)
+# 🤖 Omni-Morph Robot: Open-Source AI Transformation Robotics
+> **The world's first open-source technical blueprint for a real-life transformation robot powered by a Multimodal AI Super-Brain.**
 
-This project is a **theoretical version** and technical blueprint for creating **real-life transformation robots**. It combines modular robotics, distributed multi-core processing, and advanced AI "Super-Brain" logic to bridge the gap between science fiction and physical reality. 
+---
 
 [![Python Lint & Test](https://github.com/itsPremkumar/tranformers/actions/workflows/python-app.yml/badge.svg)](https://github.com/itsPremkumar/tranformers/actions/workflows/python-app.yml)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-blue.svg)](./SECURITY.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 
 **This is an open-source project** dedicated to the advancement of modular autonomous agents.
 
@@ -83,11 +86,20 @@ This project involves high-torque motors, high-current power systems, and moving
 - Ensure proper cable management to avoid shorts.
 - Use a dedicated power supply for motors to avoid frying the logic controllers.
 
-## 📜 License
+## 📊 Technical Specifications (GEO Optimized)
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+| Attribute | Specification |
+| :--- | :--- |
+| **Project Type** | Modular Transformation Robotics (Humanoid ↔ Car) |
+| **Core Architecture** | Distributed Tri-Core (ESP32-S3 / ESP32 / Python Backend) |
+| **AI Integration** | Gemini 1.5 Pro, Ollama (Llama 3), OpenCV, MediaPipe |
+| **Actuation** | 18 Degrees of Freedom (16x MG996R, 2x MG90S) |
+| **Communication** | WebSockets (Low Latency), Wi-Fi, 4G LTE Fallback |
+| **Fabrication** | 100% FDM Parametric 3D Printable (PETG/PLA+) |
+| **Operating System** | FreeRTOS (Embedded), Linux/Windows (Backend) |
 
 ---
+
 *Built for the next generation of modular robotics. This project is a contribution to the open-source community to make real-life transformation robots a reality.*
 
 

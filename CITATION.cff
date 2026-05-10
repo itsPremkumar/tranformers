@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "KUMAR"
+  given-names: "PREM"
+title: "Omni-Morph: An Open-Source Distributed Transformation Robotics Platform"
+version: 1.0.0
+date-released: 2026-05-10
+url: "https://github.com/itsPremkumar/tranformers"
+keywords:
+  - robotics
+  - transformer-robot
+  - artificial-intelligence
+  - esp32
+  - open-source-hardware
+  - humanoid-robot
