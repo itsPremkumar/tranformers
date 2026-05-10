@@ -1,5 +1,7 @@
-# 🤖 Omni-Morph Robot: Open-Source AI Transformation Robotics
-> **The world's first open-source technical blueprint for a real-life transformation robot powered by a Multimodal AI Super-Brain.**
+# 🤖 Omni-Morph Robot: Theoretical AI Transformation Blueprint
+> [!CAUTION]
+> **STATUS: THEORETICAL CONCEPT / NOT TESTED.**  
+> This project is a **theoretical design, sample experiment, and initial starting idea.** It has **NOT** been physically built, tested, or verified in a real-world environment. Use the code and blueprints at your own risk.
 
 ---
 
