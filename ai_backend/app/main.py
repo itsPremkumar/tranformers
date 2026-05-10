@@ -1,0 +1,225 @@
+import os
+import json
+import asyncio
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from app.core.config import settings
+from app.core.manager import manager
+from app.core.llm_factory import LLMFactory
+from app.tools.vision import capture_frame
+from app.tools.audio import generate_tts_pcm
+from app.tools.reactive_vision import reactive_vision
+from pydantic import BaseModel
+
+app = FastAPI(title=settings.PROJECT_NAME)
+llm = LLMFactory(manager)
+
+class UserPrompt(BaseModel):
+    prompt: str
+
+async def approach_target(action_at_end=None):
+    """Autonomous navigation loop towards a vision target."""
+    print(f"[AUTO] Approaching target for action: {action_at_end}")
+    
+    # Ensure robot is in correct mode (Robot Mode for interaction)
+    if action_at_end in ["KICK", "PUSH"]:
+        await manager.send_command("CMD:TRANSFORM") # Ensure Robot Mode
+        await asyncio.sleep(2)
+
+    while reactive_vision.is_tracking:
+        off_x = reactive_vision.target_offset_x
+        area = reactive_vision.target_area
+        
+        # 1. Alignment (Turn towards target)
+        if off_x > 0.2:
+            await manager.send_command("CMD:RIGHT")
+        elif off_x < -0.2:
+            await manager.send_command("CMD:LEFT")
+        else:
+            # 2. Distance Control (Move forward until close)
+            if area < 0.15: # Target is small (far away)
+                await manager.send_command("CMD:FORWARD")
+            else:
+                # 3. Target Reached! Perform Action
+                await manager.send_command("CMD:STOP")
+                if action_at_end == "KICK":
+                    await manager.send_command("CMD:KICK")
+                elif action_at_end == "PUSH":
+                    await manager.send_command("CMD:PUSH")
+                
+                print(f"[AUTO] Task {action_at_end} Complete.")
+                reactive_vision.is_tracking = False # Stop tracking once done
+                break
+        
+        await asyncio.sleep(0.5)
+
+@app.post("/ask")
+async def ask_robot(user_input: UserPrompt):
+    """The main AI endpoint. Handles vision and physical voice."""
+    image = None
+    if any(k in user_input.prompt.lower() for k in ["see", "look", "watch", "camera"]):
+        image = capture_frame()
+    
+    # Get the active robot's name and mode for memory retrieval
+    robot_name = "Unknown"
+    robot_mode = "Robot" # Default
+    if manager.active_connections:
+        ws = manager.active_connections[0]
+        profile = manager.get_profile(ws)
+        robot_name = profile.get("name", "Unknown")
+        robot_mode = profile.get("current_mode", "Robot")
+
+    # Collect Hardware Status
+    hw_status = {
+        "battery": round(reactive_vision.last_battery, 1),
+        "distance": reactive_vision.last_distance,
+        "mode": robot_mode
+    }
+
+    json_response = await llm.get_response(user_input.prompt, robot_name, image, hw_status=hw_status)
+    
+    try:
+        commands = json.loads(json_response)
+        if manager.active_connections:
+            ws = manager.active_connections[0] # Assume first robot for now
+            for cmd in commands:
+                await manager.send_command(cmd)
+                
+                # Update mode tracking
+                if "CMD:TRANSFORM" in cmd:
+                    manager.update_profile(ws, {"current_mode": "Car"})
+                elif "CMD:WALK" in cmd:
+                    manager.update_profile(ws, {"current_mode": "Robot"})
+                
+                # --- Advanced Task Handling ---
+                if "CMD:FOLLOW" in cmd:
+                    manager.update_profile(ws, {"current_task": "Following Face"})
+                    asyncio.create_task(reactive_vision.start_tracking("face"))
+                
+                if "CMD:PLAY_BALL" in cmd:
+                    manager.update_profile(ws, {"current_task": "Playing Ball"})
+                    asyncio.create_task(reactive_vision.start_tracking("ball"))
+                    asyncio.create_task(approach_target(action_at_end="KICK"))
+                
+                if "CMD:COLLECT_WASTE" in cmd:
+                    manager.update_profile(ws, {"current_task": "Collecting Waste"})
+                    asyncio.create_task(reactive_vision.start_tracking("waste"))
+                    asyncio.create_task(approach_target(action_at_end="PUSH"))
+                
+                if "CMD:STOP_FOLLOW" in cmd:
+                    manager.update_profile(ws, {"current_task": "Idle"})
+                    reactive_vision.is_tracking = False
+                
+                # Check for speech command to send physical audio
+                if cmd.startswith("SAY:"):
+                    text = cmd[4:]
+                    # Get language from robot profile
+                    robot_lang = "en"
+                    if manager.active_connections:
+                        ws = manager.active_connections[0]
+                        profile = manager.get_profile(ws)
+                        robot_lang = profile.get("language", "en")
+                    
+                    # Use thread to avoid blocking the event loop
+                    pcm_data = await asyncio.to_thread(generate_tts_pcm, text, lang=robot_lang)
+                    if pcm_data:
+                        print(f"[AUDIO] Streaming {len(pcm_data)} bytes to robot body...")
+                        # Send binary audio data
+                        await manager.send_command(pcm_data)
+        
+        return {"status": "success", "commands": commands}
+    except Exception as e:
+        print(f"Error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/manual_cmd")
+async def manual_cmd(cmd: str):
+    """Direct manual override from dashboard buttons."""
+    await manager.send_command(cmd)
+    return {"status": "sent"}
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard():
+    """Serves the Unified AI Dashboard."""
+    try:
+        with open("app/templates/dashboard.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "Dashboard template not found in app/templates/"
+
+@app.get("/status")
+async def get_status():
+    """Returns the current hardware status for all connected robots."""
+    robots = []
+    for ws, profile in manager.robot_profiles.items():
+        robots.append({
+            "id": id(ws),
+            "name": profile.get("name"),
+            "battery": profile.get("battery"),
+            "distance": profile.get("distance"),
+            "mode": profile.get("current_mode"),
+            "task": profile.get("current_task")
+        })
+    return {"robots": robots}
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """Handles real-time communication with the robot hardware."""
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data.startswith("IDENTITY:"):
+                try:
+                    payload = json.loads(data[9:])
+                    manager.update_profile(websocket, payload)
+                    profile = manager.get_profile(websocket)
+                    print(f"--- ROBOT IDENTIFIED: {profile['name']} ---")
+                except: pass
+            elif data.startswith("DISTANCE:"):
+                try:
+                    dist = int(data[9:])
+                    reactive_vision.last_distance = dist
+                    manager.update_profile(websocket, {"distance": dist})
+                except: pass
+            elif data.startswith("BATTERY:"):
+                try:
+                    bat = float(data[8:])
+                    reactive_vision.last_battery = bat
+                    manager.update_profile(websocket, {"battery": round(bat, 1)})
+                except: pass
+            elif data.startswith("CURRENT:"):
+                try:
+                    curr = float(data[8:])
+                    if curr > 2.5: # 2.5 Amps limit
+                        await manager.send_command("CMD:STOP")
+                        print("[SAFETY] Emergency Stop: High Current Detected!")
+                except: pass
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+async def proactive_loop():
+    """Background task to engage humans every 60 seconds across all robots."""
+    while True:
+        await asyncio.sleep(60)
+        # Iterate over a copy of connections to be thread-safe
+        for ws in list(manager.active_connections):
+            try:
+                profile = manager.get_profile(ws)
+                robot_name = profile.get("name", "Unknown")
+                
+                print(f"[PROACTIVE] Engaging {robot_name}...")
+                json_response = await llm.get_response("Look around and make a curious observation.", robot_name)
+                commands = json.loads(json_response)
+                for cmd in commands:
+                    await manager.send_command(cmd, target_ws=ws)
+            except Exception as e:
+                print(f"Proactive Loop Error for {robot_name if 'robot_name' in locals() else 'Unknown'}: {e}")
+
+@app.on_event("startup")
+async def startup():
+    asyncio.create_task(proactive_loop())
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

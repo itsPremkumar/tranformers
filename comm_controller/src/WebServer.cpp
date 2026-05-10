@@ -1,0 +1,275 @@
+#include "WebServer.h"
+#include <WiFi.h>
+
+WebInterface::WebInterface(AudioSystem* audio, int port) : _audio(audio), _server(port), _hasNewCommand(false) {}
+
+void WebInterface::begin() {
+    _server.on("/", [this]() { handleRoot(); });
+    _server.on("/forward", [this]() { handleForward(); });
+    _server.on("/backward", [this]() { handleBackward(); });
+    _server.on("/left", [this]() { handleLeft(); });
+    _server.on("/right", [this]() { handleRight(); });
+    _server.on("/stop", [this]() { handleStop(); });
+    _server.on("/status", [this]() { handleStatus(); });
+    _server.on("/transform", [this]() { handleTransform(); });
+    _server.on("/walk", [this]() { handleWalk(); });
+    _server.on("/auto", [this]() { handleAuto(); });
+    _server.on("/test", [this]() { handleTest(); });
+    _server.on("/pan", [this]() { handlePan(); });
+    _server.on("/tilt", [this]() { handleTilt(); });
+    _server.on("/expression", [this]() { handleExpression(); });
+    _server.on("/voice", HTTP_POST, [this]() { handleVoice(); });
+    
+    _server.begin();
+
+    _webSocket.begin();
+    _webSocket.onEvent([this](uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+        onWebSocketEvent(num, type, payload, length);
+    });
+
+    #if USE_AI_BRAIN
+    _aiClient.begin(AI_BRAIN_HOST, AI_BRAIN_PORT, "/ws");
+    _aiClient.onEvent([this](WStype_t type, uint8_t * payload, size_t length) {
+        onAiEvent(type, payload, length);
+    });
+    _aiClient.setReconnectInterval(5000);
+    #endif
+
+    Serial.println("[SERVER] HTTP & WebSocket servers started");
+}
+
+void WebInterface::handleClient() {
+    _server.handleClient();
+    _webSocket.loop();
+    #if USE_AI_BRAIN
+    _aiClient.loop();
+    #endif
+}
+
+void WebInterface::onAiEvent(WStype_t type, uint8_t * payload, size_t length) {
+    if (type == WStype_CONNECTED) {
+        Serial.println("[AI-BRAIN] Connected to AI Backend");
+        // Send identity to the AI Brain immediately
+        String identity = "IDENTITY:{\"name\":\"" + String(ROBOT_NAME) + 
+                          "\",\"persona\":\"" + String(ROBOT_PERSONA) + 
+                          "\",\"version\":\"" + String(ROBOT_VERSION) + 
+                          "\",\"language\":\"" + String(ROBOT_LANGUAGE) + "\"}";
+        _aiClient.sendTXT(identity);
+    } else if (type == WStype_TEXT) {
+        String msg = String((char*)payload);
+        Serial.println("[AI-BRAIN] Received: " + msg);
+        
+        // Treat as a command from the brain
+        _lastCommand = msg;
+        _hasNewCommand = true;
+    } else if (type == WStype_BIN) {
+        Serial.printf("[AI-BRAIN] Received binary audio: %u bytes\n", length);
+        if (_audio) {
+            _audio->playRawPCM(payload, length);
+        }
+    } else if (type == WStype_DISCONNECTED) {
+        Serial.println("[AI-BRAIN] Disconnected from AI Backend");
+    }
+}
+
+
+void WebInterface::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+    if (type == WStype_CONNECTED) {
+        // Send identity to the new client
+        String identity = "IDENTITY:{\"name\":\"" + String(ROBOT_NAME) + 
+                          "\",\"persona\":\"" + String(ROBOT_PERSONA) + 
+                          "\",\"version\":\"" + String(ROBOT_VERSION) + "\"}";
+        _webSocket.sendTXT(num, identity);
+        Serial.println("[WS] Sent Identity to client " + String(num));
+    }
+    else if (type == WStype_TEXT) {
+        _lastCommand = String((char*)payload);
+        _hasNewCommand = true;
+        _webSocket.sendTXT(num, "ACK"); // Acknowledge command
+    }
+}
+
+
+void WebInterface::broadcast(String msg) {
+    _webSocket.broadcastTXT(msg);
+}
+
+
+String WebInterface::getLastCommand() {
+    return _lastCommand;
+}
+
+bool WebInterface::hasNewCommand() {
+    return _hasNewCommand;
+}
+
+void WebInterface::clearCommand() {
+    _hasNewCommand = false;
+    _lastCommand = "";
+}
+
+String WebInterface::getHTML() {
+    String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width,initial-scale=1,user-scalable=no'>";
+    html += "<meta charset='UTF-8'><title>Transformer Control Center</title>";
+    html += "<style>";
+    html += "*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Roboto,sans-serif;background:#0f0c29;background:linear-gradient(to right,#24243e,#302b63,#0f0c29);color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}";
+    html += ".container{width:100%;max-width:500px}.header{text-align:center;margin-bottom:20px}h1{font-size:1.8em;letter-spacing:2px;text-transform:uppercase;color:#00f2fe;text-shadow:0 0 10px rgba(0,242,254,0.5)}";
+    html += ".card{background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:20px;margin-bottom:15px;box-shadow:0 8px 32px 0 rgba(0,0,0,0.37)}";
+    html += ".status-bar{display:flex;justify-content:space-between;font-size:0.9em;color:#00f2fe;margin-bottom:10px}";
+    html += ".grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;justify-items:center}";
+    html += ".btn{width:100%;aspect-ratio:1/1;max-width:100px;border-radius:15px;border:none;color:#fff;font-weight:bold;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:0.2s;box-shadow:0 4px 15px rgba(0,0,0,0.3)}";
+    html += ".btn:active{transform:scale(0.95);box-shadow:0 2px 5px rgba(0,0,0,0.5)}";
+    html += ".btn-move{background:linear-gradient(45deg,#2193b0,#6dd5ed)}.btn-action{background:linear-gradient(45deg,#ff00cc,#3333ff)}.btn-stop{background:linear-gradient(45deg,#ed213a,#93291e)}.btn-mood{background:linear-gradient(45deg,#11998e,#38ef7d)}";
+    html += ".icon{font-size:1.8em;margin-bottom:5px}.label{font-size:0.7em;text-transform:uppercase}";
+    html += ".slider-container{margin-top:10px}.slider{width:100%;height:10px;border-radius:5px;background:#2c3e50;outline:none;appearance:none;margin:10px 0}.slider::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:#00f2fe;cursor:pointer;box-shadow:0 0 10px #00f2fe}";
+    html += ".section-title{font-size:0.8em;color:rgba(255,255,255,0.5);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}";
+    html += "</style></head><body>";
+    html += "<div class='container'><div class='header'><h1>Transformer 🤖</h1></div>";
+    
+    html += "<div class='card'><div class='status-bar'><span>IP: " + WiFi.localIP().toString() + "</span><span id='status'>READY</span></div></div>";
+    
+    html += "<div class='card'><div class='section-title'>Movement Control</div><div class='grid-3'>";
+    html += "<div></div><button class='btn btn-move' onclick='cmd(\"forward\")'><span class='icon'>▲</span><span class='label'>Forward</span></button><div></div>";
+    html += "<button class='btn btn-move' onclick='cmd(\"left\")'><span class='icon'>◀</span><span class='label'>Left</span></button>";
+    html += "<button class='btn btn-stop' onclick='cmd(\"stop\")'><span class='icon'>■</span><span class='label'>Stop</span></button>";
+    html += "<button class='btn btn-move' onclick='cmd(\"right\")'><span class='icon'>▶</span><span class='label'>Right</span></button>";
+    html += "<div></div><button class='btn btn-move' onclick='cmd(\"backward\")'><span class='icon'>▼</span><span class='label'>Back</span></button><div></div>";
+    html += "</div></div>";
+
+    html += "<div class='card'><div class='section-title'>Head / Camera Pan-Tilt</div>";
+    html += "<div class='slider-container'><div class='label'>Pan (Horizontal)</div><input type='range' min='0' max='180' value='90' class='slider' onchange='val(\"pan\",this.value)'></div>";
+    html += "<div class='slider-container'><div class='label'>Tilt (Vertical)</div><input type='range' min='0' max='180' value='90' class='slider' onchange='val(\"tilt\",this.value)'></div>";
+    html += "</div>";
+
+    html += "<div class='card'><div class='section-title'>Actions & Modes</div><div class='grid-3'>";
+    html += "<button class='btn btn-action' onclick='cmd(\"transform\")'><span class='icon'>🔄</span><span class='label'>Transform</span></button>";
+    html += "<button class='btn btn-action' onclick='cmd(\"walk\")'><span class='icon'>🚶</span><span class='label'>Walk Mode</span></button>";
+    html += "<button class='btn btn-action' onclick='cmd(\"auto\")'><span class='icon'>🤖</span><span class='label'>Auto Pilot</span></button>";
+    html += "<button class='btn btn-action' style='background:linear-gradient(45deg,#f093fb,#f5576c)' onclick='cmd(\"test\")'><span class='icon'>🩺</span><span class='label'>Self-Test</span></button>";
+    html += "</div></div>";
+
+    html += "<div class='card'><div class='section-title'>Expressions</div><div class='grid-3'>";
+    html += "<button class='btn btn-mood' onclick='expr(\"happy\")'><span class='icon'>😊</span><span class='label'>Happy</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"angry\")'><span class='icon'>😠</span><span class='label'>Angry</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"hero\")'><span class='icon'>😎</span><span class='label'>Hero</span></button>";
+    html += "</div></div>";
+
+    html += "<div class='card'><div class='section-title'>Intercom (Robot Voice)</div>";
+    html += "<button id='micBtn' class='btn btn-stop' style='width:100%;aspect-ratio:auto;height:60px;flex-direction:row;gap:10px'>";
+    html += "<span class='icon'>🎤</span><span class='label'>Hold to Talk</span></button></div>";
+
+    html += "</div>"; // end container
+    html += "<script>";
+    html += "let socket; let useWS = false;";
+    html += "const ROBOT_LANG = '" + String(ROBOT_LANGUAGE) + "';";
+    html += "function initWS(){";
+    html += "  socket = new WebSocket('ws://'+window.location.hostname+':81/');";
+    html += "  socket.onopen = () => { console.log('WS Connected'); useWS = true; document.getElementById('status').textContent='⚡ REAL-TIME'; };";
+    html += "  socket.onclose = () => { console.log('WS Disconnected'); useWS = false; document.getElementById('status').textContent='FALLBACK (HTTP)'; setTimeout(initWS, 2000); };";
+    html += "  socket.onmessage = (e) => { ";
+    html += "    if(e.data.startsWith('SAY:')){";
+    html += "      let text = e.data.substring(4);";
+    html += "      document.getElementById('status').textContent = 'ROBOT: ' + text;";
+    html += "      let utterance = new SpeechSynthesisUtterance(text);";
+    html += "      utterance.lang = ROBOT_LANG;";
+    html += "      utterance.pitch = 0.8; utterance.rate = 1.0; ";
+    html += "      window.speechSynthesis.speak(utterance);";
+    html += "    }";
+    html += "  };";
+    html += "}";
+
+    
+    html += "function cmd(d){ let c = 'CMD:'+d.toUpperCase(); if(useWS){ socket.send(c); } else { fetch('/'+d).then(r=>r.text()).then(t=>{document.getElementById('status').textContent=t;}); } }";
+    html += "function val(p,v){ let c = p.toUpperCase()+':'+v; if(useWS){ socket.send(c); } else { fetch('/'+p+'?val='+v); } }";
+    html += "function expr(m){ let c = 'FACE:'+m.toUpperCase(); if(useWS){ socket.send(c); } else { fetch('/expression?val='+m); } }";
+    
+    html += "window.onload = initWS;";
+    
+    // Intercom Logic
+    const micBtn = document.getElementById('micBtn');
+    let mediaRecorder;
+
+    micBtn.onmousedown = async () => {
+        try {
+            micBtn.style.background = 'linear-gradient(45deg, #ff0000, #990000)';
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (e) => {
+                fetch('/voice', { method: 'POST', body: e.data });
+            };
+            mediaRecorder.start(100); 
+        } catch(e) { console.error("Mic Error:", e); }
+    };
+
+    micBtn.onmouseup = () => {
+        micBtn.style.background = '';
+        if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        }
+    };
+    </script></body></html>";
+    return html;
+}
+
+void WebInterface::handleRoot() {
+    _server.send(200, "text/html", getHTML());
+}
+
+void WebInterface::handleForward() { _lastCommand = "CMD:FORWARD"; _hasNewCommand = true; _server.send(200, "text/plain", "FORWARD"); }
+void WebInterface::handleBackward() { _lastCommand = "CMD:BACKWARD"; _hasNewCommand = true; _server.send(200, "text/plain", "BACKWARD"); }
+void WebInterface::handleLeft() { _lastCommand = "CMD:LEFT"; _hasNewCommand = true; _server.send(200, "text/plain", "LEFT"); }
+void WebInterface::handleRight() { _lastCommand = "CMD:RIGHT"; _hasNewCommand = true; _server.send(200, "text/plain", "RIGHT"); }
+void WebInterface::handleStop() { _lastCommand = "CMD:STOP"; _hasNewCommand = true; _server.send(200, "text/plain", "STOPPED"); }
+void WebInterface::handleTransform() { _lastCommand = "CMD:TRANSFORM"; _hasNewCommand = true; _server.send(200, "text/plain", "TRANSFORMING"); }
+void WebInterface::handleWalk() { _lastCommand = "CMD:WALK"; _hasNewCommand = true; _server.send(200, "text/plain", "WALK MODE"); }
+void WebInterface::handleAuto() { _lastCommand = "CMD:AUTO"; _hasNewCommand = true; _server.send(200, "text/plain", "AUTO PILOT"); }
+void WebInterface::handleTest() { _lastCommand = "CMD:TEST"; _hasNewCommand = true; _server.send(200, "text/plain", "RUNNING DIAGNOSTICS"); }
+
+void WebInterface::handlePan() {
+    if (_server.hasArg("val")) {
+        _lastCommand = "PAN:" + _server.arg("val");
+        _hasNewCommand = true;
+    }
+    _server.send(200, "text/plain", "OK");
+}
+
+void WebInterface::handleTilt() {
+    if (_server.hasArg("val")) {
+        _lastCommand = "TILT:" + _server.arg("val");
+        _hasNewCommand = true;
+    }
+    _server.send(200, "text/plain", "OK");
+}
+
+void WebInterface::handleExpression() {
+    if (_server.hasArg("val")) {
+        _lastCommand = "FACE:" + _server.arg("val");
+        _hasNewCommand = true;
+    }
+    _server.send(200, "text/plain", "OK");
+}
+
+void WebInterface::handleVoice() {
+    if (_server.hasArg("plain")) {
+        // Here we would push the binary data to the AudioSystem
+        // For now, we'll mark it as a voice command
+        _lastCommand = "AUDIO:DATA";
+        _hasNewCommand = true;
+    }
+    _server.send(200, "text/plain", "OK");
+}
+
+void WebInterface::handleStatus() {
+    // We'll show the network type in the response
+    String json = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"rssi\":" + String(WiFi.RSSI()) + ",\"net\":\"" + (WiFi.status() == WL_CONNECTED ? "WiFi" : "4G") + "\"}";
+    _server.send(200, "application/json", json);
+}
+
+void WebInterface::sendToAi(String msg) {
+    #if USE_AI_BRAIN
+    if (_aiClient.isConnected()) {
+        _aiClient.sendTXT(msg);
+    }
+    #endif
+}

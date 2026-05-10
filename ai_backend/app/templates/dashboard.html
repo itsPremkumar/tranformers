@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer Super-Brain Dashboard</title>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg: #0a0b10;
+            --card: #161b22;
+            --text: #e6edf3;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Sidebar Controls */
+        .sidebar {
+            width: 350px;
+            background: var(--card);
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
+        h1 { font-size: 1.2rem; color: var(--primary); margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .control-group { margin-bottom: 25px; background: #0d1117; padding: 15px; border-radius: 12px; border: 1px solid #30363d; }
+        .control-label { font-size: 0.8rem; color: #8b949e; margin-bottom: 10px; display: block; }
+        
+        .d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 150px; margin: 0 auto; }
+        .btn { background: #21262d; border: 1px solid #30363d; color: white; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: var(--secondary); border-color: var(--primary); transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+        .btn-stop { background: #da3633; border-color: #f85149; }
+        .btn-stop:hover { background: #f85149; }
+
+        .slider-container { margin-top: 10px; }
+        input[type=range] { width: 100%; accent-color: var(--primary); }
+
+        /* Main Feed */
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .video-feed { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; position: relative; }
+        .video-feed img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+        .status-overlay { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; border: 1px solid var(--primary); color: var(--primary); }
+
+        /* AI Chat */
+        .chat-container { height: 250px; background: var(--card); border-top: 1px solid #30363d; display: flex; flex-direction: column; }
+        #chat-history { flex: 1; overflow-y: auto; padding: 15px; font-size: 0.9rem; }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; max-width: 80%; }
+        .msg-ai { background: #238636; align-self: flex-start; }
+        .msg-user { background: #1f6feb; align-self: flex-end; margin-left: auto; }
+        
+        .input-area { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #30363d; }
+        #chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 20px; outline: none; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>TRANSFORMER AI</h1>
+        
+        <div class="control-group">
+            <span class="control-label">MOVEMENT CONTROL</span>
+            <div class="d-pad">
+                <div></div><button class="btn" onclick="manual('FORWARD')">▲</button><div></div>
+                <button class="btn" onclick="manual('LEFT')">◀</button>
+                <button class="btn btn-stop" onclick="manual('STOP')">■</button>
+                <button class="btn" onclick="manual('RIGHT')">▶</button>
+                <div></div><button class="btn" onclick="manual('BACKWARD')">▼</button><div></div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">CAMERA GIMBAL</span>
+            <div class="slider-container">
+                <span class="control-label">PAN: <span id="pan-val">90</span>°</span>
+                <input type="range" min="0" max="180" value="90" oninput="updateCam('PAN', this.value)">
+            </div>
+            <div class="slider-container">
+                <span class="control-label">TILT: <span id="tilt-val">90</span>°</span>
+                <input type="range" min="0" max="180" value="90" oninput="updateCam('TILT', this.value)">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">ROBOT FLEET</span>
+            <div id="fleet-list">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">FOCUSED ROBOT HEALTH</span>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                <span>🔋 Battery:</span>
+                <span id="stat-battery" style="color: #3fb950;">--%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px;">
+                <span>📏 Distance:</span>
+                <span id="stat-dist">-- cm</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px;">
+                <span>🤖 Mode:</span>
+                <span id="stat-mode" style="color: var(--primary);">--</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <span class="control-label">MODE & UTILITY</span>
+            <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="manual('TRANSFORM')">⚡ TRANSFORM</button>
+            <button class="btn" style="width: 100%;" onclick="manual('AUTO')">🤖 AUTO-AVOID</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="video-feed">
+            <div class="status-overlay">LIVE FPV STREAM</div>
+            <img id="stream" src="http://192.168.1.50/mjpeg" alt="Waiting for Camera...">
+        </div>
+
+        <div class="chat-container">
+            <div style="padding: 10px 15px; background: #0d1117; font-size: 0.7rem; color: #8b949e; border-bottom: 1px solid #30363d;">MISSION CONSOLE - TASK VALIDATION ACTIVE</div>
+            <div id="chat-history"></div>
+            <div class="input-area">
+                <input type="text" id="chat-input" placeholder="Assign a new task to the robot..." onkeypress="if(event.key==='Enter') sendAI()">
+                <button class="btn" onclick="sendAI()">DEPLOY TASK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function manual(cmd) {
+            fetch('/manual_cmd?cmd=CMD:' + cmd, {method: 'POST'});
+        }
+
+        function updateCam(type, val) {
+            document.getElementById(type.toLowerCase() + '-val').textContent = val;
+            fetch('/manual_cmd?cmd=' + type + ':' + val, {method: 'POST'});
+        }
+
+        // Poll for hardware status every 1 second
+        async function pollStatus() {
+            try {
+                const res = await fetch('/status');
+                const data = await res.json();
+                
+                const fleetList = document.getElementById('fleet-list');
+                fleetList.innerHTML = ''; // Clear current
+                
+                if(data.robots && data.robots.length > 0) {
+                    data.robots.forEach((r, idx) => {
+                        const rDiv = document.createElement('div');
+                        rDiv.style.marginBottom = "10px";
+                        rDiv.style.paddingBottom = "5px";
+                        rDiv.style.borderBottom = "1px solid #30363d";
+                        rDiv.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                                <span>${r.name}</span>
+                                <span style="color:${r.battery < 20 ? '#f85149' : '#3fb950'}">${r.battery}%</span>
+                            </div>
+                            <div style="font-size:0.75rem; color:#8b949e;">Task: <span style="color:var(--primary)">${r.task}</span></div>
+                        `;
+                        fleetList.appendChild(rDiv);
+
+                        // If it's the first robot, update the focus health
+                        if(idx === 0) {
+                            document.getElementById('stat-battery').textContent = r.battery + '%';
+                            document.getElementById('stat-dist').textContent = r.distance + ' cm';
+                            document.getElementById('stat-mode').textContent = r.mode;
+                            if(r.battery < 20) document.getElementById('stat-battery').style.color = '#f85149';
+                            else document.getElementById('stat-battery').style.color = '#3fb950';
+                        }
+                    });
+                } else {
+                    fleetList.innerHTML = '<div style="font-size:0.8rem; color:#8b949e;">No robots connected.</div>';
+                }
+            } catch(e) {}
+        }
+        setInterval(pollStatus, 1000);
+
+        async function sendAI() {
+            const input = document.getElementById('chat-input');
+            const text = input.value;
+            if(!text) return;
+            
+            addMsg(text, 'user');
+            input.value = '';
+
+            const res = await fetch('/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({prompt: text})
+            });
+            const data = await res.json();
+            
+            if(data.commands) {
+                data.commands.forEach(c => {
+                    if(c.startsWith('SAY:')) {
+                        const msgText = c.substring(4);
+                        const isDecline = msgText.toLowerCase().includes("not able");
+                        addMsg(msgText, 'ai', isDecline);
+                    }
+                });
+            }
+        }
+
+        function addMsg(text, type, isWarning = false) {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = 'msg msg-' + type;
+            if(isWarning) div.style.background = '#8a1c1c';
+            div.textContent = text;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
+    </script>
+</body>
+</html>
