@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ai_brain:
+    build: .
+    container_name: transformer_brain
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    restart: always
+
+  # Optional: Local Ollama service if you want to run it inside Docker
+  # ollama:
+  #   image: ollama/ollama
+  #   container_name: ollama_local
+  #   ports:
+    #   - "11434:11434"
