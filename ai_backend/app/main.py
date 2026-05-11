@@ -108,6 +108,8 @@ async def ask_robot(user_input: UserPrompt):
         if manager.active_connections:
             ws = manager.active_connections[0] # Assume first robot for now
             for cmd in commands:
+                if not isinstance(cmd, str):
+                    continue
                 await manager.send_command(cmd)
                 
                 # Update mode tracking

@@ -34,11 +34,12 @@ class LLMFactory:
         # 0. Load Robot-Specific Memory (Run in thread to avoid blocking)
         history, knowledge = await asyncio.to_thread(memory_manager.get_robot_memory, robot_name)
         
-        # Filter history: Remove any messages that are just numeric lists/coordinates to break loops
+        # Filter history: Remove any messages that contain numeric lists/coordinates to break loops
         clean_history = []
         for msg in history:
-            if not (msg.startswith("[") and msg.endswith("]") and any(char.isdigit() for char in msg)):
-                clean_history.append(msg)
+            if "Robot: [" in msg and any(char.isdigit() for char in msg):
+                continue
+            clean_history.append(msg)
         
         history_text = "\n".join(clean_history[-5:]) # Last 5 clean exchanges
         
@@ -94,10 +95,18 @@ class LLMFactory:
     def format_response(self, text):
         try:
             clean = text.replace("```json", "").replace("```", "").strip()
-            json.loads(clean)
+            parsed = json.loads(clean)
+            
+            # Prevent hallucinated coordinates from being treated as valid commands
+            if isinstance(parsed, list) and len(parsed) > 0 and any(isinstance(x, (int, float)) for x in parsed):
+                raise ValueError("Model hallucinated coordinates")
+                
             return clean
         except:
-            return json.dumps([f"SAY:{text}"])
+            clean_text = text.replace('"', '').replace('[', '').replace(']', '').strip()
+            if not clean_text or any(char.isdigit() for char in clean_text[:5]):
+                return json.dumps(["SAY:I am processing your request."])
+            return json.dumps([f"SAY:{clean_text}"])
 
     def get_system_prompt(self, robot_name: str):
         # Find the profile for this robot name
@@ -112,9 +121,8 @@ class LLMFactory:
             return (
                 f"You are {robot_name}, a friendly and intelligent robot. "
                 f"Persona: A helpful robot. Reply in a natural, conversational way. "
-                "IMPORTANT: Always prioritize speaking to the user. "
-                "NEVER reply with just a list of numbers or coordinates. "
-                "If you want to say something, start it with 'SAY:'. "
+                "You must ONLY reply with a valid JSON list of strings. "
+                "If you want to speak, start the string with 'SAY:'. "
                 "Example: [\"SAY:Hello! I am ready.\"]"
             )
 
