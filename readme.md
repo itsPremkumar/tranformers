@@ -53,10 +53,28 @@ The robot is powered by a FastAPI-based backend that provides "consciousness":
 
 ## 🚀 Getting Started
 
-1.  **AI Backend**: Navigate to `ai_backend/`, install dependencies from `requirements.txt`, and run `python app/main.py`.
-2.  **Hardware Configuration**: Update Wi-Fi and API keys in `Config.h` and `.env` files.
-3.  **Deployment**: Flash the ESP32 modules using PlatformIO.
-4.  **Wiring**: Refer to [**electronic.md**](./docs/electronic.md) for master wiring schematics.
+### 1. AI Backend (The "Brain")
+The AI Backend can run on your laptop for testing with a local USB camera and local LLMs.
+
+1.  **Navigate** to the `ai_backend/` directory.
+2.  **Install Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **Setup Environment**: Copy `.env.example` to `.env` and configure:
+    - `USE_LOCAL_CAMERA=True` (To use your laptop webcam).
+    - `OLLAMA_MODEL=gemma4:e4b` (For local AI) or `GEMINI_API_KEY` (For cloud AI).
+4.  **Install Ollama** (Optional for local AI): Download from [ollama.com](https://ollama.com) and run `ollama pull gemma4:e4b`.
+5.  **Run the Server**:
+    ```bash
+    python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ```
+6.  **Dashboard**: Access [http://localhost:8000/dashboard](http://localhost:8000/dashboard).
+
+### 2. Hardware Deployment
+1.  **Configuration**: Update Wi-Fi and API keys in `Config.h`.
+2.  **Deployment**: Flash the ESP32 modules using PlatformIO.
+3.  **Wiring**: Refer to [**electronic.md**](./docs/electronic.md) for master wiring schematics.
 
 ## 📖 Documentation
 

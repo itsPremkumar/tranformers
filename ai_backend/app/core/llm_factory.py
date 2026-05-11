@@ -4,6 +4,8 @@ import anthropic
 import ollama
 import json
 import asyncio
+import base64
+import io
 from app.core.config import settings
 from app.tools.robot import move_robot, set_camera_gimbal, transform_robot
 from app.tools.internet import web_search, wiki_lookup, play_youtube
@@ -54,15 +56,24 @@ class LLMFactory:
             except Exception as e:
                 print(f"[LLM] Gemini Error: {e}")
 
-        # 3. Fallbacks...
+        # 3. Fallbacks / Local LLM Path
         if not raw_response:
             try:
-                # Use standard fallback logic (Run in thread to avoid blocking)
-                print(f"[LLM] Using Fallback for {robot_name}")
-                res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[{'role': 'user', 'content': full_prompt}])
+                print(f"[LLM] Using Local Model ({settings.OLLAMA_MODEL}) for {robot_name}")
+                
+                # Prepare message with image support for Ollama
+                message = {'role': 'user', 'content': full_prompt}
+                if image:
+                    # Convert PIL Image to base64
+                    buffered = io.BytesIO()
+                    image.save(buffered, format="JPEG")
+                    img_str = base64.b64encode(buffered.getvalue()).decode()
+                    message['images'] = [img_str]
+                
+                res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[message])
                 raw_response = self.format_response(res['message']['content'])
             except Exception as e:
-                print(f"[LLM] Fallback Error: {e}")
+                print(f"[LLM] Local Model Error: {e}")
                 raw_response = json.dumps([f"SAY:I am currently processing. Please try again."])
 
         # 4. Save Interaction to Persistent Memory (Run in thread)
