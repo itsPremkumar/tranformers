@@ -19,7 +19,11 @@ class Settings:
     
     # Model Selection
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama-omni2")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "moondream")
     OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    
+    # Robot Configuration
+    DEFAULT_ROBOT_NAME = os.getenv("DEFAULT_ROBOT_NAME", "Transformer")
+    ENABLE_INTERNET_SEARCH = os.getenv("ENABLE_INTERNET_SEARCH", "True").lower() == "true"
 
 settings = Settings()

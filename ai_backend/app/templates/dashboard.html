@@ -254,8 +254,15 @@
                 
                 if(data.commands) {
                     data.commands.forEach(c => {
+                        let msgText = "";
                         if(c.startsWith('SAY:')) {
-                            const msgText = c.substring(4);
+                            msgText = c.substring(4);
+                        } else if (!c.startsWith('CMD:') && !c.includes(':')) {
+                            // If it's just plain text from the AI, show it
+                            msgText = c;
+                        }
+                        
+                        if (msgText) {
                             const isDecline = msgText.toLowerCase().includes("not able");
                             addMsg(msgText, 'ai', isDecline);
                         }

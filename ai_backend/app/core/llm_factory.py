@@ -45,37 +45,38 @@ class LLMFactory:
         search_text = f"\nLIVE INTERNET SEARCH RESULTS:\n{internet_context}\n" if internet_context else ""
         full_prompt = f"{system_prompt}\n{status_text}{search_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
 
-        # 2. Try Gemini (Primary with Function Calling)
+        # 2. Local LLM Path (Primary)
         raw_response = None
-        if self.gemini_client:
-            try:
-                chat = self.gemini_client.start_chat(enable_automatic_function_calling=True)
-                content = [full_prompt, image] if image else full_prompt
-                # Use async call for Gemini
-                response = await chat.send_message_async(content)
-                raw_response = self.format_response(response.text)
-            except Exception as e:
-                print(f"[LLM] Gemini Error: {e}")
+        try:
+            print(f"[LLM] Using Local Model ({settings.OLLAMA_MODEL}) for {robot_name}")
+            
+            # Prepare message with image support for Ollama
+            message = {'role': 'user', 'content': full_prompt}
+            if image:
+                # Convert PIL Image to base64
+                buffered = io.BytesIO()
+                image.save(buffered, format="JPEG")
+                img_str = base64.b64encode(buffered.getvalue()).decode()
+                message['images'] = [img_str]
+            
+            res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[message])
+            raw_response = self.format_response(res['message']['content'])
+        except Exception as e:
+            print(f"[LLM] Local Model Error: {e}")
+            
+            # 3. Fallback to Gemini if key exists
+            if self.gemini_client:
+                try:
+                    print(f"[LLM] Falling back to Gemini...")
+                    chat = self.gemini_client.start_chat(enable_automatic_function_calling=True)
+                    content = [full_prompt, image] if image else full_prompt
+                    response = await chat.send_message_async(content)
+                    raw_response = self.format_response(response.text)
+                except Exception as ex:
+                    print(f"[LLM] Gemini Fallback Error: {ex}")
 
-        # 3. Fallbacks / Local LLM Path
         if not raw_response:
-            try:
-                print(f"[LLM] Using Local Model ({settings.OLLAMA_MODEL}) for {robot_name}")
-                
-                # Prepare message with image support for Ollama
-                message = {'role': 'user', 'content': full_prompt}
-                if image:
-                    # Convert PIL Image to base64
-                    buffered = io.BytesIO()
-                    image.save(buffered, format="JPEG")
-                    img_str = base64.b64encode(buffered.getvalue()).decode()
-                    message['images'] = [img_str]
-                
-                res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[message])
-                raw_response = self.format_response(res['message']['content'])
-            except Exception as e:
-                print(f"[LLM] Local Model Error: {e}")
-                raw_response = json.dumps([f"SAY:I am currently processing. Please try again."])
+            raw_response = json.dumps([f"SAY:I am currently processing. Please try again."])
 
         # 4. Save Interaction to Persistent Memory (Run in thread)
         await asyncio.to_thread(memory_manager.save_interaction, robot_name, user_prompt, raw_response)

@@ -10,6 +10,7 @@ from app.core.llm_factory import LLMFactory
 from app.tools.vision import capture_frame
 from app.tools.audio import generate_tts_pcm
 from app.tools.reactive_vision import reactive_vision
+import subprocess
 from pydantic import BaseModel
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -278,8 +279,22 @@ async def proactive_loop():
             except Exception as e:
                 print(f"Proactive Loop Error for {robot_name if 'robot_name' in locals() else 'Unknown'}: {e}")
 
+def check_ollama():
+    """Ensures Ollama is running before the backend starts."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(('localhost', 11434)) != 0:
+            print("[OLLAMA] Server not detected. Starting Ollama automatically...")
+            # Try to start Ollama in the background
+            try:
+                subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                print("[OLLAMA] Started successfully.")
+            except Exception as e:
+                print(f"[OLLAMA] Error starting: {e}")
+
 @app.on_event("startup")
 async def startup():
+    check_ollama()
     asyncio.create_task(proactive_loop())
 
 if __name__ == "__main__":
