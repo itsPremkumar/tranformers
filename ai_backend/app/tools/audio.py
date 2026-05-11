@@ -3,6 +3,17 @@ from pydub import AudioSegment
 import io
 import os
 
+# Fix for missing ffmpeg in PATH
+ffmpeg_dir = r"C:\Program Files\Shotcut"
+ffmpeg_path = os.path.join(ffmpeg_dir, "ffmpeg.exe")
+ffprobe_path = os.path.join(ffmpeg_dir, "ffprobe.exe")
+
+if os.path.exists(ffmpeg_path):
+    os.environ["PATH"] += os.pathsep + ffmpeg_dir
+    AudioSegment.converter = ffmpeg_path
+if os.path.exists(ffprobe_path):
+    AudioSegment.ffprobe = ffprobe_path
+
 def generate_tts_pcm(text: str, lang: str = 'en'):
     """
     Generates a raw PCM 16kHz Mono audio stream for the ESP32.

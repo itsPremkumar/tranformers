@@ -58,8 +58,12 @@ class LLMFactory:
         if self.gemini_client:
             full_prompt = f"{system_prompt}\n{status_text}{search_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
         else:
-            # Tiny model optimized prompt (e.g., Moondream struggles with large complex context blocks)
-            full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
+            # Optimization for local models
+            if image:
+                # Moondream works best with extremely direct questions
+                full_prompt = f"Question: {user_prompt}\nAnswer briefly based on the image."
+            else:
+                full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
             
         print(f"\n[DEBUG] --- FINAL PROMPT SENT TO AI ---\n{full_prompt}\n[DEBUG] ---------------------------------")
 
@@ -100,7 +104,9 @@ class LLMFactory:
                 clean_context = internet_context.replace('\n', ' ').replace('"', '')[:200]
                 raw_response = json.dumps([f"SAY:Here is what I found: {clean_context}"])
             else:
-                raw_response = json.dumps([f"SAY:I am currently processing. Please try again."])
+                # Provide a more natural fallback if vision failed
+                msg = "I can see the camera feed, but I'm having trouble identifying everything clearly." if image else "I'm thinking, but I couldn't find a clear answer for that right now."
+                raw_response = json.dumps([f"SAY:{msg}"])
 
         # 4. Save Interaction to Persistent Memory (Run in thread)
         await asyncio.to_thread(memory_manager.save_interaction, robot_name, user_prompt, raw_response)
