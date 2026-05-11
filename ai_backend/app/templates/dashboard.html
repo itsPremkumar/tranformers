@@ -69,13 +69,25 @@
         <h1>TRANSFORMER AI</h1>
         
         <div class="control-group">
-            <span class="control-label">MOVEMENT CONTROL</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span class="control-label" style="margin-bottom: 0;">CONTROL MODE</span>
+                <select id="control-mode" class="btn" style="padding: 2px 10px; font-size: 0.7rem; aspect-ratio: auto;">
+                    <option value="LATCH">CRUISE (LATCH)</option>
+                    <option value="MOMENTARY">PRECISION (HOLD)</option>
+                </select>
+            </div>
             <div class="d-pad">
-                <div></div><button class="btn" onclick="manual('FORWARD')">▲</button><div></div>
-                <button class="btn" onclick="manual('LEFT')">◀</button>
+                <div></div>
+                <button class="btn" onmousedown="handleMove('FORWARD')" onmouseup="handleStop()" onmouseleave="handleStop()">▲</button>
+                <div></div>
+                
+                <button class="btn" onmousedown="handleMove('LEFT')" onmouseup="handleStop()" onmouseleave="handleStop()">◀</button>
                 <button class="btn btn-stop" onclick="manual('STOP')">■</button>
-                <button class="btn" onclick="manual('RIGHT')">▶</button>
-                <div></div><button class="btn" onclick="manual('BACKWARD')">▼</button><div></div>
+                <button class="btn" onmousedown="handleMove('RIGHT')" onmouseup="handleStop()" onmouseleave="handleStop()">▶</button>
+                
+                <div></div>
+                <button class="btn" onmousedown="handleMove('BACKWARD')" onmouseup="handleStop()" onmouseleave="handleStop()">▼</button>
+                <div></div>
             </div>
         </div>
 
@@ -150,6 +162,18 @@
     <script>
         function manual(cmd) {
             fetch('/manual_cmd?cmd=CMD:' + cmd, {method: 'POST'});
+        }
+
+        function handleMove(dir) {
+            const mode = document.getElementById('control-mode').value;
+            manual(dir);
+        }
+
+        function handleStop() {
+            const mode = document.getElementById('control-mode').value;
+            if (mode === 'MOMENTARY') {
+                manual('STOP');
+            }
         }
 
         function updateCam(type, val) {

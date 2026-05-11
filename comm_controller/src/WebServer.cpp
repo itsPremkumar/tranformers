@@ -130,16 +130,20 @@ String WebInterface::getHTML() {
     
     html += "<div class='card'><div class='status-bar'><span>IP: " + WiFi.localIP().toString() + "</span><span id='status'>READY</span></div></div>";
     
-    html += "<div class='card'><div class='section-title'>Movement Control</div><div class='grid-3'>";
-    html += "<div></div><button class='btn btn-move' onclick='cmd(\"forward\")'><span class='icon'>▲</span><span class='label'>Forward</span></button><div></div>";
-    html += "<button class='btn btn-move' onclick='cmd(\"left\")'><span class='icon'>◀</span><span class='label'>Left</span></button>";
+    html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
+    html += "<span>Movement Control</span>";
+    html += "<select id='mode' style='background:#1a1a2e;color:#00f2fe;border:1px solid #00f2fe;border-radius:5px;font-size:0.7em'>";
+    html += "<option value='latch'>CRUISE</option><option value='momentary'>HOLD</option></select></div>";
+    html += "<div class='grid-3'>";
+    html += "<div></div><button class='btn btn-move' onmousedown='m(\"forward\")' onmouseup='s()' onmouseleave='s()'><span class='icon'>▲</span><span class='label'>Forward</span></button><div></div>";
+    html += "<button class='btn btn-move' onmousedown='m(\"left\")' onmouseup='s()' onmouseleave='s()'><span class='icon'>◀</span><span class='label'>Left</span></button>";
     html += "<button class='btn btn-stop' onclick='cmd(\"stop\")'><span class='icon'>■</span><span class='label'>Stop</span></button>";
-    html += "<button class='btn btn-move' onclick='cmd(\"right\")'><span class='icon'>▶</span><span class='label'>Right</span></button>";
-    html += "<div></div><button class='btn btn-move' onclick='cmd(\"backward\")'><span class='icon'>▼</span><span class='label'>Back</span></button><div></div>";
+    html += "<button class='btn btn-move' onmousedown='m(\"right\")' onmouseup='s()' onmouseleave='s()'><span class='icon'>▶</span><span class='label'>Right</span></button>";
+    html += "<div></div><button class='btn btn-move' onmousedown='m(\"backward\")' onmouseup='s()' onmouseleave='s()'><span class='icon'>▼</span><span class='label'>Back</span></button><div></div>";
     html += "</div>";
     html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'>";
-    html += "<button class='btn btn-move' style='aspect-ratio:auto;height:45px' onclick='cmd(\"left_pivot\")'><span class='label'>↶ Pivot Left</span></button>";
-    html += "<button class='btn btn-move' style='aspect-ratio:auto;height:45px' onclick='cmd(\"right_pivot\")'><span class='label'>↷ Pivot Right</span></button>";
+    html += "<button class='btn btn-move' style='aspect-ratio:auto;height:45px' onmousedown='m(\"left_pivot\")' onmouseup='s()' onmouseleave='s()'><span class='label'>↶ Pivot Left</span></button>";
+    html += "<button class='btn btn-move' style='aspect-ratio:auto;height:45px' onmousedown='m(\"right_pivot\")' onmouseup='s()' onmouseleave='s()'><span class='label'>↷ Pivot Right</span></button>";
     html += "</div></div>";
 
     html += "<div class='card'><div class='section-title'>Head / Camera Pan-Tilt</div>";
@@ -186,6 +190,8 @@ String WebInterface::getHTML() {
 
     
     html += "function cmd(d){ let c = 'CMD:'+d.toUpperCase(); if(useWS){ socket.send(c); } else { fetch('/'+d).then(r=>r.text()).then(t=>{document.getElementById('status').textContent=t;}); } }";
+    html += "function m(d){ cmd(d); }";
+    html += "function s(){ if(document.getElementById('mode').value==='momentary'){ cmd('stop'); } }";
     html += "function val(p,v){ let c = p.toUpperCase()+':'+v; if(useWS){ socket.send(c); } else { fetch('/'+p+'?val='+v); } }";
     html += "function expr(m){ let c = 'FACE:'+m.toUpperCase(); if(useWS){ socket.send(c); } else { fetch('/expression?val='+m); } }";
     
