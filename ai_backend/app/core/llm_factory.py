@@ -63,9 +63,9 @@ class LLMFactory:
                 full_prompt = f"Identify and describe what is in this image. Question: {user_prompt}"
             else:
                 if internet_context:
-                    full_prompt = f"LATEST NEWS/INFO:\n{internet_context}\n\nQuestion: {user_prompt}\nAnswer using the LATEST info above. Be factual."
+                    full_prompt = f"{status_text}\nLATEST NEWS/INFO:\n{internet_context}\n\nQuestion: {user_prompt}\nAnswer using the LATEST info above. Be factual."
                 else:
-                    full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
+                    full_prompt = f"{system_prompt}\n{status_text}\nQuestion: {user_prompt}"
             
         print(f"\n[DEBUG] --- FINAL PROMPT SENT TO AI ---\n{full_prompt}\n[DEBUG] ---------------------------------")
 
@@ -159,9 +159,10 @@ class LLMFactory:
         # Simpler prompt for local models (Moondream/Llama)
         if not self.gemini_client:
             return (
-                f"You are {robot_name}, a friendly and intelligent robot. "
-                "Answer the user's question directly and concisely based on the context provided. "
-                "ALWAYS answer in English. Do not use JSON formatting, just reply with plain text."
+                f"Your name is {robot_name}. Your persona is {profile['persona']}. "
+                "You must strictly follow this identity. "
+                "Answer the user's question directly and concisely. "
+                "ALWAYS answer in English. Do not use JSON formatting."
             )
 
         return f"""

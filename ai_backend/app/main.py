@@ -106,12 +106,27 @@ async def ask_robot(user_input: UserPrompt):
         "mode": robot_mode
     }
 
+    # Hybrid Command Dispatcher (Ensures reliability for critical hardware tasks)
+    hybrid_commands = []
+    if any(k in user_input.prompt.lower() for k in ["waste", "trash", "garbage"]):
+        hybrid_commands.append("CMD:COLLECT_WASTE")
+    if any(k in user_input.prompt.lower() for k in ["follow", "track me", "look at me"]):
+        hybrid_commands.append("CMD:FOLLOW")
+    if "play" in user_input.prompt.lower():
+        # Extrapolate song name for the playback tool
+        query = user_input.prompt.lower().split("play")[-1].replace("on youtube", "").replace("song", "").strip()
+        hybrid_commands.append(f"SAY:Playing '{query}' on YouTube.")
+
     print(f"[DEBUG] Requesting LLM Response...")
     json_response = await llm.get_response(user_input.prompt, robot_name, image, hw_status=hw_status, internet_context=internet_results)
-    print(f"[DEBUG] LLM Response: {json_response[:100]}...")
     
     try:
         commands = json.loads(json_response)
+        # Merge hybrid commands (avoid duplicates)
+        for h_cmd in hybrid_commands:
+            if h_cmd not in commands:
+                commands.insert(0, h_cmd)
+        
         if manager.active_connections:
             ws = manager.active_connections[0] # Assume first robot for now
             for cmd in commands:
@@ -138,6 +153,11 @@ async def ask_robot(user_input: UserPrompt):
                 if "CMD:COLLECT_WASTE" in cmd:
                     manager.update_profile(ws, {"current_task": "Collecting Waste"})
                     asyncio.create_task(reactive_vision.start_tracking("waste"))
+                
+                if "SAY:Playing" in cmd and "on YouTube" in cmd:
+                    from app.tools.internet import play_youtube
+                    song_name = cmd.replace("SAY:Playing '", "").replace("' on YouTube.", "").strip()
+                    await asyncio.to_thread(play_youtube, song_name)
                     asyncio.create_task(approach_target(action_at_end="PUSH"))
                 
                 if "CMD:STOP_FOLLOW" in cmd:
