@@ -28,7 +28,7 @@ class LLMFactory:
         self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
         self.claude_client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY) if settings.CLAUDE_API_KEY else None
 
-    async def get_response(self, user_prompt: str, robot_name: str, image=None, hw_status: dict = None):
+    async def get_response(self, user_prompt: str, robot_name: str, image=None, hw_status: dict = None, internet_context: str = None):
         """The single unified entry point for AI logic with robot-specific memory and hardware awareness."""
         
         # 0. Load Robot-Specific Memory (Run in thread to avoid blocking)
@@ -42,7 +42,8 @@ class LLMFactory:
         if hw_status:
             status_text = f"\nCURRENT HARDWARE STATUS:\n- Battery: {hw_status.get('battery', 0)}%\n- Mode: {hw_status.get('mode', 'Unknown')}\n- Obstacle Distance: {hw_status.get('distance', 0)}cm\n"
 
-        full_prompt = f"{system_prompt}\n{status_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
+        search_text = f"\nLIVE INTERNET SEARCH RESULTS:\n{internet_context}\n" if internet_context else ""
+        full_prompt = f"{system_prompt}\n{status_text}{search_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
 
         # 2. Try Gemini (Primary with Function Calling)
         raw_response = None
@@ -96,18 +97,15 @@ class LLMFactory:
             if p['name'] == robot_name:
                 profile = p
                 break
-                
+        
+        # Simpler prompt for local models (Moondream/Llama)
+        if not self.gemini_client:
+            return f"You are {profile['name']}, a friendly and intelligent robot. Persona: {profile['persona']}. Reply in a natural, conversational way. If you want to say something, start it with 'SAY:'. For example: [\"SAY:Hello! I see you.\"]."
+
         return f"""
 You are the advanced AI brain for {profile['name']}. 
 Persona: {profile['persona']}
 Preferred Language: {profile['language']}
-
-CRITICAL TASK VALIDATION:
-1. Before performing any task, check the 'CURRENT HARDWARE STATUS' provided.
-2. If Battery < 10%, decline physical tasks and say "I am not able to do this task because my energy is too low."
-3. If a task requires vision (like tracking) but the camera feed is missing, decline it.
-4. If a task is physically impossible for a robot of your type, decline it politely.
-5. If feasible, acknowledge and start immediately.
 
 ROBOT COMMANDS (Always return as a JSON list of strings):
 - CMD:FORWARD, CMD:BACKWARD, CMD:LEFT, CMD:RIGHT, CMD:STOP

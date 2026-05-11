@@ -61,8 +61,18 @@ async def approach_target(action_at_end=None):
 async def ask_robot(user_input: UserPrompt):
     """The main AI endpoint. Handles vision and physical voice."""
     image = None
-    if any(k in user_input.prompt.lower() for k in ["see", "look", "watch", "camera"]):
+    # Smart Vision Trigger: Capture frame if the prompt implies looking at something
+    visual_keywords = ["see", "look", "watch", "camera", "what is", "who is", "describe", "identify", "where", "detect"]
+    if any(k in user_input.prompt.lower() for k in visual_keywords):
         image = capture_frame()
+    
+    # Smart Internet Trigger: Search the web if the prompt implies needing current info
+    internet_results = None
+    search_keywords = ["search", "google", "weather", "news", "who is", "what is the price", "latest"]
+    if any(k in user_input.prompt.lower() for k in search_keywords):
+        from app.tools.internet import web_search
+        # Extract a simple query from the prompt or just use the prompt
+        internet_results = web_search(user_input.prompt)
     
     # Get the active robot's name and mode for memory retrieval
     robot_name = "Unknown"
@@ -80,7 +90,7 @@ async def ask_robot(user_input: UserPrompt):
         "mode": robot_mode
     }
 
-    json_response = await llm.get_response(user_input.prompt, robot_name, image, hw_status=hw_status)
+    json_response = await llm.get_response(user_input.prompt, robot_name, image, hw_status=hw_status, internet_context=internet_results)
     
     try:
         commands = json.loads(json_response)

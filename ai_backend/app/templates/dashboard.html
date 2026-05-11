@@ -228,22 +228,42 @@
             
             addMsg(text, 'user');
             input.value = '';
-
-            const res = await fetch('/ask', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({prompt: text})
-            });
-            const data = await res.json();
             
-            if(data.commands) {
-                data.commands.forEach(c => {
-                    if(c.startsWith('SAY:')) {
-                        const msgText = c.substring(4);
-                        const isDecline = msgText.toLowerCase().includes("not able");
-                        addMsg(msgText, 'ai', isDecline);
-                    }
+            // Add temporary "Thinking" message
+            const thinkingId = 'thinking-' + Date.now();
+            const history = document.getElementById('chat-history');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'msg msg-ai';
+            thinkingDiv.id = thinkingId;
+            thinkingDiv.style.fontStyle = 'italic';
+            thinkingDiv.style.opacity = '0.7';
+            thinkingDiv.textContent = 'Robot is thinking...';
+            history.appendChild(thinkingDiv);
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({prompt: text})
                 });
+                const data = await res.json();
+                
+                // Remove thinking message
+                document.getElementById(thinkingId).remove();
+                
+                if(data.commands) {
+                    data.commands.forEach(c => {
+                        if(c.startsWith('SAY:')) {
+                            const msgText = c.substring(4);
+                            const isDecline = msgText.toLowerCase().includes("not able");
+                            addMsg(msgText, 'ai', isDecline);
+                        }
+                    });
+                }
+            } catch (err) {
+                document.getElementById(thinkingId).textContent = 'Error: Could not reach the Brain.';
+                console.error(err);
             }
         }
 
