@@ -15,6 +15,9 @@ from pydantic import BaseModel
 app = FastAPI(title=settings.PROJECT_NAME)
 llm = LLMFactory(manager)
 
+# Global camera object for the local USB camera
+global_cap = None
+
 class UserPrompt(BaseModel):
     prompt: str
 
@@ -149,30 +152,47 @@ async def get_dashboard():
         return "Dashboard template not found in app/templates/"
 
 async def gen_frames():
-    """Video streaming generator function."""
+    """Video streaming generator function using a shared camera instance."""
+    global global_cap
     source = settings.LOCAL_CAMERA_INDEX if settings.USE_LOCAL_CAMERA else settings.ESP32_CAM_URL
-    print(f"[VIDEO] Opening source: {source}")
-    cap = cv2.VideoCapture(source)
+    
+    if settings.USE_LOCAL_CAMERA:
+        if global_cap is None or not global_cap.isOpened():
+            print(f"[VIDEO] Initializing shared camera source: {source}")
+            global_cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
+        cap = global_cap
+    else:
+        # For ESP32-CAM (URL), we can open new ones or proxy, but let's stick to simple capture for now
+        cap = cv2.VideoCapture(source)
+
     if not cap.isOpened():
-        print(f"[VIDEO] Error: Could not open source {source}")
+        print(f"[VIDEO] ERROR: Could not open source {source}")
         return
 
-    while True:
-        # If reactive vision is tracking, it already has the capture open
-        # but for simplicity in testing, we'll allow a separate capture if not tracking
-        # or just use the reactive_vision.latest_frame if available.
-        if reactive_vision.is_tracking and reactive_vision.latest_frame is not None:
-            frame = reactive_vision.latest_frame
-        else:
-            success, frame = cap.read()
-            if not success:
-                break
-        
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame_bytes = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-        await asyncio.sleep(0.03) # ~30 FPS
+    try:
+        while True:
+            if reactive_vision.is_tracking and reactive_vision.latest_frame is not None:
+                frame = reactive_vision.latest_frame
+            else:
+                success, frame = cap.read()
+                if not success:
+                    print(f"[VIDEO] ERROR: Failed to read frame from source {source}")
+                    # If it's a local camera, try to re-initialize next time
+                    if settings.USE_LOCAL_CAMERA:
+                        cap.release()
+                    break
+            
+            ret, buffer = cv2.imencode('.jpg', frame)
+            if not ret:
+                continue
+                
+            frame_bytes = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+            await asyncio.sleep(0.03) # ~30 FPS
+    except Exception as e:
+        print(f"[VIDEO] Exception in gen_frames: {e}")
+    # Note: We don't release global_cap here so other clients can use it
 
 @app.get("/video_feed")
 async def video_feed():

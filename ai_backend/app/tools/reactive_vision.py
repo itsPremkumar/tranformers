@@ -44,7 +44,7 @@ class ReactiveVision:
         self.is_tracking = True
         
         source = settings.LOCAL_CAMERA_INDEX if settings.USE_LOCAL_CAMERA else settings.ESP32_CAM_URL
-        cap = cv2.VideoCapture(source)
+        cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
         
         while self.is_tracking:
             ret, frame = cap.read()
