@@ -5,17 +5,22 @@ import time
 import aiohttp
 import os
 import sys
+import io
+
+# Force UTF-8 encoding for Windows consoles
+if sys.platform == "win32":
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    except: pass
 
 # Testing configuration
 BACKEND_URL = "http://localhost:8000"
 WS_URL = "ws://localhost:8000/ws"
 
 TEST_QUESTIONS = [
-    "Who is the current Chief Minister of Tamil Nadu?",
-    "What is the latest score or news about the Indian Cricket Team?",
-    "Look at the camera and identify the most prominent object in view.",
-    "Do you see any humans or faces right now?",
-    "Describe the background environment behind the camera."
+    "Who is the current Chief Minister of Tamil Nadu as of May 11, 2026?",
+    "Which political party does the current CM of Tamil Nadu belong to?"
 ]
 
 class BackendTester:

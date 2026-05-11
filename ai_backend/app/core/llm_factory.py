@@ -60,10 +60,12 @@ class LLMFactory:
         else:
             # Optimization for local models
             if image:
-                # Moondream works best with the simplest possible prompt
-                full_prompt = f"What is in this image? {user_prompt}"
+                full_prompt = f"Identify and describe what is in this image. Question: {user_prompt}"
             else:
-                full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
+                if internet_context:
+                    full_prompt = f"LATEST NEWS/INFO:\n{internet_context}\n\nQuestion: {user_prompt}\nAnswer using the LATEST info above. Be factual."
+                else:
+                    full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
             
         print(f"\n[DEBUG] --- FINAL PROMPT SENT TO AI ---\n{full_prompt}\n[DEBUG] ---------------------------------")
 

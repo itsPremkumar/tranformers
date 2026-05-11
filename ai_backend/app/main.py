@@ -2,6 +2,13 @@ import os
 import cv2
 import json
 import asyncio
+import sys
+import io
+
+# Force UTF-8 encoding for Windows consoles
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, StreamingResponse
 from app.core.config import settings
