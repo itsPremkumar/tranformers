@@ -44,6 +44,7 @@ class LLMFactory:
 
         search_text = f"\nLIVE INTERNET SEARCH RESULTS:\n{internet_context}\n" if internet_context else ""
         full_prompt = f"{system_prompt}\n{status_text}{search_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
+        print(f"\n[DEBUG] --- FINAL PROMPT SENT TO AI ---\n{full_prompt}\n[DEBUG] ---------------------------------")
 
         # 2. Local LLM Path (Primary)
         raw_response = None

@@ -61,19 +61,25 @@ async def approach_target(action_at_end=None):
 @app.post("/ask")
 async def ask_robot(user_input: UserPrompt):
     """The main AI endpoint. Handles vision and physical voice."""
+    print(f"\n[DEBUG] --- NEW REQUEST ---")
+    print(f"[DEBUG] User Prompt: {user_input.prompt}")
+    
     image = None
     # Smart Vision Trigger: Capture frame if the prompt implies looking at something
     visual_keywords = ["see", "look", "watch", "camera", "what is", "who is", "describe", "identify", "where", "detect"]
     if any(k in user_input.prompt.lower() for k in visual_keywords):
+        print(f"[DEBUG] Vision Triggered. Capturing frame...")
         image = capture_frame()
+        print(f"[DEBUG] Image Captured: {'Success' if image else 'Failed'}")
     
     # Smart Internet Trigger: Search the web if the prompt implies needing current info
     internet_results = None
     search_keywords = ["search", "google", "weather", "news", "who is", "what is the price", "latest"]
     if any(k in user_input.prompt.lower() for k in search_keywords):
         from app.tools.internet import web_search
-        # Extract a simple query from the prompt or just use the prompt
+        print(f"[DEBUG] Internet Search Triggered. Searching for: {user_input.prompt}")
         internet_results = web_search(user_input.prompt)
+        print(f"[DEBUG] Internet Results Length: {len(internet_results) if internet_results else 0}")
     
     # Get the active robot's name and mode for memory retrieval
     robot_name = "Unknown"
@@ -84,6 +90,8 @@ async def ask_robot(user_input: UserPrompt):
         robot_name = profile.get("name", "Unknown")
         robot_mode = profile.get("current_mode", "Robot")
 
+    print(f"[DEBUG] Robot: {robot_name}, Mode: {robot_mode}")
+
     # Collect Hardware Status
     hw_status = {
         "battery": round(reactive_vision.last_battery, 1),
@@ -91,7 +99,9 @@ async def ask_robot(user_input: UserPrompt):
         "mode": robot_mode
     }
 
+    print(f"[DEBUG] Requesting LLM Response...")
     json_response = await llm.get_response(user_input.prompt, robot_name, image, hw_status=hw_status, internet_context=internet_results)
+    print(f"[DEBUG] LLM Response: {json_response[:100]}...")
     
     try:
         commands = json.loads(json_response)

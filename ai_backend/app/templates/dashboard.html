@@ -242,12 +242,20 @@
             history.scrollTop = history.scrollHeight;
 
             try {
+                console.log("[DEBUG] Sending Prompt to Brain:", text);
                 const res = await fetch('/ask', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({prompt: text})
                 });
+                
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(`Server Error (${res.status}): ${JSON.stringify(errorData.detail || errorData)}`);
+                }
+                
                 const data = await res.json();
+                console.log("[DEBUG] Brain Response Received:", data);
                 
                 // Remove thinking message
                 document.getElementById(thinkingId).remove();
@@ -257,8 +265,8 @@
                         let msgText = "";
                         if(c.startsWith('SAY:')) {
                             msgText = c.substring(4);
-                        } else if (!c.startsWith('CMD:') && !c.includes(':')) {
-                            // If it's just plain text from the AI, show it
+                        } else if (!c.startsWith('CMD:') && !c.startsWith('PAN:') && !c.startsWith('TILT:')) {
+                            // Show anything that isn't a robotic movement command
                             msgText = c;
                         }
                         
