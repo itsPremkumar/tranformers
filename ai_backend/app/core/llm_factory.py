@@ -95,6 +95,10 @@ class LLMFactory:
     def format_response(self, text):
         try:
             clean = text.replace("```json", "").replace("```", "").strip()
+            # Try to fix single quotes common in hallucinated JSON lists
+            if clean.startswith("[") and clean.endswith("]"):
+                clean = clean.replace("'", '"')
+            
             parsed = json.loads(clean)
             
             # Prevent hallucinated coordinates from being treated as valid commands
@@ -103,7 +107,10 @@ class LLMFactory:
                 
             return clean
         except:
-            clean_text = text.replace('"', '').replace('[', '').replace(']', '').strip()
+            clean_text = text.replace('"', '').replace("'", "").replace('[', '').replace(']', '').strip()
+            if clean_text.startswith("SAY:"):
+                clean_text = clean_text[4:].strip()
+                
             if not clean_text or any(char.isdigit() for char in clean_text[:5]):
                 return json.dumps(["SAY:I am processing your request."])
             return json.dumps([f"SAY:{clean_text}"])
