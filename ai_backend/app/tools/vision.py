@@ -5,8 +5,8 @@ from app.core.config import settings
 from app.tools.reactive_vision import reactive_vision
 
 def capture_frame():
-    """Captures a frame from the ESP32-CAM MJPEG stream. Prefers existing stream if active."""
-    # If reactive vision is already tracking, use its latest frame to save bandwidth/resources
+    """Captures a frame from the configured camera source (ESP32-CAM or Local USB)."""
+    # If reactive vision is already tracking, use its latest frame to save resources
     if reactive_vision.is_tracking and reactive_vision.latest_frame is not None:
         try:
             img_rgb = cv2.cvtColor(reactive_vision.latest_frame, cv2.COLOR_BGR2RGB)
@@ -15,7 +15,8 @@ def capture_frame():
             pass
 
     try:
-        cap = cv2.VideoCapture(settings.ESP32_CAM_URL)
+        source = settings.LOCAL_CAMERA_INDEX if settings.USE_LOCAL_CAMERA else settings.ESP32_CAM_URL
+        cap = cv2.VideoCapture(source)
         ret, frame = cap.read()
         cap.release()
         if not ret:

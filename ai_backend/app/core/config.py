@@ -14,6 +14,8 @@ class Settings:
     
     # Vision
     ESP32_CAM_URL = os.getenv("ESP32_CAM_URL", "http://192.168.1.50/mjpeg")
+    USE_LOCAL_CAMERA = os.getenv("USE_LOCAL_CAMERA", "False").lower() == "true"
+    LOCAL_CAMERA_INDEX = int(os.getenv("LOCAL_CAMERA_INDEX", "0"))
     
     # Model Selection
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")

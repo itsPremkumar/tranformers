@@ -42,7 +42,9 @@ class ReactiveVision:
         print(f"[VISION] Tracking Mode: {mode}")
         self.tracking_mode = mode
         self.is_tracking = True
-        cap = cv2.VideoCapture(settings.ESP32_CAM_URL)
+        
+        source = settings.LOCAL_CAMERA_INDEX if settings.USE_LOCAL_CAMERA else settings.ESP32_CAM_URL
+        cap = cv2.VideoCapture(source)
         
         while self.is_tracking:
             ret, frame = cap.read()

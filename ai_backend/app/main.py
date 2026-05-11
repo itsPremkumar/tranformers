@@ -1,8 +1,9 @@
 import os
+import cv2
 import json
 import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from app.core.config import settings
 from app.core.manager import manager
 from app.core.llm_factory import LLMFactory
@@ -146,6 +147,32 @@ async def get_dashboard():
             return f.read()
     except FileNotFoundError:
         return "Dashboard template not found in app/templates/"
+
+async def gen_frames():
+    """Video streaming generator function."""
+    source = settings.LOCAL_CAMERA_INDEX if settings.USE_LOCAL_CAMERA else settings.ESP32_CAM_URL
+    cap = cv2.VideoCapture(source)
+    while True:
+        # If reactive vision is tracking, it already has the capture open
+        # but for simplicity in testing, we'll allow a separate capture if not tracking
+        # or just use the reactive_vision.latest_frame if available.
+        if reactive_vision.is_tracking and reactive_vision.latest_frame is not None:
+            frame = reactive_vision.latest_frame
+        else:
+            success, frame = cap.read()
+            if not success:
+                break
+        
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame_bytes = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        await asyncio.sleep(0.03) # ~30 FPS
+
+@app.get("/video_feed")
+async def video_feed():
+    """Video streaming route. Put this in the src attribute of an img tag."""
+    return StreamingResponse(gen_frames(), media_type='multipart/x-mixed-replace; boundary=frame')
 
 @app.get("/status")
 async def get_status():
