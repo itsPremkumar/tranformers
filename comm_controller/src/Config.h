@@ -18,6 +18,7 @@
 #define USE_AI_BRAIN     true    // Connect to the Python AI Backend
 #define AI_BRAIN_HOST    "192.168.1.100" // IP Address of your PC
 #define AI_BRAIN_PORT    8000            // FastAPI Port
+#define VISION_CAM_URL   "http://192.168.1.50/stream" // ESP32-CAM Address
 
 
 // ==========================================

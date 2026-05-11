@@ -116,7 +116,10 @@ String WebInterface::getHTML() {
     html += "<style>";
     html += "*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Roboto,sans-serif;background:#0f0c29;background:linear-gradient(to right,#24243e,#302b63,#0f0c29);color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}";
     html += ".container{width:100%;max-width:500px}.header{text-align:center;margin-bottom:20px}h1{font-size:1.8em;letter-spacing:2px;text-transform:uppercase;color:#00f2fe;text-shadow:0 0 10px rgba(0,242,254,0.5)}";
-    html += ".card{background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:20px;margin-bottom:15px;box-shadow:0 8px 32px 0 rgba(0,0,0,0.37)}";
+    html += ".card{background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:20px;margin-bottom:15px;box-shadow:0 8px 32px 0 rgba(0,0,0,0.37);overflow:hidden}";
+    html += ".video-container{position:relative;width:100%;border-radius:15px;overflow:hidden;border:2px solid #00f2fe;box-shadow:0 0 20px rgba(0,242,254,0.3);margin-bottom:15px}";
+    html += ".video-container img{width:100%;display:block;transition:0.3s}";
+    html += ".video-overlay{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);padding:2px 10px;border-radius:10px;font-size:0.6em;color:#00f2fe;border:1px solid #00f2fe;text-transform:uppercase;letter-spacing:1px}";
     html += ".status-bar{display:flex;justify-content:space-between;font-size:0.9em;color:#00f2fe;margin-bottom:10px}";
     html += ".grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;justify-items:center}";
     html += ".btn{width:100%;aspect-ratio:1/1;max-width:100px;border-radius:15px;border:none;color:#fff;font-weight:bold;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:0.2s;box-shadow:0 4px 15px rgba(0,0,0,0.3)}";
@@ -128,6 +131,11 @@ String WebInterface::getHTML() {
     html += "</style></head><body>";
     html += "<div class='container'><div class='header'><h1>Transformer 🤖</h1></div>";
     
+    html += "<div class='video-container'>";
+    html += "  <div class='video-overlay'>● LIVE FPV</div>";
+    html += "  <img src='" + String(VISION_CAM_URL) + "' onerror=\"this.src='https://via.placeholder.com/400x300?text=Camera+Offline'\" />";
+    html += "</div>";
+
     html += "<div class='card'><div class='status-bar'><span>IP: " + WiFi.localIP().toString() + "</span><span id='status'>READY</span></div></div>";
     
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
