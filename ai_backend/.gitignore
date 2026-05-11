@@ -9,3 +9,4 @@ env/
 .coverage
 htmlcov/
 *.log
+*.db

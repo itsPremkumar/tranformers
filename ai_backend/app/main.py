@@ -143,7 +143,7 @@ async def manual_cmd(cmd: str):
 async def get_dashboard():
     """Serves the Unified AI Dashboard."""
     try:
-        with open("app/templates/dashboard.html", "r") as f:
+        with open("app/templates/dashboard.html", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         return "Dashboard template not found in app/templates/"
@@ -151,7 +151,12 @@ async def get_dashboard():
 async def gen_frames():
     """Video streaming generator function."""
     source = settings.LOCAL_CAMERA_INDEX if settings.USE_LOCAL_CAMERA else settings.ESP32_CAM_URL
+    print(f"[VIDEO] Opening source: {source}")
     cap = cv2.VideoCapture(source)
+    if not cap.isOpened():
+        print(f"[VIDEO] Error: Could not open source {source}")
+        return
+
     while True:
         # If reactive vision is tracking, it already has the capture open
         # but for simplicity in testing, we'll allow a separate capture if not tracking
