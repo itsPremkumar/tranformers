@@ -33,7 +33,14 @@ class LLMFactory:
         
         # 0. Load Robot-Specific Memory (Run in thread to avoid blocking)
         history, knowledge = await asyncio.to_thread(memory_manager.get_robot_memory, robot_name)
-        history_text = "\n".join(history[-5:]) # Last 5 exchanges
+        
+        # Filter history: Remove any messages that are just numeric lists/coordinates to break loops
+        clean_history = []
+        for msg in history:
+            if not (msg.startswith("[") and msg.endswith("]") and any(char.isdigit() for char in msg)):
+                clean_history.append(msg)
+        
+        history_text = "\n".join(clean_history[-5:]) # Last 5 clean exchanges
         
         # 1. Build Final Prompt
         system_prompt = self.get_system_prompt(robot_name)
@@ -102,7 +109,14 @@ class LLMFactory:
         
         # Simpler prompt for local models (Moondream/Llama)
         if not self.gemini_client:
-            return f"You are {profile['name']}, a friendly and intelligent robot. Persona: {profile['persona']}. Reply in a natural, conversational way. If you want to say something, start it with 'SAY:'. For example: [\"SAY:Hello! I see you.\"]."
+            return (
+                f"You are {robot_name}, a friendly and intelligent robot. "
+                f"Persona: A helpful robot. Reply in a natural, conversational way. "
+                "IMPORTANT: Always prioritize speaking to the user. "
+                "NEVER reply with just a list of numbers or coordinates. "
+                "If you want to say something, start it with 'SAY:'. "
+                "Example: [\"SAY:Hello! I am ready.\"]"
+            )
 
         return f"""
 You are the advanced AI brain for {profile['name']}. 
