@@ -66,7 +66,7 @@ async def ask_robot(user_input: UserPrompt):
     
     image = None
     # Smart Vision Trigger: Capture frame if the prompt implies looking at something
-    visual_keywords = ["see", "look", "watch", "camera", "what is", "who is", "describe", "identify", "where", "detect"]
+    visual_keywords = ["see", "look", "watch", "camera", "describe", "identify", "detect", "in front of"]
     if any(k in user_input.prompt.lower() for k in visual_keywords):
         print(f"[DEBUG] Vision Triggered. Capturing frame...")
         image = capture_frame()

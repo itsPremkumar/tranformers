@@ -39,6 +39,9 @@ class LLMFactory:
         for msg in history:
             if "Robot: [" in msg and any(char.isdigit() for char in msg):
                 continue
+            # Remove hallucinated patterns from previous errors to break the loop
+            if "?I am ready" in msg or "SAY:?" in msg or '?"' in msg:
+                continue
             clean_history.append(msg)
         
         history_text = "\n".join(clean_history[-5:]) # Last 5 clean exchanges
@@ -51,7 +54,13 @@ class LLMFactory:
             status_text = f"\nCURRENT HARDWARE STATUS:\n- Battery: {hw_status.get('battery', 0)}%\n- Mode: {hw_status.get('mode', 'Unknown')}\n- Obstacle Distance: {hw_status.get('distance', 0)}cm\n"
 
         search_text = f"\nLIVE INTERNET SEARCH RESULTS:\n{internet_context}\n" if internet_context else ""
-        full_prompt = f"{system_prompt}\n{status_text}{search_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
+        
+        if self.gemini_client:
+            full_prompt = f"{system_prompt}\n{status_text}{search_text}\nKNOWLEDGE OF USER/ENVIRONMENT: {knowledge}\n\nPAST CONVERSATION:\n{history_text}\n\nUser: {user_prompt}"
+        else:
+            # Tiny model optimized prompt (e.g., Moondream struggles with large complex context blocks)
+            full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
+            
         print(f"\n[DEBUG] --- FINAL PROMPT SENT TO AI ---\n{full_prompt}\n[DEBUG] ---------------------------------")
 
         # 2. Local LLM Path (Primary)
@@ -68,7 +77,9 @@ class LLMFactory:
                 img_str = base64.b64encode(buffered.getvalue()).decode()
                 message['images'] = [img_str]
             
+            print(f"[DEBUG] Sending request to Ollama ({settings.OLLAMA_MODEL}) with {len(message['content'])} chars of prompt...")
             res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[message])
+            print(f"[DEBUG] Raw Ollama Response: {res['message']['content']}")
             raw_response = self.format_response(res['message']['content'])
         except Exception as e:
             print(f"[LLM] Local Model Error: {e}")
@@ -84,8 +95,12 @@ class LLMFactory:
                 except Exception as ex:
                     print(f"[LLM] Gemini Fallback Error: {ex}")
 
-        if not raw_response:
-            raw_response = json.dumps([f"SAY:I am currently processing. Please try again."])
+        if not raw_response or "I am processing your request." in raw_response:
+            if internet_context and not self.gemini_client:
+                clean_context = internet_context.replace('\n', ' ').replace('"', '')[:200]
+                raw_response = json.dumps([f"SAY:Here is what I found: {clean_context}"])
+            else:
+                raw_response = json.dumps([f"SAY:I am currently processing. Please try again."])
 
         # 4. Save Interaction to Persistent Memory (Run in thread)
         await asyncio.to_thread(memory_manager.save_interaction, robot_name, user_prompt, raw_response)
@@ -110,8 +125,15 @@ class LLMFactory:
             clean_text = text.replace('"', '').replace("'", "").replace('[', '').replace(']', '').strip()
             if clean_text.startswith("SAY:"):
                 clean_text = clean_text[4:].strip()
+            
+            # Clean up Moondream hallucinations
+            clean_text = clean_text.lstrip("?").strip()
                 
-            if not clean_text or any(char.isdigit() for char in clean_text[:5]):
+            if not clean_text:
+                # If the local vision model completely failed to answer but we have internet context, use it as fallback
+                if "LIVE INTERNET SEARCH RESULTS:" in text or len(text) < 3: # hack to see if we had context
+                    pass # We handle this in get_response mostly, but here we only have text. Wait, text is the raw response.
+                
                 return json.dumps(["SAY:I am processing your request."])
             return json.dumps([f"SAY:{clean_text}"])
 
@@ -127,10 +149,8 @@ class LLMFactory:
         if not self.gemini_client:
             return (
                 f"You are {robot_name}, a friendly and intelligent robot. "
-                f"Persona: A helpful robot. Reply in a natural, conversational way. "
-                "You must ONLY reply with a valid JSON list of strings. "
-                "If you want to speak, start the string with 'SAY:'. "
-                "Example: [\"SAY:Hello! I am ready.\"]"
+                "Answer the user's question directly and concisely based on the context provided. "
+                "ALWAYS answer in English. Do not use JSON formatting, just reply with plain text."
             )
 
         return f"""
