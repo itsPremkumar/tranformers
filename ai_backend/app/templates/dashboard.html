@@ -80,6 +80,16 @@
         </div>
 
         <div class="control-group">
+            <span class="control-label">ADVANCED STEERING</span>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn" onclick="manual('LEFT_PIVOT')">↶ PIVOT L</button>
+                <button class="btn" onclick="manual('RIGHT_PIVOT')">↷ PIVOT R</button>
+                <button class="btn" onclick="manual('LEFT_ZERO')" style="font-size: 0.7rem;">↺ SPIN L</button>
+                <button class="btn" onclick="manual('RIGHT_ZERO')" style="font-size: 0.7rem;">↻ SPIN R</button>
+            </div>
+        </div>
+
+        <div class="control-group">
             <span class="control-label">CAMERA GIMBAL</span>
             <div class="slider-container">
                 <span class="control-label">PAN: <span id="pan-val">90</span>°</span>

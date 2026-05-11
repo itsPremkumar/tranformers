@@ -9,6 +9,8 @@ void WebInterface::begin() {
     _server.on("/backward", [this]() { handleBackward(); });
     _server.on("/left", [this]() { handleLeft(); });
     _server.on("/right", [this]() { handleRight(); });
+    _server.on("/left_pivot", [this]() { handleLeftPivot(); });
+    _server.on("/right_pivot", [this]() { handleRightPivot(); });
     _server.on("/stop", [this]() { handleStop(); });
     _server.on("/status", [this]() { handleStatus(); });
     _server.on("/transform", [this]() { handleTransform(); });
@@ -134,6 +136,10 @@ String WebInterface::getHTML() {
     html += "<button class='btn btn-stop' onclick='cmd(\"stop\")'><span class='icon'>■</span><span class='label'>Stop</span></button>";
     html += "<button class='btn btn-move' onclick='cmd(\"right\")'><span class='icon'>▶</span><span class='label'>Right</span></button>";
     html += "<div></div><button class='btn btn-move' onclick='cmd(\"backward\")'><span class='icon'>▼</span><span class='label'>Back</span></button><div></div>";
+    html += "</div>";
+    html += "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'>";
+    html += "<button class='btn btn-move' style='aspect-ratio:auto;height:45px' onclick='cmd(\"left_pivot\")'><span class='label'>↶ Pivot Left</span></button>";
+    html += "<button class='btn btn-move' style='aspect-ratio:auto;height:45px' onclick='cmd(\"right_pivot\")'><span class='label'>↷ Pivot Right</span></button>";
     html += "</div></div>";
 
     html += "<div class='card'><div class='section-title'>Head / Camera Pan-Tilt</div>";
@@ -220,6 +226,8 @@ void WebInterface::handleForward() { _lastCommand = "CMD:FORWARD"; _hasNewComman
 void WebInterface::handleBackward() { _lastCommand = "CMD:BACKWARD"; _hasNewCommand = true; _server.send(200, "text/plain", "BACKWARD"); }
 void WebInterface::handleLeft() { _lastCommand = "CMD:LEFT"; _hasNewCommand = true; _server.send(200, "text/plain", "LEFT"); }
 void WebInterface::handleRight() { _lastCommand = "CMD:RIGHT"; _hasNewCommand = true; _server.send(200, "text/plain", "RIGHT"); }
+void WebInterface::handleLeftPivot() { _lastCommand = "CMD:LEFT_PIVOT"; _hasNewCommand = true; _server.send(200, "text/plain", "PIVOT LEFT"); }
+void WebInterface::handleRightPivot() { _lastCommand = "CMD:RIGHT_PIVOT"; _hasNewCommand = true; _server.send(200, "text/plain", "PIVOT RIGHT"); }
 void WebInterface::handleStop() { _lastCommand = "CMD:STOP"; _hasNewCommand = true; _server.send(200, "text/plain", "STOPPED"); }
 void WebInterface::handleTransform() { _lastCommand = "CMD:TRANSFORM"; _hasNewCommand = true; _server.send(200, "text/plain", "TRANSFORMING"); }
 void WebInterface::handleWalk() { _lastCommand = "CMD:WALK"; _hasNewCommand = true; _server.send(200, "text/plain", "WALK MODE"); }
