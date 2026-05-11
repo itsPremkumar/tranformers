@@ -1,4 +1,4 @@
-#include "WebServer.h"
+#include "RobotServer.h"
 #include <WiFi.h>
 
 WebInterface::WebInterface(AudioSystem* audio, int port) : _audio(audio), _server(port), _hasNewCommand(false) {}
@@ -197,30 +197,30 @@ String WebInterface::getHTML() {
     
     html += "window.onload = initWS;";
     
-    // Intercom Logic
-    const micBtn = document.getElementById('micBtn');
-    let mediaRecorder;
+    html += "// Intercom Logic\n";
+    html += "const micBtn = document.getElementById('micBtn');";
+    html += "let mediaRecorder;";
 
-    micBtn.onmousedown = async () => {
-        try {
-            micBtn.style.background = 'linear-gradient(45deg, #ff0000, #990000)';
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = (e) => {
-                fetch('/voice', { method: 'POST', body: e.data });
-            };
-            mediaRecorder.start(100); 
-        } catch(e) { console.error("Mic Error:", e); }
-    };
+    html += "micBtn.onmousedown = async () => {";
+    html += "    try {";
+    html += "        micBtn.style.background = 'linear-gradient(45deg, #ff0000, #990000)';";
+    html += "        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });";
+    html += "        mediaRecorder = new MediaRecorder(stream);";
+    html += "        mediaRecorder.ondataavailable = (e) => {";
+    html += "            fetch('/voice', { method: 'POST', body: e.data });";
+    html += "        };";
+    html += "        mediaRecorder.start(100); ";
+    html += "    } catch(e) { console.error('Mic Error:', e); }";
+    html += "};";
 
-    micBtn.onmouseup = () => {
-        micBtn.style.background = '';
-        if(mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(t => t.stop());
-        }
-    };
-    </script></body></html>";
+    html += "micBtn.onmouseup = () => {";
+    html += "    micBtn.style.background = '';";
+    html += "    if(mediaRecorder && mediaRecorder.state !== 'inactive') {";
+    html += "        mediaRecorder.stop();";
+    html += "        mediaRecorder.stream.getTracks().forEach(t => t.stop());";
+    html += "    }";
+    html += "};";
+    html += "</script></body></html>";
     return html;
 }
 

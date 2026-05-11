@@ -1,5 +1,5 @@
-#ifndef WEB_SERVER_H
-#define WEB_SERVER_H
+#ifndef ROBOT_SERVER_H
+#define ROBOT_SERVER_H
 
 #include <Arduino.h>
 #include <WebServer.h>
@@ -7,6 +7,7 @@
 #include <WebSocketsClient.h>
 #include <WiFi.h>
 #include "Audio.h"
+#include "Config.h"
 
 class WebInterface {
 public:
@@ -45,6 +46,8 @@ private:
     void handleBackward();
     void handleLeft();
     void handleRight();
+    void handleLeftPivot();
+    void handleRightPivot();
     void handleStop();
     void handleStatus();
     void handleTransform();

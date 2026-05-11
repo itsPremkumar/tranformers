@@ -3,7 +3,7 @@
 #include "Network.h"
 #include "Audio.h"
 #include "Display.h"
-#include "WebServer.h"
+#include "RobotServer.h"
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -141,4 +141,5 @@ void loop() {
             web.sendToAi(telemetry);
         }
     }
+    #endif
 }
