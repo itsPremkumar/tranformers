@@ -28,7 +28,13 @@ def capture_frame():
         
         if ret:
             img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            return Image.fromarray(img_rgb)
+            pil_img = Image.fromarray(img_rgb)
+            # Save for verification
+            try:
+                pil_img.save("last_capture.jpg")
+                print("[VIDEO] Saved capture to last_capture.jpg")
+            except: pass
+            return pil_img
     except Exception as e:
         print(f"[VIDEO] One-off capture error: {e}")
         

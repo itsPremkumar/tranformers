@@ -60,8 +60,8 @@ class LLMFactory:
         else:
             # Optimization for local models
             if image:
-                # Moondream works best with extremely direct questions
-                full_prompt = f"Question: {user_prompt}\nAnswer briefly based on the image."
+                # Moondream works best with the simplest possible prompt
+                full_prompt = f"What is in this image? {user_prompt}"
             else:
                 full_prompt = f"{system_prompt}\n{search_text}\nQuestion: {user_prompt}"
             
@@ -72,19 +72,22 @@ class LLMFactory:
         try:
             print(f"[LLM] Using Local Model ({settings.OLLAMA_MODEL}) for {robot_name}")
             
-            # Prepare message with image support for Ollama
-            message = {'role': 'user', 'content': full_prompt}
             if image:
-                # Convert PIL Image to base64
+                # Convert PIL Image to bytes
                 buffered = io.BytesIO()
                 image.save(buffered, format="JPEG")
-                img_str = base64.b64encode(buffered.getvalue()).decode()
-                message['images'] = [img_str]
-            
-            print(f"[DEBUG] Sending request to Ollama ({settings.OLLAMA_MODEL}) with {len(message['content'])} chars of prompt...")
-            res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[message])
-            print(f"[DEBUG] Raw Ollama Response: {res['message']['content']}")
-            raw_response = self.format_response(res['message']['content'])
+                img_bytes = buffered.getvalue()
+                
+                print(f"[DEBUG] Sending vision request to Ollama ({settings.OLLAMA_MODEL})...")
+                res = await asyncio.to_thread(ollama.generate, model=settings.OLLAMA_MODEL, prompt=full_prompt, images=[img_bytes])
+                response_text = res.get('response', '')
+            else:
+                print(f"[DEBUG] Sending chat request to Ollama ({settings.OLLAMA_MODEL})...")
+                res = await asyncio.to_thread(ollama.chat, model=settings.OLLAMA_MODEL, messages=[{'role': 'user', 'content': full_prompt}])
+                response_text = res['message']['content']
+
+            print(f"[DEBUG] Raw Ollama Response: {response_text}")
+            raw_response = self.format_response(response_text)
         except Exception as e:
             print(f"[LLM] Local Model Error: {e}")
             

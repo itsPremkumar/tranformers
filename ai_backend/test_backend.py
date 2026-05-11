@@ -11,11 +11,11 @@ BACKEND_URL = "http://localhost:8000"
 WS_URL = "ws://localhost:8000/ws"
 
 TEST_QUESTIONS = [
-    "Look at the camera and describe everything you see in detail.",
-    "Is there anything moving in front of you?",
-    "Identify any objects or people in the current camera view.",
-    "What is the most prominent color in the frame?",
-    "Tell me if you see any text or signs in the background."
+    "Who is the current Chief Minister of Tamil Nadu?",
+    "What is the latest score or news about the Indian Cricket Team?",
+    "Look at the camera and identify the most prominent object in view.",
+    "Do you see any humans or faces right now?",
+    "Describe the background environment behind the camera."
 ]
 
 class BackendTester:
