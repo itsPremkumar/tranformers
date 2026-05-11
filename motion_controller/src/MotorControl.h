@@ -11,8 +11,14 @@ public:
     void setSpeed(int speed);
     void moveForward();
     void moveBackward();
-    void turnLeft();
-    void turnRight();
+    void turnLeft();      // Default (Zero Turn)
+    void turnRight();     // Default (Zero Turn)
+    void turnLeftZero();  // Both wheels opposite
+    void turnRightZero(); // Both wheels opposite
+    void turnLeftPivot();  // Forward Pivot
+    void turnRightPivot(); // Forward Pivot
+    void turnLeftPivotBack();  // Backward Pivot
+    void turnRightPivotBack(); // Backward Pivot
     void stop();
 
 private:

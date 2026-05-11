@@ -65,6 +65,15 @@ void MotorControl::moveBackward() {
 }
 
 void MotorControl::turnRight() {
+    turnRightZero();
+}
+
+void MotorControl::turnLeft() {
+    turnLeftZero();
+}
+
+void MotorControl::turnRightZero() {
+    // Left Forward, Right Backward
     digitalWrite(_in1, LOW);
     digitalWrite(_in2, HIGH);
     digitalWrite(_in3, HIGH);
@@ -72,10 +81,47 @@ void MotorControl::turnRight() {
     applySpeed();
 }
 
-void MotorControl::turnLeft() {
+void MotorControl::turnLeftZero() {
+    // Left Backward, Right Forward
     digitalWrite(_in1, HIGH);
     digitalWrite(_in2, LOW);
     digitalWrite(_in3, LOW);
     digitalWrite(_in4, HIGH);
+    applySpeed();
+}
+
+void MotorControl::turnRightPivot() {
+    // Left Forward, Right Stopped
+    digitalWrite(_in1, LOW);
+    digitalWrite(_in2, LOW);
+    digitalWrite(_in3, HIGH);
+    digitalWrite(_in4, LOW);
+    applySpeed();
+}
+
+void MotorControl::turnLeftPivot() {
+    // Left Stopped, Right Forward
+    digitalWrite(_in1, HIGH);
+    digitalWrite(_in2, LOW);
+    digitalWrite(_in3, LOW);
+    digitalWrite(_in4, LOW);
+    applySpeed();
+}
+
+void MotorControl::turnRightPivotBack() {
+    // Left Backward, Right Stopped
+    digitalWrite(_in1, LOW);
+    digitalWrite(_in2, LOW);
+    digitalWrite(_in3, LOW);
+    digitalWrite(_in4, HIGH);
+    applySpeed();
+}
+
+void MotorControl::turnLeftPivotBack() {
+    // Left Stopped, Right Backward
+    digitalWrite(_in1, LOW);
+    digitalWrite(_in2, HIGH);
+    digitalWrite(_in3, LOW);
+    digitalWrite(_in4, LOW);
     applySpeed();
 }

@@ -106,6 +106,30 @@ void processCommand(String cmd) {
         car.turnRight();
         currentState = STATE_CAR;
         isMovingForward = false;
+    } else if (cmd == "CMD:LEFT_PIVOT") {
+        car.turnLeftPivot();
+        currentState = STATE_CAR;
+        isMovingForward = false;
+    } else if (cmd == "CMD:RIGHT_PIVOT") {
+        car.turnRightPivot();
+        currentState = STATE_CAR;
+        isMovingForward = false;
+    } else if (cmd == "CMD:LEFT_PIVOT_BACK") {
+        car.turnLeftPivotBack();
+        currentState = STATE_CAR;
+        isMovingForward = false;
+    } else if (cmd == "CMD:RIGHT_PIVOT_BACK") {
+        car.turnRightPivotBack();
+        currentState = STATE_CAR;
+        isMovingForward = false;
+    } else if (cmd == "CMD:LEFT_ZERO") {
+        car.turnLeftZero();
+        currentState = STATE_CAR;
+        isMovingForward = false;
+    } else if (cmd == "CMD:RIGHT_ZERO") {
+        car.turnRightZero();
+        currentState = STATE_CAR;
+        isMovingForward = false;
     } else if (cmd == "CMD:STOP") {
         car.stop();
         currentState = STATE_STAND;

@@ -1,7 +1,7 @@
 from app.core.manager import manager
 
 async def move_robot(direction: str):
-    """Moves the robot (FORWARD, BACKWARD, LEFT, RIGHT, STOP)."""
+    """Moves the robot (FORWARD, BACKWARD, LEFT, RIGHT, STOP, LEFT_PIVOT, RIGHT_PIVOT, LEFT_PIVOT_BACK, RIGHT_PIVOT_BACK, LEFT_ZERO, RIGHT_ZERO)."""
     print(f"[ACTION] Robot Move: {direction}")
     await manager.send_command(f"CMD:{direction.upper()}")
     return f"Robot is now moving {direction}."
