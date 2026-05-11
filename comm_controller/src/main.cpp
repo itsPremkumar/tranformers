@@ -129,7 +129,16 @@ void loop() {
         displayCtrl.updateRandom();
         lastDisplayUpdate = millis();
     }
-    // 5. Read Telemetry from Motion Controller
+    #endif
+    
+    // 5. Send Heartbeat to Motion Controller (every 1 second)
+    static unsigned long lastHeartbeat = 0;
+    if (millis() - lastHeartbeat > 1000) {
+        Serial2.println("BEAT");
+        lastHeartbeat = millis();
+    }
+
+    // 6. Read Telemetry from Motion Controller
     while (Serial2.available()) {
         String telemetry = Serial2.readStringUntil('\n');
         telemetry.trim();
@@ -141,5 +150,4 @@ void loop() {
             web.sendToAi(telemetry);
         }
     }
-    #endif
 }
