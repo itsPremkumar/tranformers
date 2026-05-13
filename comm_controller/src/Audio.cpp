@@ -129,11 +129,24 @@ void AudioSystem::i2sFeederTask(void *pvParameters) {
         
         if (data != NULL) {
             size_t bytesWritten;
+            
+            // Calculate amplitude for Lip-Sync
+            int16_t *samples = (int16_t *)data;
+            size_t numSamples = item_size / sizeof(int16_t);
+            int maxAmp = 0;
+            for (size_t i = 0; i < numSamples; i += 4) { // Subsample for speed
+                int val = abs(samples[i]);
+                if (val > maxAmp) maxAmp = val;
+            }
+            self->_currentAmplitude = maxAmp;
+
             // Write to I2S. This task can block, but it won't affect the main Arduino loop.
             i2s_write(I2S_NUM_1, data, item_size, &bytesWritten, portMAX_DELAY);
             
             // Return the item to the ring buffer
             vRingbufferReturnItem(self->_audioBuffer, (void *)data);
+        } else {
+            self->_currentAmplitude = 0;
         }
     }
 }

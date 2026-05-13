@@ -147,6 +147,16 @@ void DisplayController::talkingAnimation() {
     }
 }
 
+void DisplayController::drawTalkingMouth(int amplitude) {
+    clearFace();
+    drawNormalEyes(40, 88);
+    // Map amplitude (roughly 0-16000) to height (0-20)
+    int h = map(constrain(amplitude, 0, 16000), 0, 16000, 2, 24);
+    int w = 20 + (h / 2);
+    _display.fillRect(64 - (w / 2), 52 - (h / 2), w, h, WHITE);
+    showFace();
+}
+
 void DisplayController::updateRandom() {
     int rnd = random(0, 100);
     if (rnd < 5) randomBlink();

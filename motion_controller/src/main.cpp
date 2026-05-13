@@ -24,7 +24,8 @@ enum RobotState {
 RobotState currentState = STATE_STAND;
 bool isMovingForward = false; 
 bool lastTurnWasLeft = false;
-
+float targetYaw = 0;
+bool isAidingGyro = false;
 unsigned long lastHeartbeatReceived = 0;
 const unsigned long HEARTBEAT_TIMEOUT = 2500; // 2.5 seconds
 
@@ -88,6 +89,10 @@ void processCommand(String cmd) {
             car.moveForward();
             currentState = STATE_CAR;
             isMovingForward = true;
+            #if USE_MPU6050
+            targetYaw = balance.getYaw();
+            isAidingGyro = true;
+            #endif
         } else {
             Serial.println("[SAFETY] Blocked Forward move: Object too close!");
             car.stop();
@@ -97,19 +102,26 @@ void processCommand(String cmd) {
         car.moveForward();
         currentState = STATE_CAR;
         isMovingForward = true;
+        #if USE_MPU6050
+        targetYaw = balance.getYaw();
+        isAidingGyro = true;
+        #endif
         #endif
     } else if (cmd == "CMD:BACKWARD") {
         car.moveBackward();
         currentState = STATE_CAR;
         isMovingForward = false;
+        isAidingGyro = false;
     } else if (cmd == "CMD:LEFT") {
         car.turnLeft();
         currentState = STATE_CAR;
         isMovingForward = false;
+        isAidingGyro = false;
     } else if (cmd == "CMD:RIGHT") {
         car.turnRight();
         currentState = STATE_CAR;
         isMovingForward = false;
+        isAidingGyro = false;
     } else if (cmd == "CMD:LEFT_PIVOT") {
         car.turnLeftPivot();
         currentState = STATE_CAR;
@@ -138,6 +150,7 @@ void processCommand(String cmd) {
         car.stop();
         currentState = STATE_STAND;
         isMovingForward = false;
+        isAidingGyro = false;
     } else if (cmd == "CMD:WALK") {
         #if ENABLE_WALKING
         currentState = STATE_WALK;
@@ -271,6 +284,7 @@ void setup() {
     ArduinoOTA.begin();
     #endif
 
+    balance.resetYaw();
     lastHeartbeatReceived = millis();
 }
 
@@ -280,6 +294,7 @@ const int TELEMETRY_INTERVAL = 500; // 500ms
 void loop() {
     static unsigned long lastBatteryCheck = 0;
     static bool batteryCritical = false;
+    static unsigned long lastSensorFusion = 0;
 
     #if USE_OTA
     ArduinoOTA.handle();
@@ -287,6 +302,14 @@ void loop() {
 
     #if USE_MPU6050
     balance.update();
+    
+    // Auto Fall Detection and Recovery
+    FallDirection fall = balance.checkFall();
+    if (fall != NO_FALL && currentState != STATE_FALLEN) {
+        Serial.println("[IMU] Fall detected! Transitioning to STATE_FALLEN");
+        currentState = STATE_FALLEN;
+        car.stop();
+    }
     #endif
     
     // --- PERIODIC TELEMETRY ---
@@ -337,17 +360,16 @@ void loop() {
         currentState = STATE_STAND;
     }
     
-    #if USE_MPU6050
-    FallDirection fall = balance.checkFall();
-    if (fall != NO_FALL) {
-        car.stop();
-        currentState = STATE_FALLEN;
-        isMovingForward = false;
-    }
-    #endif
 
     // --- DYNAMIC OBSTACLE AVOIDANCE ---
     #if USE_ULTRASONIC
+    // Tilt Compensation: Keep eyes level if robot is tilted
+    if (currentState != STATE_FALLEN) {
+        float pitch = balance.getPitch();
+        int tiltAdjustment = map(pitch, -45, 45, -30, 30);
+        obstacle.setTilt(90 + tiltAdjustment); 
+    }
+
     if (isMovingForward && (currentState == STATE_CAR || currentState == STATE_WALK)) {
         if (obstacle.readFrontDistance() < 20) {
             Serial.println("[SAFETY] Emergency Stop: Obstacle detected while moving!");
@@ -358,6 +380,14 @@ void loop() {
     }
     #endif
 
+    // Gyro-Assisted Straight Driving
+    if (isMovingForward && isAidingGyro) {
+        float currentYaw = balance.getYaw();
+        float yawError = currentYaw - targetYaw;
+        int correction = yawError * 4; // Kp = 4
+        car.moveForward(correction);
+    }
+    
     // Memory Decay and Non-Blocking Cliff Check
     #if USE_ULTRASONIC
     obstacle.decayMemoryIfNeeded();

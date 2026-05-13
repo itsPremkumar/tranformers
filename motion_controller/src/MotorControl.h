@@ -9,8 +9,8 @@ public:
     void begin();
     
     void setSpeed(int speed);
-    void moveForward();
-    void moveBackward();
+    void moveForward(int correction = 0);
+    void moveBackward(int correction = 0);
     void turnLeft();      // Default (Zero Turn)
     void turnRight();     // Default (Zero Turn)
     void turnLeftZero();  // Both wheels opposite

@@ -48,20 +48,28 @@ void MotorControl::stop() {
     ledcWrite(_enbChannel, 0);
 }
 
-void MotorControl::moveForward() {
+void MotorControl::moveForward(int correction) {
     digitalWrite(_in1, HIGH);
     digitalWrite(_in2, LOW);
     digitalWrite(_in3, HIGH);
     digitalWrite(_in4, LOW);
-    applySpeed();
+    
+    int speedA = constrain(_speed - correction, 0, 255);
+    int speedB = constrain(_speed + correction, 0, 255);
+    ledcWrite(_enaChannel, speedA);
+    ledcWrite(_enbChannel, speedB);
 }
 
-void MotorControl::moveBackward() {
+void MotorControl::moveBackward(int correction) {
     digitalWrite(_in1, LOW);
     digitalWrite(_in2, HIGH);
     digitalWrite(_in3, LOW);
     digitalWrite(_in4, HIGH);
-    applySpeed();
+    
+    int speedA = constrain(_speed - correction, 0, 255);
+    int speedB = constrain(_speed + correction, 0, 255);
+    ledcWrite(_enaChannel, speedA);
+    ledcWrite(_enbChannel, speedB);
 }
 
 void MotorControl::turnRight() {

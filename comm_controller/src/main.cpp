@@ -140,9 +140,13 @@ void loop() {
     audioSys.processAudio(); 
     #endif
     
-    // 4. Update Display animations occasionally
+    // 4. Update Display animations or Lip-Sync
     #if USE_OLED_DISPLAY
-    if (millis() - lastDisplayUpdate > 3000) {
+    int amp = audioSys.getRecentAmplitude();
+    if (amp > 500) { // If audio is playing
+        displayCtrl.drawTalkingMouth(amp);
+        lastDisplayUpdate = millis(); // Defer random animations
+    } else if (millis() - lastDisplayUpdate > 3000) {
         displayCtrl.updateRandom();
         lastDisplayUpdate = millis();
     }

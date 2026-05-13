@@ -25,6 +25,7 @@ public:
     void sleepMode();
     void warningFace();
     void talkingAnimation();
+    void drawTalkingMouth(int amplitude);
     void drawBitmapFace(int index);
 
 private:
