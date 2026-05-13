@@ -43,6 +43,12 @@ This package contains **4 comprehensive documents** and **1 complete Python scri
 │     • Post-processing (support removal, finishing)
 │     • Common print failures & solutions
 │
+├─ 🚀 advanced_features_v2.md
+│  └─ Advanced Software Enhancements (v2.0)
+│     • OTA Updates, Smart Battery Management
+│     • Gyro-Assisted Drive, Terrain Detection
+│     • Lip-Sync & Fall Recovery
+│
 └─ This README.md
    └─ Master navigation guide
 ```

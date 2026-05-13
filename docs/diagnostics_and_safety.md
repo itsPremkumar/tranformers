@@ -14,10 +14,10 @@ Before deployment, it is highly recommended to run the **Full Diagnostic Suite**
 ## 🚨 2. Multi-Layer Safety Protocols
 
 ### 🔋 2.1 Battery Intelligence
-The system monitors the 11.1V 3S battery in real-time:
-- **Voltage to Percentage**: Converted using the range 9.9V (0%) to 12.6V (100%).
-- **Verbal Alerts**: If power drops below **15%**, the robot will verbally warn: *"Caution. My energy levels are low."*
-- **Auto-Shutdown**: At <10% battery, the AI will refuse all physical movement commands to prevent battery damage.
+The system monitors the 11.1V 3S battery in real-time with hardware-level protection:
+- **Voltage Warning (6.8V)**: The robot broadcasts a "Battery Low" status, shows a **Sad Face** on the OLED, and provides a verbal warning.
+- **Critical Cut-off (6.4V)**: To prevent cell damage, the Motion Controller performs an **Emergency Hardware Halt**, locking all motors and stopping logic.
+- **NVS Memory**: Current mood and power states are saved to Non-Volatile Storage to ensure safety across reboots.
 
 ### ⚡ 2.2 Over-Current Protection
 The backend monitors the Amperage from the `CURRENT_PIN`:
@@ -34,9 +34,10 @@ To prevent "runaway" scenarios if the Wi-Fi or Controller link fails:
 - **Interval**: Comm controller sends `BEAT` every 1000ms.
 - **Timeout**: If Motion controller receives nothing for **2500ms**, it enters `STATE_STAND` and locks all motors.
 
-### 🚨 2.5 Fall Detection
-The MPU6050 IMU monitors the robot's pitch and roll:
-- **Action**: If an extreme tilt is detected (indicating the robot has tipped over), it triggers an emergency stop to protect the servo gears from impact.
+### 🚨 2.5 Fall Detection & Auto-Recovery
+The MPU6050 IMU monitors the robot's pitch and roll in real-time:
+- **Detection**: Instant stop if an extreme tilt is detected (Forward, Backward, or Side fall).
+- **Auto-Recovery**: After a fall, the robot executes a **Self-Righting Sequence**. It identifies its orientation and uses its servos to push itself back up to a standing position.
 
 ## 🛠️ 3. Calibration
 - **Servo Offsets**: Use the `standPosition()` command to verify that all limbs are aligned.
