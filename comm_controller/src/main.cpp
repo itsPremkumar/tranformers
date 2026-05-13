@@ -6,6 +6,7 @@
 #include "RobotServer.h"
 #include "BluetoothAudio.h"
 #include <ArduinoOTA.h>
+#include <Preferences.h>
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -28,6 +29,8 @@ WebInterface web(NULL, WEB_PORT);
 BluetoothAudio btAudio;
 #endif
 
+Preferences prefs;
+int currentMood = 0; // 0=Happy, 1=Sad, 2=Angry, 3=Hero
 unsigned long lastDisplayUpdate = 0;
 
 void setup() {
@@ -39,7 +42,10 @@ void setup() {
     #if USE_OLED_DISPLAY
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN); 
     displayCtrl.begin();
-    displayCtrl.happyFace();
+    
+    prefs.begin("robot", false);
+    currentMood = prefs.getInt("mood", 0);
+    displayCtrl.drawBitmapFace(currentMood);
     #endif
     
     network.beginWiFi();
@@ -109,13 +115,15 @@ void loop() {
         } else if (cmd.startsWith("FACE:")) {
             #if USE_OLED_DISPLAY
             String mood = cmd.substring(5);
-            if (mood == "happy") displayCtrl.happyFace();
-            else if (mood == "angry") displayCtrl.angryFace();
-            else if (mood == "hero") displayCtrl.heroFace();
-            else if (mood == "thinking") displayCtrl.talkingAnimation();
+            if (mood == "happy") { currentMood = 0; displayCtrl.happyFace(); }
+            else if (mood == "sad") { currentMood = 1; displayCtrl.sadFace(); }
+            else if (mood == "angry") { currentMood = 2; displayCtrl.angryFace(); }
+            else if (mood == "hero") { currentMood = 3; displayCtrl.heroFace(); }
             else if (mood.length() > 0 && isDigit(mood[0])) {
-                displayCtrl.drawBitmapFace(mood.toInt());
+                currentMood = mood.toInt();
+                displayCtrl.drawBitmapFace(currentMood);
             }
+            prefs.putInt("mood", currentMood);
             #endif
         } else if (cmd.startsWith("SAY:")) {
             #if USE_OLED_DISPLAY

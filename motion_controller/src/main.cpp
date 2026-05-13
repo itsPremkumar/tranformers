@@ -295,6 +295,7 @@ void loop() {
     static unsigned long lastBatteryCheck = 0;
     static bool batteryCritical = false;
     static unsigned long lastSensorFusion = 0;
+    static FallDirection lastFall = NO_FALL;
 
     #if USE_OTA
     ArduinoOTA.handle();
@@ -308,6 +309,7 @@ void loop() {
     if (fall != NO_FALL && currentState != STATE_FALLEN) {
         Serial.println("[IMU] Fall detected! Transitioning to STATE_FALLEN");
         currentState = STATE_FALLEN;
+        lastFall = fall;
         car.stop();
     }
     #endif
@@ -327,6 +329,7 @@ void loop() {
         float vCurr = (analogRead(CURRENT_PIN) / 4095.0) * 3.3;
         float amps = (vCurr - 1.65) / 0.1; // Offset and sensitivity depends on sensor
         Serial.println("CURRENT:" + String(amps, 2));
+        Serial.println("ROUGHNESS:" + String(balance.getTerrainRoughness(), 4));
         
         lastTelemetryUpdate = millis();
 
@@ -476,7 +479,13 @@ void loop() {
             #endif
             break;
         }
-        case STATE_FALLEN: break;
+        case STATE_FALLEN: {
+            #if ENABLE_TRANSFORM
+            servos.recoverFromFall(lastFall);
+            currentState = STATE_STAND;
+            #endif
+            break;
+        }
     }
     delay(5); // Small yield for watchdog
 }

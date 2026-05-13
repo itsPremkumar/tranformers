@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Adafruit_PWMServoDriver.h>
+#include "Balance.h"
 
 class ServoControl {
 public:
@@ -17,6 +18,7 @@ public:
     void transformToCar();
     void pushMotion();
     void kickMotion();
+    void recoverFromFall(FallDirection dir);
 
 private:
     Adafruit_PWMServoDriver _pwm;

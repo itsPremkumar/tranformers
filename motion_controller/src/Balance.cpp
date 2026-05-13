@@ -1,6 +1,8 @@
 #include "Balance.h"
 
-Balance::Balance() : _roll(0), _pitch(0), _yaw(0), _lastUpdate(0) {}
+Balance::Balance() : _roll(0), _pitch(0), _yaw(0), _roughness(0), _lastUpdate(0) {
+    for (int i = 0; i < WINDOW_SIZE; i++) _accHistory[i] = 0;
+}
 
 bool Balance::begin() {
     _mpu.initialize();
@@ -19,6 +21,18 @@ void Balance::update() {
     _accY = _ay / 16384.0;
     _accZ = _az / 16384.0;
     
+    // Terrain Roughness (Variance of AccZ)
+    _accHistory[_historyIdx] = _accZ;
+    _historyIdx = (_historyIdx + 1) % WINDOW_SIZE;
+    
+    float mean = 0;
+    for(int i=0; i<WINDOW_SIZE; i++) mean += _accHistory[i];
+    mean /= WINDOW_SIZE;
+    
+    float variance = 0;
+    for(int i=0; i<WINDOW_SIZE; i++) variance += pow(_accHistory[i] - mean, 2);
+    _roughness = variance / WINDOW_SIZE;
+
     _gyroX = _gx / 131.0;
     _gyroY = _gy / 131.0;
     _gyroZ = _gz / 131.0;

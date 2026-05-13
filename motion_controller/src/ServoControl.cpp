@@ -136,3 +136,41 @@ void ServoControl::kickMotion() {
     moveServoSmooth(2, 90);
     moveServoSmooth(0, 90);
 }
+
+void ServoControl::recoverFromFall(FallDirection dir) {
+    if (dir == NO_FALL) return;
+
+    Serial.println("[RECOVERY] Executing self-righting sequence...");
+
+    if (dir == FALL_FORWARD) {
+        // Use arms to push back
+        moveServoSmooth(4, 160); // Right arm forward
+        moveServoSmooth(5, 20);  // Left arm forward
+        delay(500);
+        moveServoSmooth(4, 40);  // Snap back to push
+        moveServoSmooth(5, 140); 
+        delay(300);
+    } else if (dir == FALL_BACKWARD) {
+        // Use legs to push forward
+        moveServoSmooth(0, 150); // Hips forward
+        moveServoSmooth(1, 30);
+        delay(400);
+        moveServoSmooth(2, 160); // Knees snap
+        moveServoSmooth(3, 20);
+        delay(300);
+    } else {
+        // General shake to try and get up
+        for(int i=0; i<3; i++) {
+            moveServoSmooth(4, 40);
+            moveServoSmooth(5, 140);
+            delay(100);
+            moveServoSmooth(4, 140);
+            moveServoSmooth(5, 40);
+            delay(100);
+        }
+    }
+
+    // Return to stand
+    standPosition();
+    Serial.println("[RECOVERY] Sequence complete.");
+}

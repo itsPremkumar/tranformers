@@ -25,6 +25,7 @@ public:
     float getPitch() const { return _pitch; }
     float getYaw() const { return _yaw; }
     float getGyroZ() const { return _gyroZ; }
+    float getTerrainRoughness() const { return _roughness; }
     void resetYaw() { _yaw = 0; }
     
     bool isStanding() const;
@@ -40,7 +41,12 @@ private:
     float _gyroX, _gyroY, _gyroZ;
     
     float _roll, _pitch, _yaw;
+    float _roughness;
     uint32_t _lastUpdate;
+    
+    static const int WINDOW_SIZE = 10;
+    float _accHistory[WINDOW_SIZE];
+    int _historyIdx = 0;
     
     const float _gravity = 16384.0; 
     const float _fallThreshold = 1000.0;
