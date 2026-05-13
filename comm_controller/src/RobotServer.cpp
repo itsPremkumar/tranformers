@@ -24,6 +24,7 @@ void WebInterface::begin() {
     _server.on("/voice", HTTP_POST, [this]() { handleVoice(); });
     _server.on("/scan", [this]() { handleScan(); });
     _server.on("/takeover", [this]() { handleTakeover(); });
+    _server.on("/stealth", [this]() { handleStealth(); });
     
     _server.begin();
 
@@ -180,15 +181,21 @@ String WebInterface::getHTML() {
     html += "<span class='icon'>🎤</span><span class='label'>Hold to Talk</span></button></div>";
 
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
-    html += "<span>Surround Intelligence</span><button onclick='cmd(\"scan\")' style='background:#00f2fe;color:#000;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold'>SCAN AREA</button></div>";
-    html += "<div id='device-list' style='font-size:0.8em;max-height:150px;overflow-y:auto;margin-top:10px'>";
+    html += "<span>Surround Intelligence</span>";
+    html += "<div><button onclick='cmd(\"scan\")' style='background:#00f2fe;color:#000;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold;margin-right:5px'>SCAN</button>";
+    html += "<button id='stealthBtn' onclick='cmd(\"stealth\")' style='background:#ff00cc;color:#fff;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold'>STEALTH</button></div></div>";
+    html += "<div id='device-list' style='font-size:0.8em;max-height:200px;overflow-y:auto;margin-top:10px'>";
     
     if (_surround) {
         for (int i = 0; i < _surround->getDeviceCount(); i++) {
             ScannedDevice d = _surround->getDevice(i);
-            html += "<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.1)'>";
-            html += "<span>" + (d.isBle ? "📶 " : "🌐 ") + d.name + "</span>";
-            if (!d.isBle) {
+            String icon = d.isBle ? "📶 " : (d.isSniffed ? "🕵️ " : "🌐 ");
+            html += "<div style='display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)'>";
+            html += "<span>" + icon + d.name + (d.isSniffed ? " (SNIFFED)" : "") + "</span>";
+            
+            if (d.mac != "" && !d.isBle) {
+                html += "<button onclick='fetch(\"/takeover?mac=" + d.mac + "\")' style='background:none;border:1px solid #ff00cc;color:#ff00cc;font-size:0.7em;padding:1px 5px'>WOL</button>";
+            } else if (!d.isBle && d.ip != "") {
                 html += "<button onclick='fetch(\"/takeover?ip=" + d.ip + "\")' style='background:none;border:1px solid #00f2fe;color:#00f2fe;font-size:0.7em;padding:1px 5px'>TAKEOVER</button>";
             } else {
                 html += "<span style='color:rgba(255,255,255,0.5)'>" + String(d.rssi) + " dBm</span>";
@@ -196,7 +203,6 @@ String WebInterface::getHTML() {
             html += "</div>";
         }
     }
-    
     html += "</div></div>";
 
     html += "</div>"; // end container
@@ -330,11 +336,23 @@ void WebInterface::handleScan() {
 void WebInterface::handleTakeover() {
     if (_server.hasArg("ip")) {
         String ip = _server.arg("ip");
-        if (_surround) {
-            _surround->controlTasmota(ip, true);
-        }
+        if (_surround) _surround->controlTasmota(ip, true);
         _server.send(200, "text/plain", "TAKEOVER SENT TO " + ip);
+    } else if (_server.hasArg("mac")) {
+        String mac = _server.arg("mac");
+        if (_surround) _surround->wakeOnLan(mac.c_str());
+        _server.send(200, "text/plain", "WOL SENT TO " + mac);
     } else {
-        _server.send(400, "text/plain", "MISSING IP");
+        _server.send(400, "text/plain", "MISSING IP/MAC");
     }
+}
+
+void WebInterface::handleStealth() {
+    static bool stealthOn = false;
+    stealthOn = !stealthOn;
+    if (_surround) {
+        if (stealthOn) _surround->startSniffing();
+        else _surround->stopSniffing();
+    }
+    _server.send(200, "text/plain", stealthOn ? "STEALTH ON" : "STEALTH OFF");
 }

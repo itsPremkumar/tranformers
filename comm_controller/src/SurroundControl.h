@@ -10,13 +10,16 @@
 #include <BLEAdvertisedDevice.h>
 #include <WiFiUdp.h>
 #include <HTTPClient.h>
+#include <esp_wifi.h>
 
 struct ScannedDevice {
     String name;
     String ip;
     String mac;
     int rssi;
+    int battery; 
     bool isBle;
+    bool isSniffed; 
 };
 
 class SurroundControl : public BLEAdvertisedDeviceCallbacks {
@@ -33,9 +36,13 @@ public:
     void startBleScan(int duration = 5);
     void onResult(BLEAdvertisedDevice advertisedDevice) override;
     
+    // WiFi Sniffing (Promiscuous Mode)
+    void startSniffing();
+    void stopSniffing();
+    static void onWiFiPacket(void* buf, wifi_promiscuous_pkt_type_t type);
+    
     // Takeover Actions
     void controlTasmota(String ip, bool power);
-    void controlSamsungTV(String ip, String command);
     
     int getDeviceCount() { return _deviceCount; }
     ScannedDevice getDevice(int index);

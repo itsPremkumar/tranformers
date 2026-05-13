@@ -21,12 +21,13 @@ AudioSystem audioSys(I2S_BCK_PIN, I2S_WS_PIN, I2S_DIN_PIN, I2S_DOUT_PIN);
 DisplayController displayCtrl(0x3C);
 #endif
 
+SurroundControl surroundCtrl;
+
 #if USE_AUDIO_SYSTEM
 WebInterface web(&audioSys, &surroundCtrl, WEB_PORT);
 #else
 WebInterface web(NULL, &surroundCtrl, WEB_PORT);
 #endif
-
 #if USE_BLUETOOTH_AUDIO
 BluetoothAudio btAudio;
 #endif
@@ -34,7 +35,6 @@ BluetoothAudio btAudio;
 Preferences prefs;
 int currentMood = 0; // 0=Happy, 1=Sad, 2=Angry, 3=Hero
 SwarmLink swarm;
-SurroundControl surroundCtrl;
 bool isAiListening = false;
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastSwarmBroadcast = 0;

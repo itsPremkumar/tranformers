@@ -62,6 +62,7 @@ private:
     void handleVoice();
     void handleScan();
     void handleTakeover();
+    void handleStealth();
 };
 
 #endif
