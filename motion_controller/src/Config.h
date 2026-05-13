@@ -1,6 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define WIFI_SSID "one"          // Local Wi-Fi Network Name
+#define WIFI_PASS "12345678"     // Local Wi-Fi Password
+#define USE_OTA   true           // Enable wireless updates
+
 // ==========================================
 // 🚀 FEATURE TOGGLES
 // ==========================================

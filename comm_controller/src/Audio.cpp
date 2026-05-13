@@ -79,8 +79,32 @@ void AudioSystem::playTestTone() {
     free(testData);
 }
 
+bool AudioSystem::isVoiceActive(int16_t* buffer, size_t samples) {
+    long long sum = 0;
+    for (size_t i = 0; i < samples; i++) {
+        sum += abs(buffer[i]);
+    }
+    float averageEnergy = (float)sum / samples;
+    return averageEnergy > _vadThreshold;
+}
+
 void AudioSystem::processAudio() {
-    // Simplified: Just passthrough if needed, but usually AI handles this now
+    #if USE_AUDIO_SYSTEM
+    int16_t readBuffer[512];
+    size_t bytesRead;
+    
+    // Read from Microphone (I2S_NUM_0)
+    esp_err_t res = i2s_read(I2S_NUM_0, readBuffer, sizeof(readBuffer), &bytesRead, 10);
+    
+    if (res == ESP_OK && bytesRead > 0) {
+        size_t samples = bytesRead / sizeof(int16_t);
+        if (isVoiceActive(readBuffer, samples)) {
+            // Serial.println("[VAD] Voice detected, streaming...");
+            // Here you would normally send the buffer to your AI backend
+            // For now, we just log activity to demonstrate the feature
+        }
+    }
+    #endif
 }
 
 void AudioSystem::playRawPCM(uint8_t* data, size_t len) {

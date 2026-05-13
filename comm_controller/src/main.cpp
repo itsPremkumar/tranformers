@@ -5,6 +5,7 @@
 #include "Display.h"
 #include "RobotServer.h"
 #include "BluetoothAudio.h"
+#include <ArduinoOTA.h>
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -64,12 +65,17 @@ void setup() {
         #endif
     }
     
+    ArduinoOTA.setHostname(BT_DEVICE_NAME); 
+    ArduinoOTA.begin();
+    
     Serial.println("Comm Controller Ready.");
 }
 
 unsigned long lastNetworkCheck = 0;
 
 void loop() {
+    ArduinoOTA.handle();
+    
     // 1. Handle Web Requests & WebSocket loop
     web.handleClient();
     
@@ -131,7 +137,7 @@ void loop() {
     
     // 3. Process Audio (Pass-through or simple analysis)
     #if USE_AUDIO_SYSTEM
-    // audioSys.processAudio(); 
+    audioSys.processAudio(); 
     #endif
     
     // 4. Update Display animations occasionally
@@ -152,6 +158,16 @@ void loop() {
             web.sendToAi(telemetry);
         } else if (telemetry.startsWith("CURRENT:")) {
             web.sendToAi(telemetry);
+        } else if (telemetry == "CMD:BATTERY_LOW") {
+            #if USE_OLED_DISPLAY
+            displayCtrl.sadFace(); // Show sad face for low battery
+            #endif
+            web.broadcast("STATUS: Battery Low!");
+        } else if (telemetry == "CMD:BATTERY_CRITICAL") {
+            #if USE_OLED_DISPLAY
+            displayCtrl.drawBitmapFace(4); // Use a "dead" or "critical" face if bitmap 4 is suitable
+            #endif
+            web.broadcast("STATUS: CRITICAL BATTERY! Shutting down...");
         }
     }
 }

@@ -25,6 +25,9 @@ private:
     RingbufHandle_t _audioBuffer;
     TaskHandle_t _feederTaskHandle;
     
+    float _vadThreshold = 500.0f; // Adjusted for ambient noise
+    bool isVoiceActive(int16_t* buffer, size_t samples);
+    
     static const int RING_BUFFER_SIZE = 32 * 1024; // 32KB buffer
 };
 

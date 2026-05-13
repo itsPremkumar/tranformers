@@ -4,6 +4,8 @@
 #include "ServoControl.h"
 #include "Balance.h"
 #include "ObstacleAvoidance.h"
+#include <WiFi.h>
+#include <ArduinoOTA.h>
 
 MotorControl car(MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4, MOTOR_ENA, MOTOR_ENB);
 ServoControl servos;
@@ -262,6 +264,13 @@ void setup() {
     #if USE_SERVO_DRIVER
     servos.standPosition();
     #endif
+
+    #if USE_OTA
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    ArduinoOTA.setHostname("Omni-Motion");
+    ArduinoOTA.begin();
+    #endif
+
     lastHeartbeatReceived = millis();
 }
 
@@ -269,6 +278,13 @@ unsigned long lastTelemetryUpdate = 0;
 const int TELEMETRY_INTERVAL = 500; // 500ms
 
 void loop() {
+    static unsigned long lastBatteryCheck = 0;
+    static bool batteryCritical = false;
+
+    #if USE_OTA
+    ArduinoOTA.handle();
+    #endif
+
     #if USE_MPU6050
     balance.update();
     #endif
@@ -290,6 +306,25 @@ void loop() {
         Serial.println("CURRENT:" + String(amps, 2));
         
         lastTelemetryUpdate = millis();
+
+        // Smart Battery Check
+        if (millis() - lastBatteryCheck > 5000) { // Check every 5 seconds
+            float vBat = (analogRead(BATTERY_PIN) / 4095.0) * 3.3 * 2.0;
+            if (vBat < 6.4) {
+                Serial2.println("CMD:BATTERY_CRITICAL");
+                batteryCritical = true;
+                car.stop();
+            } else if (vBat < 6.8) {
+                Serial2.println("CMD:BATTERY_LOW");
+            }
+            lastBatteryCheck = millis();
+        }
+    }
+    
+    if (batteryCritical) {
+        car.stop();
+        delay(100);
+        return; // Halt logic
     }
     
     if (Serial2.available()) {
