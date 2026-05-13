@@ -7,6 +7,7 @@
 #include "BluetoothAudio.h"
 #include <ArduinoOTA.h>
 #include <Preferences.h>
+#include "SwarmLink.h"
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -31,7 +32,9 @@ BluetoothAudio btAudio;
 
 Preferences prefs;
 int currentMood = 0; // 0=Happy, 1=Sad, 2=Angry, 3=Hero
+SwarmLink swarm;
 unsigned long lastDisplayUpdate = 0;
+unsigned long lastSwarmBroadcast = 0;
 
 void setup() {
     Serial.begin(SERIAL_BAUD);
@@ -62,6 +65,7 @@ void setup() {
     
     if (network.isWiFiConnected()) {
         web.begin();
+        swarm.begin("OMNI-01"); // Name this robot
         #if USE_OLED_DISPLAY
         displayCtrl.peaceFace();
         #endif
@@ -160,7 +164,29 @@ void loop() {
     }
     #endif
     
-    // 5. Read Telemetry from Motion Controller
+    // 5. Swarm Intelligence (ESP-NOW)
+    if (millis() - lastSwarmBroadcast > 5000) {
+        // Broadcast our state to other robots
+        int batVal = analogRead(34); // Pseudo battery read for swarm data
+        swarm.broadcast(currentMood, batVal);
+        lastSwarmBroadcast = millis();
+    }
+
+    if (swarm.hasNewData()) {
+        SwarmData other = swarm.getLastData();
+        Serial.print("[SWARM-AI] Mirroring mood from: ");
+        Serial.println(other.senderName);
+        
+        #if USE_OLED_DISPLAY
+        // Social Mirroring: If another robot is "Angry", we get "Hero" mode to help
+        if (other.mood == 2) { 
+            displayCtrl.heroFace();
+            web.broadcast("STATUS: Fellow robot is in trouble! I'm helping.");
+        }
+        #endif
+    }
+    
+    // 6. Read Telemetry from Motion Controller
     while (Serial2.available()) {
         String telemetry = Serial2.readStringUntil('\n');
         telemetry.trim();
