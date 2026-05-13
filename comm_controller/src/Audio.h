@@ -19,25 +19,21 @@ public:
     static void i2sFeederTask(void *pvParameters);
 
 private:
-    int _bckPin;
-    int _wsPin;
-    int _dataInPin;
-    int _dataOutPin;
-    
+    int _bckPin, _wsPin, _dataInPin, _dataOutPin;
     RingbufHandle_t _audioBuffer;
     TaskHandle_t _feederTaskHandle;
     
-    float _vadThreshold = 500.0f; // Adjusted for ambient noise
+    float _vadThreshold = 500.0f;
     bool isVoiceActive(int16_t* buffer, size_t samples);
     
-    // Wake Word (Double Clap) detection
+    // Wake Word State
     unsigned long _lastClapTime = 0;
     int _clapCount = 0;
-    const int CLAP_THRESHOLD = 15000; // Peak amplitude for a "clap"
+    float _noiseFloor = 1000.0f;
+    const int CLAP_THRESHOLD = 15000; 
     
     volatile int _currentAmplitude = 0;
-    
-    static const int RING_BUFFER_SIZE = 32 * 1024; // 32KB buffer
+    static const int RING_BUFFER_SIZE = 32 * 1024; 
 };
 
 #endif

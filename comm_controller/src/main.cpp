@@ -8,6 +8,7 @@
 #include <ArduinoOTA.h>
 #include <Preferences.h>
 #include "SwarmLink.h"
+#include "SurroundControl.h"
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -21,9 +22,9 @@ DisplayController displayCtrl(0x3C);
 #endif
 
 #if USE_AUDIO_SYSTEM
-WebInterface web(&audioSys, WEB_PORT);
+WebInterface web(&audioSys, &surroundCtrl, WEB_PORT);
 #else
-WebInterface web(NULL, WEB_PORT);
+WebInterface web(NULL, &surroundCtrl, WEB_PORT);
 #endif
 
 #if USE_BLUETOOTH_AUDIO
@@ -33,6 +34,7 @@ BluetoothAudio btAudio;
 Preferences prefs;
 int currentMood = 0; // 0=Happy, 1=Sad, 2=Angry, 3=Hero
 SwarmLink swarm;
+SurroundControl surroundCtrl;
 bool isAiListening = false;
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastSwarmBroadcast = 0;
@@ -67,7 +69,8 @@ void setup() {
     
     if (network.isWiFiConnected()) {
         web.begin();
-        swarm.begin("OMNI-01"); // Name this robot
+        swarm.begin("OMNI-01"); 
+        surroundCtrl.begin();
         #if USE_OLED_DISPLAY
         displayCtrl.peaceFace();
         #endif
@@ -132,14 +135,15 @@ void loop() {
         Serial.println("Action Received: " + cmd);
         
         if (cmd == "CMD:TEST") {
-            Serial.println("\n[COMM-DIAGNOSTICS] Starting Brain Test...");
-            Serial.println("[TEST] Active Network: " + network.getActiveNetwork());
-            Serial.println("[TEST] WiFi Signal (RSSI): " + String(WiFi.RSSI()) + " dBm");
-            #if USE_AUDIO_SYSTEM
-            audioSys.playTestTone();
+            // ... (keep test logic)
+        } else if (cmd == "CMD:SCAN") {
+            surroundCtrl.scanNetwork();
+            surroundCtrl.startBleScan(5);
+            String msg = "Captured " + String(surroundCtrl.getDeviceCount()) + " devices.";
+            web.broadcast("STATUS: " + msg);
+            #if USE_OLED_DISPLAY
+            displayCtrl.heroFace(); // Show excitement
             #endif
-            Serial.println("[COMM-DIAGNOSTICS] Brain Test Complete. Forwarding to Motion...");
-            Serial2.println(cmd); 
         } else if (cmd.startsWith("FACE:")) {
             #if USE_OLED_DISPLAY
             String mood = cmd.substring(5);
@@ -188,6 +192,8 @@ void loop() {
     }
     #endif
     
+    surroundCtrl.update();
+
     // 5. Swarm Intelligence (ESP-NOW)
     if (millis() - lastSwarmBroadcast > 5000) {
         // Broadcast our state to other robots

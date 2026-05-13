@@ -89,22 +89,23 @@ bool AudioSystem::isVoiceActive(int16_t* buffer, size_t samples) {
 }
 
 bool AudioSystem::checkForWakeWord(int16_t* buffer, size_t samples) {
+    long long sum = 0;
     bool peakDetected = false;
     for (size_t i = 0; i < samples; i++) {
-        if (abs(buffer[i]) > CLAP_THRESHOLD) {
-            peakDetected = true;
-            break;
-        }
+        int absVal = abs(buffer[i]);
+        sum += absVal;
+        if (absVal > CLAP_THRESHOLD) peakDetected = true;
     }
+    float energy = (float)sum / samples;
+
+    // Adaptive noise floor (Slowly tracks room volume)
+    _noiseFloor = (_noiseFloor * 0.99f) + (energy * 0.01f);
 
     if (peakDetected) {
         unsigned long now = millis();
         unsigned long diff = now - _lastClapTime;
 
-        if (diff < 150) {
-            // Ignore rapid echoes or noise
-            return false;
-        }
+        if (diff < 150) return false; // Ignore echo
 
         if (_clapCount == 0) {
             _clapCount = 1;
@@ -113,17 +114,15 @@ bool AudioSystem::checkForWakeWord(int16_t* buffer, size_t samples) {
         } else if (_clapCount == 1) {
             if (diff > 200 && diff < 800) {
                 Serial.println("[WAKE] Double-Clap MATCHED! Waking up AI...");
-                _clapCount = 0; // Reset
+                _clapCount = 0;
                 _lastClapTime = 0;
                 return true;
             } else {
-                // Too slow, restart
-                _clapCount = 1;
                 _lastClapTime = now;
+                _clapCount = 1;
             }
         }
     } else {
-        // Reset count if too much time passes between claps
         if (_clapCount > 0 && (millis() - _lastClapTime > 1000)) {
             _clapCount = 0;
         }

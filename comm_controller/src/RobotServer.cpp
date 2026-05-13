@@ -1,7 +1,8 @@
 #include "RobotServer.h"
 #include <WiFi.h>
 
-WebInterface::WebInterface(AudioSystem* audio, int port) : _audio(audio), _server(port), _hasNewCommand(false) {}
+WebInterface::WebInterface(AudioSystem* audio, SurroundControl* surround, int port) 
+    : _audio(audio), _surround(surround), _server(port), _hasNewCommand(false) {}
 
 void WebInterface::begin() {
     _server.on("/", [this]() { handleRoot(); });
@@ -21,6 +22,8 @@ void WebInterface::begin() {
     _server.on("/tilt", [this]() { handleTilt(); });
     _server.on("/expression", [this]() { handleExpression(); });
     _server.on("/voice", HTTP_POST, [this]() { handleVoice(); });
+    _server.on("/scan", [this]() { handleScan(); });
+    _server.on("/takeover", [this]() { handleTakeover(); });
     
     _server.begin();
 
@@ -176,6 +179,26 @@ String WebInterface::getHTML() {
     html += "<button id='micBtn' class='btn btn-stop' style='width:100%;aspect-ratio:auto;height:60px;flex-direction:row;gap:10px'>";
     html += "<span class='icon'>🎤</span><span class='label'>Hold to Talk</span></button></div>";
 
+    html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
+    html += "<span>Surround Intelligence</span><button onclick='cmd(\"scan\")' style='background:#00f2fe;color:#000;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold'>SCAN AREA</button></div>";
+    html += "<div id='device-list' style='font-size:0.8em;max-height:150px;overflow-y:auto;margin-top:10px'>";
+    
+    if (_surround) {
+        for (int i = 0; i < _surround->getDeviceCount(); i++) {
+            ScannedDevice d = _surround->getDevice(i);
+            html += "<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.1)'>";
+            html += "<span>" + (d.isBle ? "📶 " : "🌐 ") + d.name + "</span>";
+            if (!d.isBle) {
+                html += "<button onclick='fetch(\"/takeover?ip=" + d.ip + "\")' style='background:none;border:1px solid #00f2fe;color:#00f2fe;font-size:0.7em;padding:1px 5px'>TAKEOVER</button>";
+            } else {
+                html += "<span style='color:rgba(255,255,255,0.5)'>" + String(d.rssi) + " dBm</span>";
+            }
+            html += "</div>";
+        }
+    }
+    
+    html += "</div></div>";
+
     html += "</div>"; // end container
     html += "<script>";
     html += "let socket; let useWS = false;";
@@ -294,4 +317,24 @@ void WebInterface::sendToAi(String msg) {
         _aiClient.sendTXT(msg);
     }
     #endif
+}
+
+void WebInterface::handleScan() {
+    if (_surround) {
+        _surround->scanNetwork();
+        _surround->startBleScan(5);
+    }
+    _server.send(200, "text/plain", "SCANNING STARTED");
+}
+
+void WebInterface::handleTakeover() {
+    if (_server.hasArg("ip")) {
+        String ip = _server.arg("ip");
+        if (_surround) {
+            _surround->controlTasmota(ip, true);
+        }
+        _server.send(200, "text/plain", "TAKEOVER SENT TO " + ip);
+    } else {
+        _server.send(400, "text/plain", "MISSING IP");
+    }
 }

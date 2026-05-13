@@ -8,10 +8,11 @@
 #include <WiFi.h>
 #include "Audio.h"
 #include "Config.h"
+#include "SurroundControl.h"
 
 class WebInterface {
 public:
-    WebInterface(AudioSystem* audio, int port = 80);
+    WebInterface(AudioSystem* audio, SurroundControl* surround, int port = 80);
     void begin();
     void handleClient();
     void broadcast(String msg);
@@ -31,6 +32,7 @@ private:
     String _lastCommand;
     bool _hasNewCommand;
     AudioSystem* _audio;
+    SurroundControl* _surround;
     
     // HTML page
     String getHTML();
@@ -58,6 +60,8 @@ private:
     void handleTilt();
     void handleExpression();
     void handleVoice();
+    void handleScan();
+    void handleTakeover();
 };
 
 #endif
