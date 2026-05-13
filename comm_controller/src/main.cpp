@@ -33,8 +33,10 @@ BluetoothAudio btAudio;
 Preferences prefs;
 int currentMood = 0; // 0=Happy, 1=Sad, 2=Angry, 3=Hero
 SwarmLink swarm;
+bool isAiListening = false;
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastSwarmBroadcast = 0;
+unsigned long aiListenStartTime = 0;
 
 void setup() {
     Serial.begin(SERIAL_BAUD);
@@ -95,15 +97,37 @@ void loop() {
         lastNetworkCheck = millis();
     }
     
-    // 3. Heartbeat Pulse (Every 1 second)
+    // 3. Heartbeat & Audio Processing
     static unsigned long lastHeartbeat = 0;
     if (millis() - lastHeartbeat > 1000) {
         Serial2.println("BEAT");
         lastHeartbeat = millis();
     }
+
+    #if USE_AUDIO_SYSTEM
+    if (audioSys.processAudio()) {
+        isAiListening = true;
+        aiListenStartTime = millis();
+        #if USE_OLED_DISPLAY
+        displayCtrl.heroFace();
+        #endif
+        web.broadcast("STATUS: I am listening...");
+        Serial.println("[AI] Wake Word Detected. Listening...");
+    }
+
+    // Auto-timeout AI listening after 10 seconds of no interaction
+    if (isAiListening && (millis() - aiListenStartTime > 10000)) {
+        isAiListening = false;
+        web.broadcast("STATUS: Going to sleep...");
+        #if USE_OLED_DISPLAY
+        displayCtrl.drawBitmapFace(currentMood);
+        #endif
+    }
+    #endif
     
     // 4. Process any new commands from Web UI
     if (web.hasNewCommand()) {
+        aiListenStartTime = millis(); // Refresh timeout
         String cmd = web.getLastCommand();
         Serial.println("Action Received: " + cmd);
         

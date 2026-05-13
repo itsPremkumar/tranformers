@@ -10,9 +10,10 @@ public:
     AudioSystem(int bckPin = 26, int wsPin = 25, int dataInPin = 33, int dataOutPin = 22);
     void begin();
     void playTestTone();
-    void processAudio();
+    bool processAudio();
     void playRawPCM(uint8_t* data, size_t len);
     int getRecentAmplitude() { return _currentAmplitude; }
+    bool checkForWakeWord(int16_t* buffer, size_t samples);
     
     // Background Feeder (static for FreeRTOS task)
     static void i2sFeederTask(void *pvParameters);
@@ -28,6 +29,11 @@ private:
     
     float _vadThreshold = 500.0f; // Adjusted for ambient noise
     bool isVoiceActive(int16_t* buffer, size_t samples);
+    
+    // Wake Word (Double Clap) detection
+    unsigned long _lastClapTime = 0;
+    int _clapCount = 0;
+    const int CLAP_THRESHOLD = 15000; // Peak amplitude for a "clap"
     
     volatile int _currentAmplitude = 0;
     

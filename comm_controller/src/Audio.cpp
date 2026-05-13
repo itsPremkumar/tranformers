@@ -88,7 +88,50 @@ bool AudioSystem::isVoiceActive(int16_t* buffer, size_t samples) {
     return averageEnergy > _vadThreshold;
 }
 
-void AudioSystem::processAudio() {
+bool AudioSystem::checkForWakeWord(int16_t* buffer, size_t samples) {
+    bool peakDetected = false;
+    for (size_t i = 0; i < samples; i++) {
+        if (abs(buffer[i]) > CLAP_THRESHOLD) {
+            peakDetected = true;
+            break;
+        }
+    }
+
+    if (peakDetected) {
+        unsigned long now = millis();
+        unsigned long diff = now - _lastClapTime;
+
+        if (diff < 150) {
+            // Ignore rapid echoes or noise
+            return false;
+        }
+
+        if (_clapCount == 0) {
+            _clapCount = 1;
+            _lastClapTime = now;
+            Serial.println("[WAKE] First clap detected...");
+        } else if (_clapCount == 1) {
+            if (diff > 200 && diff < 800) {
+                Serial.println("[WAKE] Double-Clap MATCHED! Waking up AI...");
+                _clapCount = 0; // Reset
+                _lastClapTime = 0;
+                return true;
+            } else {
+                // Too slow, restart
+                _clapCount = 1;
+                _lastClapTime = now;
+            }
+        }
+    } else {
+        // Reset count if too much time passes between claps
+        if (_clapCount > 0 && (millis() - _lastClapTime > 1000)) {
+            _clapCount = 0;
+        }
+    }
+    return false;
+}
+
+bool AudioSystem::processAudio() {
     #if USE_AUDIO_SYSTEM
     int16_t readBuffer[512];
     size_t bytesRead;
@@ -98,13 +141,19 @@ void AudioSystem::processAudio() {
     
     if (res == ESP_OK && bytesRead > 0) {
         size_t samples = bytesRead / sizeof(int16_t);
+        
+        // 1. Check for Offline Wake Word (Double Clap)
+        if (checkForWakeWord(readBuffer, samples)) {
+            return true; 
+        }
+
+        // 2. VAD for AI Streaming
         if (isVoiceActive(readBuffer, samples)) {
-            // Serial.println("[VAD] Voice detected, streaming...");
             // Here you would normally send the buffer to your AI backend
-            // For now, we just log activity to demonstrate the feature
         }
     }
     #endif
+    return false;
 }
 
 void AudioSystem::playRawPCM(uint8_t* data, size_t len) {
