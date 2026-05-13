@@ -37,5 +37,15 @@
 #define CURRENT_PIN 35           // Analog current sensor
 #define HEARTBEAT_TIMEOUT_MS 2500 // Safety halt if no comms for 2.5s
 
+// Advanced Obstacle Avoidance Thresholds
+#define SAFE_DISTANCE_CM    38
+#define CAUTION_DISTANCE_CM 55
+#define BLOCK_DISTANCE_CM   26
+#define MAX_DISTANCE_CM     250
+#define REVERSE_TIME_MS     280
+#define TURN_BASE_MS_MIN    170
+#define TURN_BASE_MS_MAX    540
+#define SERVO_STEP_DELAY_MS 8
+
 #endif
 

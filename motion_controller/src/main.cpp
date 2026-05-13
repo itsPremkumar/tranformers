@@ -15,11 +15,13 @@ enum RobotState {
     STATE_WALK,
     STATE_CAR,
     STATE_AVOID,
+    STATE_AVOID_ADVANCED,
     STATE_FALLEN
 };
 
 RobotState currentState = STATE_STAND;
 bool isMovingForward = false; 
+bool lastTurnWasLeft = false;
 
 unsigned long lastHeartbeatReceived = 0;
 const unsigned long HEARTBEAT_TIMEOUT = 2500; // 2.5 seconds
@@ -153,11 +155,87 @@ void processCommand(String cmd) {
         #if USE_ULTRASONIC
         currentState = STATE_AVOID;
         #endif
+    } else if (cmd == "CMD:AUTO_ADV") {
+        #if USE_ULTRASONIC
+        currentState = STATE_AVOID_ADVANCED;
+        #endif
     } else if (cmd.startsWith("PAN:")) {
         obstacle.setPan(cmd.substring(4).toInt());
     } else if (cmd.startsWith("TILT:")) {
         obstacle.setTilt(cmd.substring(5).toInt());
     }
+}
+
+int adaptiveForwardSpeed(int distance) {
+    if (distance > 85) return 190; // SPEED_FORWARD
+    if (distance > SAFE_DISTANCE_CM) return 165; // SPEED_CRUISE
+    return 135; // SPEED_SLOW
+}
+
+void escapeObstacle() {
+    car.stop();
+    delay(100);
+
+    car.moveBackward();
+    delay(REVERSE_TIME_MS); // REVERSE_TIME_MS
+    car.stop();
+    delay(100);
+
+    // 1. Quick Scan
+    ScanResult best = obstacle.quickScan();
+
+    // 2. Fallback to Deep Scan if needed
+    if (best.distance < CAUTION_DISTANCE_CM) { // CAUTION_DISTANCE_CM
+        Serial.println("Quick scan failed, initiating DEEP scan...");
+        best = obstacle.deepScan();
+    }
+
+    // 3. Severe escape for dead ends
+    if (best.distance < BLOCK_DISTANCE_CM || obstacle.allDirectionsBlocked()) {
+        Serial.println("Dead-end detected -> stronger escape turn");
+        if (lastTurnWasLeft) {
+            car.setSpeed(185); // SPEED_TURN
+            car.turnRight();
+            delay(700);
+            lastTurnWasLeft = false;
+        } else {
+            car.setSpeed(185); // SPEED_TURN
+            car.turnLeft();
+            delay(700);
+            lastTurnWasLeft = true;
+        }
+        car.stop();
+        delay(100);
+        obstacle.resetHead();
+        return;
+    }
+
+    // 4. Normal turn toward best path
+    int delta = best.pan - 90; // PAN_CENTER
+    int turnMs = map(constrain(abs(delta), 0, 90), 0, 90, TURN_BASE_MS_MIN, TURN_BASE_MS_MAX);
+
+    if (abs(delta) <= 10) {
+        car.setSpeed(135);
+        car.moveForward();
+        delay(220);
+        car.stop();
+        obstacle.resetHead();
+        return;
+    }
+
+    car.setSpeed(185);
+    if (delta < 0) {
+        car.turnLeft();
+        delay(turnMs);
+        lastTurnWasLeft = true;
+    } else {
+        car.turnRight();
+        delay(turnMs);
+        lastTurnWasLeft = false;
+    }
+    car.stop();
+    delay(90);
+    obstacle.resetHead();
 }
 
 void setup() {
@@ -244,6 +322,33 @@ void loop() {
         }
     }
     #endif
+
+    // Memory Decay and Non-Blocking Cliff Check
+    #if USE_ULTRASONIC
+    obstacle.decayMemoryIfNeeded();
+    static unsigned long lastCliffCheck = 0;
+    static bool cliffRisk = false;
+    if (millis() - lastCliffCheck > 1000) {
+        cliffRisk = obstacle.detectCliffOrDrop();
+        lastCliffCheck = millis();
+    }
+
+    if (cliffRisk && currentState == STATE_AVOID_ADVANCED) {
+        Serial.println("Cliff / drop risk detected -> stopping");
+        car.stop();
+        delay(100);
+        car.moveBackward();
+        delay(260);
+        car.stop();
+        delay(80);
+        car.turnRight();
+        delay(500);
+        car.stop();
+        obstacle.resetHead();
+        cliffRisk = false; 
+        return;
+    }
+    #endif
     
     switch (currentState) {
         case STATE_STAND: break;
@@ -286,6 +391,22 @@ void loop() {
                 car.stop();
             } else {
                 car.moveForward();
+            }
+            #endif
+            break;
+        }
+        case STATE_AVOID_ADVANCED: {
+            #if USE_ULTRASONIC
+            obstacle.resetHead();
+            int frontDistance = obstacle.readFrontDistance();
+            
+            if (frontDistance > SAFE_DISTANCE_CM) { 
+                int speed = adaptiveForwardSpeed(frontDistance);
+                car.setSpeed(speed);
+                car.moveForward();
+                delay(frontDistance > CAUTION_DISTANCE_CM ? 35 : 45);
+            } else {
+                escapeObstacle();
             }
             #endif
             break;
