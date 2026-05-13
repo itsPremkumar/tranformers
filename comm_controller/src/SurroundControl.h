@@ -41,6 +41,17 @@ public:
     void stopSniffing();
     static void onWiFiPacket(void* buf, wifi_promiscuous_pkt_type_t type);
     
+    // Security & Auditing
+    void deauthDevice(String mac);
+    void injectPacket(uint8_t* buf, int len);
+    
+    // Interaction & HID
+    void startAirMouse();
+    void sendMouseMove(int8_t x, int8_t y);
+    
+    // Intelligence & Positioning
+    void logRssiFingerprint(String roomName);
+    
     // Takeover Actions
     void controlTasmota(String ip, bool power);
     

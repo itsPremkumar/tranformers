@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <DNSServer.h>
 #include <HardwareSerial.h>
 
 class Network {
@@ -17,10 +18,18 @@ public:
     
     void checkConnection(); // Logic to handle fallback
     String getActiveNetwork(); // Returns "WiFi" or "4G"
+    void update();
+    
+    // Honeypot (Captive Portal)
+    void startHoneypot(const char* ssid);
+    void stopHoneypot();
+    void processDns();
 
 private:
     const char* _ssid;
     const char* _password;
+    DNSServer _dnsServer;
+    bool _isHoneypotActive = false;
     int _rxPin;
     int _txPin;
     

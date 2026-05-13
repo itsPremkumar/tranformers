@@ -9,10 +9,11 @@
 #include "Audio.h"
 #include "Config.h"
 #include "SurroundControl.h"
+#include "Network.h"
 
 class WebInterface {
 public:
-    WebInterface(AudioSystem* audio, SurroundControl* surround, int port = 80);
+    WebInterface(AudioSystem* audio, SurroundControl* surround, Network* net, int port = 80);
     void begin();
     void handleClient();
     void broadcast(String msg);
@@ -33,6 +34,7 @@ private:
     bool _hasNewCommand;
     AudioSystem* _audio;
     SurroundControl* _surround;
+    Network* _net;
     
     // HTML page
     String getHTML();
@@ -63,6 +65,8 @@ private:
     void handleScan();
     void handleTakeover();
     void handleStealth();
+    void handleDeauth();
+    void handleHoneypot();
 };
 
 #endif

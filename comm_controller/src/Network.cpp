@@ -56,6 +56,29 @@ bool Network::isSIMConnected() {
     return true; // Simplify for now, logic would involve AT commands
 }
 
+void Network::update() {
+    checkConnection();
+    processDns();
+}
+
+void Network::startHoneypot(const char* ssid) {
+    Serial.println("[NET] Starting HONEYPOT: " + String(ssid));
+    WiFi.softAP(ssid);
+    _dnsServer.start(53, "*", WiFi.softAPIP()); // Redirect all to us
+    _isHoneypotActive = true;
+}
+
+void Network::stopHoneypot() {
+    _dnsServer.stop();
+    WiFi.softAPdisconnect(true);
+    _isHoneypotActive = false;
+    Serial.println("[NET] Honeypot DISABLED.");
+}
+
+void Network::processDns() {
+    if (_isHoneypotActive) _dnsServer.processNextRequest();
+}
+
 void Network::checkConnection() {
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[NETWORK] WiFi Lost. Checking 4G Fallback...");

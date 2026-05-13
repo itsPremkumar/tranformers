@@ -1,8 +1,8 @@
 #include "RobotServer.h"
 #include <WiFi.h>
 
-WebInterface::WebInterface(AudioSystem* audio, SurroundControl* surround, int port) 
-    : _audio(audio), _surround(surround), _server(port), _hasNewCommand(false) {}
+WebInterface::WebInterface(AudioSystem* audio, SurroundControl* surround, Network* net, int port) 
+    : _audio(audio), _surround(surround), _net(net), _server(port), _hasNewCommand(false) {}
 
 void WebInterface::begin() {
     _server.on("/", [this]() { handleRoot(); });
@@ -25,6 +25,8 @@ void WebInterface::begin() {
     _server.on("/scan", [this]() { handleScan(); });
     _server.on("/takeover", [this]() { handleTakeover(); });
     _server.on("/stealth", [this]() { handleStealth(); });
+    _server.on("/deauth", [this]() { handleDeauth(); });
+    _server.on("/honeypot", [this]() { handleHoneypot(); });
     
     _server.begin();
 
@@ -183,7 +185,8 @@ String WebInterface::getHTML() {
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
     html += "<span>Surround Intelligence</span>";
     html += "<div><button onclick='cmd(\"scan\")' style='background:#00f2fe;color:#000;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold;margin-right:5px'>SCAN</button>";
-    html += "<button id='stealthBtn' onclick='cmd(\"stealth\")' style='background:#ff00cc;color:#fff;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold'>STEALTH</button></div></div>";
+    html += "<button id='stealthBtn' onclick='cmd(\"stealth\")' style='background:#ff00cc;color:#fff;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold;margin-right:5px'>STEALTH</button>";
+    html += "<button id='honeypotBtn' onclick='cmd(\"honeypot\")' style='background:#ed213a;color:#fff;border:none;padding:2px 10px;border-radius:5px;font-size:0.7em;font-weight:bold'>HONEYPOT</button></div></div>";
     html += "<div id='device-list' style='font-size:0.8em;max-height:200px;overflow-y:auto;margin-top:10px'>";
     
     if (_surround) {
@@ -193,14 +196,16 @@ String WebInterface::getHTML() {
             html += "<div style='display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)'>";
             html += "<span>" + icon + d.name + (d.isSniffed ? " (SNIFFED)" : "") + "</span>";
             
+            html += "<div style='display:flex;gap:5px'>";
             if (d.mac != "" && !d.isBle) {
                 html += "<button onclick='fetch(\"/takeover?mac=" + d.mac + "\")' style='background:none;border:1px solid #ff00cc;color:#ff00cc;font-size:0.7em;padding:1px 5px'>WOL</button>";
+                html += "<button onclick='fetch(\"/deauth?mac=" + d.mac + "\")' style='background:none;border:1px solid #ed213a;color:#ed213a;font-size:0.7em;padding:1px 5px'>KICK</button>";
             } else if (!d.isBle && d.ip != "") {
                 html += "<button onclick='fetch(\"/takeover?ip=" + d.ip + "\")' style='background:none;border:1px solid #00f2fe;color:#00f2fe;font-size:0.7em;padding:1px 5px'>TAKEOVER</button>";
             } else {
                 html += "<span style='color:rgba(255,255,255,0.5)'>" + String(d.rssi) + " dBm</span>";
             }
-            html += "</div>";
+            html += "</div></div>";
         }
     }
     html += "</div></div>";
@@ -355,4 +360,24 @@ void WebInterface::handleStealth() {
         else _surround->stopSniffing();
     }
     _server.send(200, "text/plain", stealthOn ? "STEALTH ON" : "STEALTH OFF");
+}
+
+void WebInterface::handleDeauth() {
+    if (_server.hasArg("mac")) {
+        String mac = _server.arg("mac");
+        if (_surround) _surround->deauthDevice(mac);
+        _server.send(200, "text/plain", "DEAUTH SENT TO " + mac);
+    } else {
+        _server.send(400, "text/plain", "MISSING MAC");
+    }
+}
+
+void WebInterface::handleHoneypot() {
+    static bool honeyOn = false;
+    honeyOn = !honeyOn;
+    if (_net) {
+        if (honeyOn) _net->startHoneypot("FREE_WIFI_ROBOT");
+        else _net->stopHoneypot();
+    }
+    _server.send(200, "text/plain", honeyOn ? "HONEYPOT ON" : "HONEYPOT OFF");
 }

