@@ -4,6 +4,7 @@
 #include "Audio.h"
 #include "Display.h"
 #include "RobotServer.h"
+#include "BluetoothAudio.h"
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -20,6 +21,10 @@ DisplayController displayCtrl(0x3C);
 WebInterface web(&audioSys, WEB_PORT);
 #else
 WebInterface web(NULL, WEB_PORT);
+#endif
+
+#if USE_BLUETOOTH_AUDIO
+BluetoothAudio btAudio;
 #endif
 
 unsigned long lastDisplayUpdate = 0;
@@ -40,6 +45,12 @@ void setup() {
     
     #if USE_AUDIO_SYSTEM
     audioSys.begin();
+    #endif
+
+    #if USE_BLUETOOTH_AUDIO
+    // Wait a bit after WiFi to let things settle
+    delay(100); 
+    btAudio.begin(I2S_BCK_PIN, I2S_WS_PIN, I2S_DOUT_PIN);
     #endif
     
     if (network.isWiFiConnected()) {
@@ -131,14 +142,7 @@ void loop() {
     }
     #endif
     
-    // 5. Send Heartbeat to Motion Controller (every 1 second)
-    static unsigned long lastHeartbeat = 0;
-    if (millis() - lastHeartbeat > 1000) {
-        Serial2.println("BEAT");
-        lastHeartbeat = millis();
-    }
-
-    // 6. Read Telemetry from Motion Controller
+    // 5. Read Telemetry from Motion Controller
     while (Serial2.available()) {
         String telemetry = Serial2.readStringUntil('\n');
         telemetry.trim();

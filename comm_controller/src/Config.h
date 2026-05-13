@@ -16,6 +16,8 @@
 #define USE_AUDIO_SYSTEM true    // Enable I2S Microphone and Speaker
 #define USE_WEBSOCKETS   true    // Enable low-latency remote control via WS
 #define USE_AI_BRAIN     true    // Connect to the Python AI Backend
+#define USE_BLUETOOTH_AUDIO true // Enable Bluetooth Speaker functionality
+#define BT_DEVICE_NAME   "Omni-Core-BT"
 #define AI_BRAIN_HOST    "192.168.1.100" // IP Address of your PC
 #define AI_BRAIN_PORT    8000            // FastAPI Port
 #define VISION_CAM_URL   "http://192.168.1.50/stream" // ESP32-CAM Address
