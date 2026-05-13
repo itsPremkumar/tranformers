@@ -18,7 +18,8 @@ enum RobotState {
     STATE_CAR,
     STATE_AVOID,
     STATE_AVOID_ADVANCED,
-    STATE_FALLEN
+    STATE_FALLEN,
+    STATE_CRAWLER
 };
 
 RobotState currentState = STATE_STAND;
@@ -166,9 +167,14 @@ void processCommand(String cmd) {
         servos.pushMotion();
     } else if (cmd == "CMD:KICK") {
         servos.kickMotion();
-    } else if (cmd == "CMD:AUTO") {
         #if USE_ULTRASONIC
         currentState = STATE_AVOID;
+        #endif
+    } else if (cmd == "CMD:CRAWLER") {
+        #if ENABLE_TRANSFORM
+        servos.transformToCrawler();
+        currentState = STATE_CRAWLER;
+        isMovingForward = false;
         #endif
     } else if (cmd == "CMD:AUTO_ADV") {
         #if USE_ULTRASONIC

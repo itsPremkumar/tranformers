@@ -16,6 +16,7 @@ public:
     void standPosition();
     void walkForward();
     void transformToCar();
+    void transformToCrawler();
     void pushMotion();
     void kickMotion();
     void recoverFromFall(FallDirection dir);

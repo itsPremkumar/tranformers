@@ -170,6 +170,14 @@ void loop() {
             web.sendToAi(telemetry);
         } else if (telemetry.startsWith("CURRENT:")) {
             web.sendToAi(telemetry);
+        } else if (telemetry.startsWith("ROUGHNESS:")) {
+            float r = telemetry.substring(10).toFloat();
+            if (r > 0.05) { // Threshold for "Rough"
+                web.broadcast("STATUS: Rough Terrain Detected! Consider CRAWLER mode.");
+                #if USE_OLED_DISPLAY
+                displayCtrl.warningFace();
+                #endif
+            }
         } else if (telemetry == "CMD:BATTERY_LOW") {
             #if USE_OLED_DISPLAY
             displayCtrl.sadFace(); // Show sad face for low battery

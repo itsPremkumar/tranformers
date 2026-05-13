@@ -107,6 +107,23 @@ void ServoControl::transformToCar() {
     moveServoSmooth(9, 180);
 }
 
+void ServoControl::transformToCrawler() {
+    // Spread hips wide
+    moveServoSmooth(0, 160); // Left hip out
+    moveServoSmooth(1, 20);  // Right hip out
+    delay(300);
+
+    // Bend knees to lower the chassis
+    moveServoSmooth(2, 160); // Left knee
+    moveServoSmooth(3, 20);  // Right knee
+    delay(300);
+
+    // Spread arms for balance
+    moveServoSmooth(4, 150);
+    moveServoSmooth(5, 30);
+    delay(200);
+}
+
 void ServoControl::pushMotion() {
     // Start with arms in neutral
     moveServoSmooth(4, 90);
