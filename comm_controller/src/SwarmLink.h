@@ -18,15 +18,24 @@ public:
     void begin(const char* robotName);
     void broadcast(int mood, int battery, const char* cmd = "");
     
-    // Callback for when data is received
+    // NEW: Send to a specific robot (Unicast) with reliability
+    void sendTo(const uint8_t* mac, int mood, int battery, const char* cmd = "");
+    bool addPeer(const uint8_t* mac);
+    
+    // Callbacks
     static void onDataReceive(const uint8_t * mac, const uint8_t *incomingData, int len);
+    static void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
     
     bool hasNewData() { return _newData; }
     SwarmData getLastData() { _newData = false; return _lastData; }
+    
+    // NEW: Check if the last direct message was successful
+    bool isLastMessageDelivered() { return _lastSendSuccess; }
 
 private:
     static SwarmData _lastData;
     static bool _newData;
+    static bool _lastSendSuccess;
     char _robotName[16];
 };
 
