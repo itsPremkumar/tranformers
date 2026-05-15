@@ -13,6 +13,7 @@
 #include "Connectivity.h"
 #include "Interaction.h"
 #include "SwarmIntelligence.h"
+#include "BLEManager.h"
 
 #define WDT_TIMEOUT 10 
 
@@ -21,6 +22,7 @@ Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
 SurroundControl surroundCtrl;
 SwarmLink swarm;
 Preferences prefs;
+BLEManager bleManager;
 
 #if USE_AUDIO_SYSTEM
 AudioSystem audioSys(I2S_BCK_PIN, I2S_WS_PIN, I2S_DIN_PIN, I2S_DOUT_PIN);
@@ -41,7 +43,7 @@ WebInterface web(NULL, &surroundCtrl, &network, WEB_PORT);
 #endif
 
 // --- Module Instances ---
-Connectivity connect(network, web, surroundCtrl);
+Connectivity connect(network, web, surroundCtrl, bleManager);
 Interaction interact(&audioSys, &displayCtrl, &btAudio, web);
 SwarmIntelligence swarmAI(swarm, &displayCtrl, web);
 

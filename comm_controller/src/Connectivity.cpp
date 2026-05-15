@@ -1,14 +1,15 @@
 #include "Connectivity.h"
 #include <esp_now.h>
 
-Connectivity::Connectivity(Network& net, WebInterface& web, SurroundControl& surround) 
-    : _net(net), _web(web), _surround(surround) {}
+Connectivity::Connectivity(Network& net, WebInterface& web, SurroundControl& surround, BLEManager& ble) 
+    : _net(net), _web(web), _surround(surround), _ble(ble) {}
 
 void Connectivity::begin() {
     _net.beginWiFi();
     if (_net.isWiFiConnected()) {
         _web.begin();
     }
+    _ble.begin();
     _lastAiHeartbeat = millis();
 }
 
@@ -16,6 +17,16 @@ void Connectivity::update() {
     _net.update();
     _web.handleClient();
     _surround.update();
+    _ble.update();
+
+    // Toggle sniffer based on nearby users or commands
+    #if USE_NET_SNIFFER
+    if (!_ble.isUserNearby() && !_net.isSnifferActive()) {
+        _net.startSniffer();
+    } else if (_ble.isUserNearby() && _net.isSnifferActive()) {
+        _net.stopSniffer();
+    }
+    #endif
 
     // 1. Connection Healer
     checkConnectionHealer();

@@ -1,4 +1,7 @@
 #include "Network.h"
+#include <ESPmDNS.h>
+#include <esp_wifi.h>
+#include "Config.h"
 
 Network::Network(const char* ssid, const char* password, int rxPin, int txPin) 
     : _defaultSsid(ssid), _defaultPass(password), _rxPin(rxPin), _txPin(txPin), _sim7600(2), _portalServer(80) {
@@ -11,6 +14,11 @@ void Network::beginWiFi() {
     
     Serial.println("[WIFI] Connecting to: " + savedSsid);
     WiFi.mode(WIFI_STA);
+    
+    #if USE_WIFI_LR
+    beginLongRange();
+    #endif
+
     WiFi.begin(savedSsid.c_str(), savedPass.c_str());
 
     int attempts = 0;
@@ -24,10 +32,52 @@ void Network::beginWiFi() {
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("[WIFI] Connected successfully");
         Serial.println("[WIFI] IP: " + WiFi.localIP().toString());
+        
+        #if USE_MDNS
+        setupMDNS();
+        #endif
     } else {
         Serial.println("[ERROR] WiFi connection failed. Starting Setup Portal...");
         startConfigPortal();
     }
+}
+
+void Network::setupMDNS() {
+    if (!MDNS.begin("omni")) {
+        Serial.println("[MDNS] Error setting up MDNS responder!");
+        return;
+    }
+    Serial.println("[MDNS] Responder started: http://omni.local");
+    MDNS.addService("http", "tcp", 80);
+}
+
+void Network::beginLongRange() {
+    Serial.println("[WIFI] Enabling 802.11 Long Range Mode...");
+    esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR);
+}
+
+// Sniffer Callback
+void sniffer_callback(void* buf, wifi_promiscuous_pkt_type_t type) {
+    if (type != WIFI_PKT_MGMT) return;
+    wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
+    int rssi = pkt->rx_ctrl.rssi;
+    // Basic detection: log high-strength signals from unknown devices
+    if (rssi > -50) {
+        Serial.printf("[SNIFFER] Strong management packet detected! RSSI: %d\n", rssi);
+    }
+}
+
+void Network::startSniffer() {
+    Serial.println("[SNIFFER] Starting Network Audit Sniffer...");
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_promiscuous_rx_cb(&sniffer_callback);
+    _isSnifferActive = true;
+}
+
+void Network::stopSniffer() {
+    esp_wifi_set_promiscuous(false);
+    _isSnifferActive = false;
+    Serial.println("[SNIFFER] Sniffer disabled.");
 }
 
 void Network::startConfigPortal() {

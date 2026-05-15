@@ -7,10 +7,11 @@
 #include "Network.h"
 #include "RobotServer.h"
 #include "SurroundControl.h"
+#include "BLEManager.h"
 
 class Connectivity {
 public:
-    Connectivity(Network& net, WebInterface& web, SurroundControl& surround);
+    Connectivity(Network& net, WebInterface& web, SurroundControl& surround, BLEManager& ble);
     
     void begin();
     void update();
@@ -23,6 +24,7 @@ private:
     Network& _net;
     WebInterface& _web;
     SurroundControl& _surround;
+    BLEManager& _ble;
     
     unsigned long _lastAiHeartbeat = 0;
     unsigned long _lastNetworkCheck = 0;

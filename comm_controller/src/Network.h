@@ -34,6 +34,13 @@ public:
     void stopHoneypot();
     void processDns();
 
+    // 🚀 NEW FEATURES
+    void setupMDNS();
+    void beginLongRange();
+    void startSniffer();
+    void stopSniffer();
+    bool isSnifferActive() { return _isSnifferActive; }
+
 private:
     const char* _defaultSsid;
     const char* _defaultPass;
@@ -44,6 +51,7 @@ private:
     bool _isHoneypotActive = false;
     bool _isConfigPortalActive = false;
     bool _isHotspotActive = false;
+    bool _isSnifferActive = false;
     int _rxPin;
     int _txPin;
     

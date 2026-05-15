@@ -17,6 +17,10 @@
 #define USE_WEBSOCKETS   true    // Enable low-latency remote control via WS
 #define USE_AI_BRAIN     true    // Connect to the Python AI Backend
 #define USE_BLUETOOTH_AUDIO true // Enable Bluetooth Speaker functionality
+#define USE_WIFI_LR          true    // Enable Long Range WiFi (up to 1km)
+#define USE_BLE_PROXIMITY    true    // Enable BLE beacon for phone detection
+#define USE_MDNS             true    // Enable omni.local access
+#define USE_NET_SNIFFER      true    // Enable WiFi packet sniffing for security audit
 #define BT_DEVICE_NAME   "Omni-Core-BT"
 #define AI_BRAIN_HOST    "192.168.1.100" // IP Address of your PC
 #define AI_BRAIN_PORT    8000            // FastAPI Port
