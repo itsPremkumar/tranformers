@@ -36,6 +36,11 @@ void SwarmLink::broadcast(int mood, int battery, const char* cmd) {
     sendTo(broadcastAddress, mood, battery, cmd);
 }
 
+void SwarmLink::broadcast(SwarmData data) {
+    uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    sendTo(broadcastAddress, data);
+}
+
 void SwarmLink::sendTo(const uint8_t* mac, int mood, int battery, const char* cmd) {
     SwarmData data;
     strncpy(data.senderName, _robotName, 16);
@@ -43,6 +48,17 @@ void SwarmLink::sendTo(const uint8_t* mac, int mood, int battery, const char* cm
     data.batteryLevel = battery;
     strncpy(data.command, cmd, 32);
     
+    // Default spatial data
+    data.x = 0;
+    data.y = 0;
+    data.obsX = 0;
+    data.obsY = 0;
+    data.hasObstacle = false;
+    
+    sendTo(mac, data);
+}
+
+void SwarmLink::sendTo(const uint8_t* mac, SwarmData data) {
     esp_now_send(mac, (uint8_t *) &data, sizeof(data));
 }
 

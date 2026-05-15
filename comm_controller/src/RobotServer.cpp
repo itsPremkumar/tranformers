@@ -68,9 +68,15 @@ void WebInterface::onAiEvent(WStype_t type, uint8_t * payload, size_t length) {
         String msg = String((char*)payload);
         Serial.println("[AI-BRAIN] Received: " + msg);
         
-        // Treat as a command from the brain
-        _lastCommand = msg;
-        _hasNewCommand = true;
+        if (msg.startsWith("POS:")) {
+            int comma = msg.indexOf(',');
+            _robotX = msg.substring(4, comma).toFloat();
+            _robotY = msg.substring(comma + 1).toFloat();
+        } else {
+            // Treat as a command from the brain
+            _lastCommand = msg;
+            _hasNewCommand = true;
+        }
     } else if (type == WStype_BIN) {
         Serial.printf("[AI-BRAIN] Received binary audio: %u bytes\n", length);
         if (_audio) {

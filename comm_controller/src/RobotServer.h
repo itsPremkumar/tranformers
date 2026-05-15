@@ -25,6 +25,9 @@ public:
     bool hasNewCommand();
     void clearCommand();
 
+    float getPosX() { return _robotX; }
+    float getPosY() { return _robotY; }
+
 private:
     WebServer _server;
     WebSocketsServer _webSocket = WebSocketsServer(81);
@@ -35,6 +38,7 @@ private:
     AudioSystem* _audio;
     SurroundControl* _surround;
     Network* _net;
+    float _robotX = 0, _robotY = 0;
     
     // HTML page
     String getHTML();

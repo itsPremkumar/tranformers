@@ -4,7 +4,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <DNSServer.h>
-#include <HardwareSerial.h>
+#include <Preferences.h>
+#include <WebServer.h>
 
 class Network {
 public:
@@ -16,9 +17,13 @@ public:
     bool isWiFiConnected();
     bool isSIMConnected();
     
-    void checkConnection(); // Logic to handle fallback
-    String getActiveNetwork(); // Returns "WiFi" or "4G"
+    void checkConnection(); 
+    String getActiveNetwork(); 
     void update();
+    
+    // WiFi Manager & Config Portal
+    void startConfigPortal();
+    void saveCredentials(String ssid, String pass);
     
     // Honeypot (Captive Portal)
     void startHoneypot(const char* ssid);
@@ -26,14 +31,21 @@ public:
     void processDns();
 
 private:
-    const char* _ssid;
-    const char* _password;
+    const char* _defaultSsid;
+    const char* _defaultPass;
     DNSServer _dnsServer;
+    WebServer _portalServer;
+    Preferences _prefs;
+    
     bool _isHoneypotActive = false;
+    bool _isConfigPortalActive = false;
     int _rxPin;
     int _txPin;
     
     HardwareSerial _sim7600;
+    
+    void handlePortal();
+    void handleSave();
 };
 
 #endif

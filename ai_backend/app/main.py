@@ -239,6 +239,11 @@ async def gen_frames():
             # --- Visual Odometry Update ---
             visual_odometry.process_frame(frame)
             
+            # Sync position back to robot for Swarm Mapping
+            pos = visual_odometry.get_position()
+            for ws in list(manager.active_connections):
+                await manager.send_command(f"POS:{pos['x']},{pos['y']}", target_ws=ws)
+            
             ret, buffer = cv2.imencode('.jpg', frame)
             if not ret:
                 continue

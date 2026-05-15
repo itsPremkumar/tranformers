@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Preferences.h>
+#include <esp_now.h>
 #include "Config.h"
 #include "MotorControl.h"
 #include "ServoControl.h"
@@ -6,6 +8,26 @@
 #include "ObstacleAvoidance.h"
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+
+struct WiFiSync {
+    char ssid[32];
+    char pass[64];
+};
+
+Preferences prefs;
+
+void onDataReceive(const uint8_t * mac, const uint8_t *incomingData, int len) {
+    if (len == sizeof(WiFiSync)) {
+        WiFiSync sync;
+        memcpy(&sync, incomingData, sizeof(WiFiSync));
+        prefs.begin("wifi", false);
+        prefs.putString("ssid", sync.ssid);
+        prefs.putString("pass", sync.pass);
+        prefs.end();
+        delay(500);
+        ESP.restart();
+    }
+}
 
 MotorControl car(MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4, MOTOR_ENA, MOTOR_ENB);
 ServoControl servos;
@@ -263,8 +285,24 @@ void setup() {
     Serial.begin(SERIAL_BAUD);
     Serial2.begin(SERIAL_BAUD, SERIAL_8N1, COMM_LINK_RX, COMM_LINK_TX); 
     
-    Wire.begin(); 
+    // 1. WiFi & Sync Init
+    prefs.begin("wifi", false);
+    String ssid = prefs.getString("ssid", WIFI_SSID);
+    String pass = prefs.getString("pass", WIFI_PASS);
     
+    WiFi.mode(WIFI_AP_STA);
+    if (esp_now_init() == ESP_OK) {
+        esp_now_register_recv_cb(onDataReceive);
+    }
+
+    #if USE_OTA
+    WiFi.begin(ssid.c_str(), pass.c_str());
+    ArduinoOTA.setHostname("Omni-Motion");
+    ArduinoOTA.begin();
+    #endif
+
+    // 2. Hardware Init (Preserved)
+    Wire.begin(); 
     car.begin();
     #if USE_SERVO_DRIVER
     servos.begin();
@@ -282,12 +320,6 @@ void setup() {
     
     #if USE_SERVO_DRIVER
     servos.standPosition();
-    #endif
-
-    #if USE_OTA
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-    ArduinoOTA.setHostname("Omni-Motion");
-    ArduinoOTA.begin();
     #endif
 
     balance.resetYaw();
@@ -336,6 +368,7 @@ void loop() {
         float amps = (vCurr - 1.65) / 0.1; // Offset and sensitivity depends on sensor
         Serial.println("CURRENT:" + String(amps, 2));
         Serial.println("ROUGHNESS:" + String(balance.getTerrainRoughness(), 4));
+        Serial.println("YAW:" + String(balance.getYaw(), 2));
         
         lastTelemetryUpdate = millis();
 

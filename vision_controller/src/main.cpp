@@ -1,20 +1,32 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <WebServer.h>
+#include <Preferences.h>
+#include <esp_now.h>
 
-const char* ssid = "one";
-const char* password = "12345678";
+// WiFi Sync Data Structure
+struct WiFiSync {
+    char ssid[32];
+    char pass[64];
+};
+
+Preferences prefs;
+
+// Default Fallback (Your original credentials preserved)
+const char* default_ssid = "one";
+const char* default_password = "12345678";
 
 #define WIFI_TIMEOUT 30000
 
-// AI Thinker ESP32-CAM Pin Map
+// ==========================================
+// 📌 AI Thinker ESP32-CAM Pin Map
+// ==========================================
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
 #define SIOD_GPIO_NUM     26
 #define SIOC_GPIO_NUM     27
 #define FLASH_GPIO_NUM     4
-
 #define Y9_GPIO_NUM       35
 #define Y8_GPIO_NUM       34
 #define Y7_GPIO_NUM       39
@@ -26,6 +38,24 @@ const char* password = "12345678";
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
+
+// ESP-NOW Callback for Wireless WiFi Syncing
+void onDataReceive(const uint8_t * mac, const uint8_t *incomingData, int len) {
+    if (len == sizeof(WiFiSync)) {
+        WiFiSync sync;
+        memcpy(&sync, incomingData, sizeof(WiFiSync));
+        
+        Serial.println("[SYNC] Received New WiFi Credentials!");
+        prefs.begin("wifi", false);
+        prefs.putString("ssid", sync.ssid);
+        prefs.putString("pass", sync.pass);
+        prefs.end();
+        
+        Serial.println("[SYNC] Credentials Saved. Restarting Robot Eye...");
+        delay(1000);
+        ESP.restart();
+    }
+}
 
 WebServer server(80);
 
@@ -77,6 +107,19 @@ void handleFlash() {
 void setup() {
     Serial.begin(115200);
     
+    // 1. Load Saved WiFi or use Defaults
+    prefs.begin("wifi", false);
+    String ssid = prefs.getString("ssid", default_ssid);
+    String pass = prefs.getString("pass", default_password);
+    
+    // 2. Initialize ESP-NOW Sync Listener
+    WiFi.mode(WIFI_AP_STA);
+    if (esp_now_init() == ESP_OK) {
+        esp_now_register_recv_cb(onDataReceive);
+        Serial.println("[SYNC] Wireless Sync Listener Active.");
+    }
+
+    // 3. Detailed Camera Initialization (RESTORED)
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer   = LEDC_TIMER_0;
@@ -116,25 +159,34 @@ void setup() {
         ESP.restart();
     }
     
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
+    // 4. WiFi Connection Loop (Improved for Syncing)
+    Serial.println("[WIFI] Connecting to: " + ssid);
+    WiFi.begin(ssid.c_str(), pass.c_str());
+    
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
         Serial.print(".");
+        attempts++;
     }
-    Serial.println("\nWiFi Connected. IP: " + WiFi.localIP().toString());
 
-    server.on("/", HTTP_GET, handleRoot);
-    server.on("/stream", HTTP_GET, handleJPGStream);
-    server.on("/flash", HTTP_GET, handleFlash);
-    server.begin();
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi Connected. IP: " + WiFi.localIP().toString());
+        server.on("/", HTTP_GET, handleRoot);
+        server.on("/stream", HTTP_GET, handleJPGStream);
+        server.on("/flash", HTTP_GET, handleFlash);
+        server.begin();
+        Serial.println("Vision Stream Server Started.");
+    } else {
+        Serial.println("\n[WIFI] Connection Failed. Staying in Wireless Sync Mode...");
+    }
     
     pinMode(FLASH_GPIO_NUM, OUTPUT);
     digitalWrite(FLASH_GPIO_NUM, LOW);
-    
-    Serial.println("Vision Stream Server Started.");
 }
 
 void loop() {
-    server.handleClient();
+    if (WiFi.status() == WL_CONNECTED) {
+        server.handleClient();
+    }
 }

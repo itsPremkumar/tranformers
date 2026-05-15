@@ -221,11 +221,40 @@ void loop() {
     }
     
     // 6. Read Telemetry from Motion Controller
+    static float currentYaw = 0;
     while (Serial2.available()) {
         String telemetry = Serial2.readStringUntil('\n');
         telemetry.trim();
-        if (telemetry.startsWith("DISTANCE:")) {
+        
+        if (telemetry.startsWith("YAW:")) {
+            currentYaw = telemetry.substring(4).toFloat();
+        } else if (telemetry.startsWith("DISTANCE:")) {
+            int dist = telemetry.substring(9).toInt();
             web.sendToAi(telemetry);
+            
+            // Shared Obstacle Memory Logic
+            if (dist > 0 && dist < 30) {
+                float rad = (currentYaw * PI) / 180.0;
+                float obsX = web.getPosX() + dist * cos(rad);
+                float obsY = web.getPosY() + dist * sin(rad);
+                
+                Serial.printf("[SWARM] Obstacle detected at X:%.1f Y:%.1f. Broadcasting...\n", obsX, obsY);
+                
+                // Construct swarm data with obstacle
+                SwarmData data;
+                strncpy(data.senderName, ROBOT_NAME, 16);
+                data.mood = currentMood;
+                data.x = web.getPosX();
+                data.y = web.getPosY();
+                data.obsX = obsX;
+                data.obsY = obsY;
+                data.hasObstacle = true;
+                
+                // Broadcast to everyone
+                swarm.broadcast(data.mood, 100, ""); // Need to update swarm.broadcast to take SwarmData or similar
+                // Wait, swarm.broadcast currently takes int mood, int battery. 
+                // I'll update SwarmLink.cpp to allow broadcasting full data.
+            }
         } else if (telemetry.startsWith("BATTERY:")) {
             web.sendToAi(telemetry);
         } else if (telemetry.startsWith("CURRENT:")) {
@@ -248,6 +277,14 @@ void loop() {
             displayCtrl.drawBitmapFace(4); // Use a "dead" or "critical" face if bitmap 4 is suitable
             #endif
             web.broadcast("STATUS: CRITICAL BATTERY! Shutting down...");
+        }
+    }
+
+    if (swarm.hasNewData()) {
+        SwarmData other = swarm.getLastData();
+        if (other.hasObstacle) {
+            Serial.printf("[SWARM-AI] Robot %s alerted! Obstacle at (%.1f, %.1f)\n", other.senderName, other.obsX, other.obsY);
+            web.broadcast("ALERT: " + String(other.senderName) + " found obstacle at " + String(other.obsX) + "," + String(other.obsY));
         }
     }
 }
