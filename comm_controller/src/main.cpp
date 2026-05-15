@@ -216,6 +216,9 @@ void loop() {
             #endif
             // Also forward to Web UI via WebSocket if connected
             web.broadcast(cmd); 
+        } else if (cmd.startsWith("GOTO:")) {
+            // Forward coordinate navigation to Motion Controller
+            reliableSendCommand(cmd);
         } else {
             // Forward everything else (Moves, Pan/Tilt, Modes) to Motion Controller
             // SELF-HEALING: Reliable Command Link with ACKs

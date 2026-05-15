@@ -71,6 +71,69 @@ ServoControl servos;
 Balance balance;
 ObstacleAvoidance obstacle(TRIG_PIN, ECHO_PIN, PAN_SERVO_PIN, TILT_SERVO_PIN);
 
+// --- ADVANCED AUTONOMY: ACTIVE SCANNING (SAFETY BUBBLE) ---
+void updateActiveScan() {
+    static unsigned long lastSweep = 0;
+    static int sweepPos = 90;
+    static int sweepDir = 5;
+    
+    // Only scan if we are moving forward
+    if (car.getSpeed() > 0 && millis() - lastSweep > 50) {
+        sweepPos += sweepDir;
+        if (sweepPos >= 135 || sweepPos <= 45) sweepDir *= -1;
+        
+        servos.setPan(sweepPos);
+        int dist = obstacle.getDistance();
+        
+        // If we see something at ANY angle while moving, evaluate safety
+        if (dist > 0 && dist < SAFE_DISTANCE_CM) {
+            Serial.println("[SAFETY] Side Obstacle Detected at " + String(sweepPos) + " deg! Distance: " + String(dist));
+            car.stop();
+            Serial2.println("STATUS: Safety stop! Obstacle at " + String(sweepPos) + " degrees.");
+            // Reset head to center for evaluation
+            servos.setPan(90); 
+        }
+        lastSweep = millis();
+    }
+}
+
+// Navigation States
+float targetX = 0, targetY = 0;
+float currentX = 0, currentY = 0;
+bool isNavigating = false;
+
+void processNavigation(float currentYaw) {
+    if (!isNavigating) return;
+    
+    float dx = targetX - currentX;
+    float dy = targetY - currentY;
+    float distance = sqrt(dx*dx + dy*dy);
+    float angleToTarget = atan2(dy, dx) * 180.0 / PI;
+    
+    // 1. Check if arrived
+    if (distance < 5.0) { // 5cm tolerance
+        Serial.println("[NAV] Target Reached!");
+        Serial2.println("STATUS: Arrived at target (" + String(targetX) + "," + String(targetY) + ")");
+        car.stop();
+        isNavigating = false;
+        return;
+    }
+    
+    // 2. Adjust Heading
+    float yawError = angleToTarget - currentYaw;
+    if (yawError > 180) yawError -= 360;
+    if (yawError < -180) yawError += 360;
+    
+    if (abs(yawError) > 15) {
+        // Need to turn first
+        if (yawError > 0) car.turnRight(150);
+        else car.turnLeft(150);
+    } else {
+        // Heading is good, move forward
+        car.moveForward(180);
+    }
+}
+
 enum RobotState {
     STATE_STAND,
     STATE_WALK,
@@ -142,6 +205,19 @@ void processCommand(String cmd) {
     
     if (cmd == "BEAT") return; 
     if (cmd == "CMD:TEST") { runSelfTest(); return; }
+
+    // SELF-HEALING: Navigation Command Parser
+    if (cmd.startsWith("GOTO:")) {
+        int commaIdx = cmd.indexOf(',');
+        if (commaIdx > 0) {
+            targetX = cmd.substring(5, commaIdx).toFloat();
+            targetY = cmd.substring(commaIdx + 1).toFloat();
+            isNavigating = true;
+            Serial.printf("[NAV] New Target Set: %.1f, %.1f\n", targetX, targetY);
+            Serial2.println("STATUS: Navigation Started to " + String(targetX) + "," + String(targetY));
+        }
+        return;
+    }
 
     if (cmd == "CMD:FORWARD") {
         #if USE_ULTRASONIC
@@ -455,6 +531,10 @@ void loop() {
         Serial2.println("STATUS: MOTOR STALL! Emergency Stop.");
     }
     checkStuckStatus(amps);
+    
+    // 5. AUTONOMY: Active Safety & Navigation
+    updateActiveScan();
+    processNavigation(balance.getYaw());
 
     if (millis() - lastHeartbeatReceived > HEARTBEAT_TIMEOUT_MS && currentState != STATE_STAND) {
         car.stop();
