@@ -67,6 +67,7 @@ private:
     void handleStealth();
     void handleDeauth();
     void handleHoneypot();
+    void handleFlash();
 };
 
 #endif

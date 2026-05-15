@@ -13,6 +13,7 @@ const char* password = "12345678";
 #define XCLK_GPIO_NUM      0
 #define SIOD_GPIO_NUM     26
 #define SIOC_GPIO_NUM     27
+#define FLASH_GPIO_NUM     4
 
 #define Y9_GPIO_NUM       35
 #define Y8_GPIO_NUM       34
@@ -61,6 +62,16 @@ void handleRoot() {
     html += "<img src='/stream' style='width:100%;max-width:800px;border-radius:10px;' />";
     html += "</body></html>";
     server.send(200, "text/html", html);
+}
+
+void handleFlash() {
+    if (server.hasArg("val")) {
+        int val = server.arg("val").toInt();
+        digitalWrite(FLASH_GPIO_NUM, val ? HIGH : LOW);
+        server.send(200, "text/plain", val ? "FLASH ON" : "FLASH OFF");
+    } else {
+        server.send(400, "text/plain", "MISSING VAL");
+    }
 }
 
 void setup() {
@@ -115,7 +126,11 @@ void setup() {
 
     server.on("/", HTTP_GET, handleRoot);
     server.on("/stream", HTTP_GET, handleJPGStream);
+    server.on("/flash", HTTP_GET, handleFlash);
     server.begin();
+    
+    pinMode(FLASH_GPIO_NUM, OUTPUT);
+    digitalWrite(FLASH_GPIO_NUM, LOW);
     
     Serial.println("Vision Stream Server Started.");
 }

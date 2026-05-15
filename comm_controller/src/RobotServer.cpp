@@ -27,6 +27,7 @@ void WebInterface::begin() {
     _server.on("/stealth", [this]() { handleStealth(); });
     _server.on("/deauth", [this]() { handleDeauth(); });
     _server.on("/honeypot", [this]() { handleHoneypot(); });
+    _server.on("/flash", [this]() { handleFlash(); });
     
     _server.begin();
 
@@ -169,6 +170,7 @@ String WebInterface::getHTML() {
     html += "<button class='btn btn-action' onclick='cmd(\"transform\")'><span class='icon'>🔄</span><span class='label'>Transform</span></button>";
     html += "<button class='btn btn-action' onclick='cmd(\"walk\")'><span class='icon'>🚶</span><span class='label'>Walk Mode</span></button>";
     html += "<button class='btn btn-action' onclick='cmd(\"auto\")'><span class='icon'>🤖</span><span class='label'>Auto Pilot</span></button>";
+    html += "<button class='btn btn-action' style='background:linear-gradient(45deg,#ff9a9e,#fecfef)' onclick='cmd(\"flash\")'><span class='icon'>🔦</span><span class='label'>Flashlight</span></button>";
     html += "<button class='btn btn-action' style='background:linear-gradient(45deg,#f093fb,#f5576c)' onclick='cmd(\"test\")'><span class='icon'>🩺</span><span class='label'>Self-Test</span></button>";
     html += "</div></div>";
 
@@ -380,4 +382,23 @@ void WebInterface::handleHoneypot() {
         else _net->stopHoneypot();
     }
     _server.send(200, "text/plain", honeyOn ? "HONEYPOT ON" : "HONEYPOT OFF");
+}
+
+void WebInterface::handleFlash() {
+    static bool flashOn = false;
+    flashOn = !flashOn;
+    
+    // 1. Send Command to Vision Controller (Wireless Flash)
+    HTTPClient http;
+    String camUrl = String(VISION_CAM_URL);
+    // Replace '/stream' with '/flash'
+    camUrl.replace("/stream", "/flash");
+    http.begin(camUrl + "?val=" + String(flashOn ? 1 : 0));
+    http.GET();
+    http.end();
+
+    // 2. Local State Management
+    _lastCommand = String("FLASH:") + (flashOn ? "ON" : "OFF");
+    _hasNewCommand = true;
+    _server.send(200, "text/plain", flashOn ? "FLASH ON" : "FLASH OFF");
 }
