@@ -10,6 +10,7 @@
 #include "Config.h"
 #include "SurroundControl.h"
 #include "Network.h"
+#include "DashboardUI.h"
 
 class WebInterface {
 public:
@@ -41,7 +42,7 @@ private:
     float _robotX = 0, _robotY = 0;
     
     // HTML page
-    String getHTML();
+
     
     // WebSocket Event Handlers
     void onWebSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
