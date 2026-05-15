@@ -86,7 +86,7 @@ The AI Backend can run on your laptop for testing with a local USB camera and lo
 *   📐 [**3D Model Quick Start**](./docs/COMPLETE_3D_MODEL_QUICK_START.md): Immediate steps for CAD design.
 *   📘 [**Technical Documentation**](./docs/docs.md): Deep dive into protocols and architecture.
 *   🦾 [**Omni-Morph Build Guide**](./docs/README.md): Step-by-step instructions for hardware.
-*   ⚡ [**Electronics Guide**](./docs/electronic.md): Master wiring and power.
+*   ⚡ [**Electronics & Wiring Guide**](./docs/WIRING_GUIDE.md): Master pin mapping and wiring.
 *   📋 [**Components List**](./docs/list.md): Detailed BOM for fabrication.
 
 ### 🧠 Advanced AI & Interaction
