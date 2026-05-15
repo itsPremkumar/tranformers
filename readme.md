@@ -15,17 +15,20 @@
 ## 🌟 Key Features
 
 *   **Dynamic Transformation**: Seamless mechanical transition between **Humanoid** (Walking/Interaction) and **4WD Car** (High-speed Mobility) modes.
-*   **AI Super-Brain (Cognitive Layer)**: High-level reasoning powered by Gemini 1.5 Pro/Flash and local Ollama (Llama 3), enabling complex conversation and physical decision-making.
-*   **Advanced Vision Intelligence**: 
-    *   **Reactive Vision**: Face, ball, and waste tracking using OpenCV.
-    *   **Gesture Recognition**: MediaPipe-based hand signal control (Silent interaction).
-    *   **Visual SLAM**: Basic odometry using Optical Flow for movement estimation.
-*   **distributed Tri-Core Architecture**: 
-    *   **Motion Controller**: Real-time gait, servo orchestration (PCA9685), and IMU-based balance.
-    *   **Communication Controller**: Web-based remote control, 4G LTE fallback (SIM7600), and OLED facial expressions.
-    *   **Vision Controller**: Low-latency FPV MJPEG streaming.
-*   **Physical Voice & Audio**: Real-time I2S Audio streaming for AI text-to-speech, allowing the robot to speak through its physical body.
-*   **Safety & Health**: Integrated battery monitoring, over-current protection, and fall detection.
+*   **Premium Motion Control**: **S-Curve acceleration** smoothing for fluid, professional-grade physical movement.
+*   **Self-Healing Autonomy**: 
+    *   **Anti-Freeze Watchdogs**: Hardware-level protection against system hangs.
+    *   **Network Healer**: Automatic recovery for "zombie" WiFi connections.
+    *   **Vision Recovery**: Self-detecting and re-initializing frozen camera sensors.
+*   **Field-Ready Connectivity**:
+    *   **WiFi Manager**: Phone-based captive portal for field credential configuration.
+    *   **Wireless Swarm Sync**: Master-Slave password propagation via ESP-NOW.
+    *   **4G LTE Bridge**: Sharing SIM7600 connectivity across the entire robot swarm.
+*   **Intelligent Navigation**: 
+    *   **Coordinate Navigation (GOTO)**: Target-based travel using IMU and Visual Odometry.
+    *   **360° Safety Bubble**: Active head-scanning for collision avoidance while moving.
+*   **Persistent Robot Soul**: Flash-memory **Memory Vault** for persistent personality and learned facts.
+*   **AI Super-Brain (Cognitive Layer)**: High-level reasoning powered by Gemini 1.5 Pro/Flash and local Ollama (Llama 3).
 
 ## 📁 Project Structure
 
