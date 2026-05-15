@@ -219,6 +219,28 @@ void loop() {
         } else if (cmd.startsWith("GOTO:")) {
             // Forward coordinate navigation to Motion Controller
             reliableSendCommand(cmd);
+        } else if (cmd.startsWith("MEM:")) {
+            // SELF-HEALING: Persistent AI Memory
+            int eqIdx = cmd.indexOf('=');
+            if (eqIdx > 4) {
+                String key = cmd.substring(4, eqIdx);
+                String val = cmd.substring(eqIdx + 1);
+                
+                Preferences vault;
+                vault.begin("vault", false);
+                vault.putString(key.c_str(), val);
+                vault.end();
+                
+                Serial.println("[MEM] Fact Saved: " + key + " = " + val);
+                web.broadcast("STATUS: I remembered " + key);
+            }
+        } else if (cmd.startsWith("GET_MEM:")) {
+            String key = cmd.substring(8);
+            Preferences vault;
+            vault.begin("vault", true);
+            String val = vault.getString(key.c_str(), "Unknown");
+            vault.end();
+            web.broadcast("MEM_VAL:" + key + "=" + val);
         } else {
             // Forward everything else (Moves, Pan/Tilt, Modes) to Motion Controller
             // SELF-HEALING: Reliable Command Link with ACKs

@@ -19,6 +19,7 @@ public:
     void turnRightPivot(); // Forward Pivot
     void turnLeftPivotBack();  // Backward Pivot
     void turnRightPivotBack(); // Backward Pivot
+    void applySmoothSpeeds(int left, int right);
     void stop();
 
 private:

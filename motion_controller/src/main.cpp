@@ -97,10 +97,21 @@ void updateActiveScan() {
     }
 }
 
-// Navigation States
-float targetX = 0, targetY = 0;
-float currentX = 0, currentY = 0;
-bool isNavigating = false;
+// --- ADVANCED MOTION: S-CURVE SMOOTHING ---
+int targetLeftSpeed = 0;
+int targetRightSpeed = 0;
+float currentLeftSpeed = 0;
+float currentRightSpeed = 0;
+const float SMOOTHING_FACTOR = 0.15; // 0.1 to 0.3 for smooth feel
+
+void updateSmoothMotors() {
+    // Gradually move current speed toward target speed
+    currentLeftSpeed += (targetLeftSpeed - currentLeftSpeed) * SMOOTHING_FACTOR;
+    currentRightSpeed += (targetRightSpeed - currentRightSpeed) * SMOOTHING_FACTOR;
+    
+    // Apply to motors (Handle absolute value and direction)
+    car.applySmoothSpeeds((int)currentLeftSpeed, (int)currentRightSpeed);
+}
 
 void processNavigation(float currentYaw) {
     if (!isNavigating) return;
@@ -111,10 +122,9 @@ void processNavigation(float currentYaw) {
     float angleToTarget = atan2(dy, dx) * 180.0 / PI;
     
     // 1. Check if arrived
-    if (distance < 5.0) { // 5cm tolerance
+    if (distance < 5.0) { 
         Serial.println("[NAV] Target Reached!");
-        Serial2.println("STATUS: Arrived at target (" + String(targetX) + "," + String(targetY) + ")");
-        car.stop();
+        targetLeftSpeed = 0; targetRightSpeed = 0; // Smooth Stop
         isNavigating = false;
         return;
     }
@@ -125,12 +135,10 @@ void processNavigation(float currentYaw) {
     if (yawError < -180) yawError += 360;
     
     if (abs(yawError) > 15) {
-        // Need to turn first
-        if (yawError > 0) car.turnRight(150);
-        else car.turnLeft(150);
+        if (yawError > 0) { targetLeftSpeed = 150; targetRightSpeed = -150; }
+        else { targetLeftSpeed = -150; targetRightSpeed = 150; }
     } else {
-        // Heading is good, move forward
-        car.moveForward(180);
+        targetLeftSpeed = 180; targetRightSpeed = 180;
     }
 }
 
@@ -222,7 +230,7 @@ void processCommand(String cmd) {
     if (cmd == "CMD:FORWARD") {
         #if USE_ULTRASONIC
         if (obstacle.readFrontDistance() > 20) {
-            car.moveForward();
+            targetLeftSpeed = 200; targetRightSpeed = 200;
             currentState = STATE_CAR;
             isMovingForward = true;
             #if USE_MPU6050
@@ -231,11 +239,11 @@ void processCommand(String cmd) {
             #endif
         } else {
             Serial.println("[SAFETY] Blocked Forward move: Object too close!");
-            car.stop();
+            targetLeftSpeed = 0; targetRightSpeed = 0;
             isMovingForward = false;
         }
         #else
-        car.moveForward();
+        targetLeftSpeed = 200; targetRightSpeed = 200;
         currentState = STATE_CAR;
         isMovingForward = true;
         #if USE_MPU6050
@@ -244,23 +252,26 @@ void processCommand(String cmd) {
         #endif
         #endif
     } else if (cmd == "CMD:BACKWARD") {
-        car.moveBackward();
+        targetLeftSpeed = -200; targetRightSpeed = -200;
         currentState = STATE_CAR;
         isMovingForward = false;
         isAidingGyro = false;
     } else if (cmd == "CMD:LEFT") {
-        car.turnLeft();
+        targetLeftSpeed = -150; targetRightSpeed = 150;
         currentState = STATE_CAR;
         isMovingForward = false;
         isAidingGyro = false;
     } else if (cmd == "CMD:RIGHT") {
-        car.turnRight();
+        targetLeftSpeed = 150; targetRightSpeed = -150;
         currentState = STATE_CAR;
         isMovingForward = false;
         isAidingGyro = false;
-    } else if (cmd == "CMD:LEFT_PIVOT") {
-        car.turnLeftPivot();
-        currentState = STATE_CAR;
+    } else if (cmd == "CMD:STOP") {
+        targetLeftSpeed = 0; targetRightSpeed = 0;
+        currentState = STATE_STAND;
+        isMovingForward = false;
+        isAidingGyro = false;
+    }
         isMovingForward = false;
     } else if (cmd == "CMD:RIGHT_PIVOT") {
         car.turnRightPivot();
@@ -443,12 +454,20 @@ unsigned long lastTelemetryUpdate = 0;
 const int TELEMETRY_INTERVAL = 500; // 500ms
 
 void loop() {
+    esp_task_wdt_reset(); 
+    #if USE_OTA
+    ArduinoOTA.handle();
+    #endif
+    
+    // 0. SELF-HEALING: Motion Smoothing Engine
+    updateSmoothMotors();
+
+    // 1. SELF-HEALING: Battery Safety & Auto-Sleep
     static unsigned long lastBatteryCheck = 0;
     static bool batteryCritical = false;
     static unsigned long lastSensorFusion = 0;
     static FallDirection lastFall = NO_FALL;
 
-    // 1. SELF-HEALING: Battery Safety & Auto-Sleep
     int batRaw = analogRead(BATTERY_PIN);
     float voltage = (batRaw / 4095.0) * 3.3 * 4.0; // 1:4 voltage divider check
     if (voltage < 6.4 && voltage > 1.0) { // 6.4V is safety for 2S LiPo
@@ -461,10 +480,6 @@ void loop() {
         delay(2000);
         esp_deep_sleep_start();
     }
-
-    #if USE_OTA
-    ArduinoOTA.handle();
-    #endif
 
     #if USE_MPU6050
     balance.update();
