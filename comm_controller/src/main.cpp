@@ -9,6 +9,9 @@
 #include <Preferences.h>
 #include "SwarmLink.h"
 #include "SurroundControl.h"
+#include <esp_task_wdt.h>
+
+#define WDT_TIMEOUT 10 // 10 seconds for Comm Controller
 
 // Networking using Config IDs
 Network network(WIFI_SSID, WIFI_PASS, SIM_RX_PIN, SIM_TX_PIN);
@@ -43,6 +46,10 @@ unsigned long aiListenStartTime = 0;
 void setup() {
     Serial.begin(SERIAL_BAUD);
     
+    // Enable Hardware Watchdog (Anti-Freeze)
+    esp_task_wdt_init(WDT_TIMEOUT, true);
+    esp_task_wdt_add(NULL);
+
     // Communication with Motion Controller
     Serial2.begin(SERIAL_BAUD, SERIAL_8N1, MOTION_LINK_RX, MOTION_LINK_TX);
     
@@ -89,8 +96,22 @@ void setup() {
 unsigned long lastNetworkCheck = 0;
 
 void loop() {
+    esp_task_wdt_reset(); // Feed the watchdog (Anti-Freeze)
     ArduinoOTA.handle();
     
+    // 1. Connection Watchdog (Self-Healing)
+    static unsigned long lastAiHeartbeat = millis();
+    if (web.hasNewCommand()) {
+        lastAiHeartbeat = millis(); // Reset healer on activity
+    }
+    
+    // If we've been connected to WiFi but no AI data for 45s, connection is "Zombie"
+    if (network.isWiFiConnected() && (millis() - lastAiHeartbeat > 45000)) {
+        Serial.println("[HEAL] Connection Zombie detected. Re-initializing Network...");
+        network.beginWiFi(); // Force a fresh connection
+        lastAiHeartbeat = millis();
+    }
+
     // Update Wireless Masters
     network.update();
     surroundCtrl.update();

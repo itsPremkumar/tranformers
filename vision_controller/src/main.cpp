@@ -3,6 +3,9 @@
 #include <WebServer.h>
 #include <Preferences.h>
 #include <esp_now.h>
+#include <esp_task_wdt.h>
+
+#define WDT_TIMEOUT 8 // 8 seconds watchdog
 
 // WiFi Sync Data Structure
 struct WiFiSync {
@@ -63,14 +66,26 @@ void handleJPGStream() {
     WiFiClient client = server.client();
     String header = "HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n";
     server.sendContent(header);
+    
+    static int capture_failures = 0;
 
     while (client.connected()) {
+        esp_task_wdt_reset(); // Self-healing: Reset the hardware watchdog
+        
         camera_fb_t* fb = esp_camera_fb_get();
         if (!fb) {
             Serial.println("ERROR: Camera frame capture failed");
+            capture_failures++;
+            
+            // SELF-HEALING: If sensor hangs 5 times, reboot hardware
+            if (capture_failures > 5) {
+                Serial.println("[HEAL] Camera sensor frozen. Restarting...");
+                ESP.restart();
+            }
             break;
         }
 
+        capture_failures = 0; // Success! Reset healer counter
         String partHeader = "--frame\r\nContent-Type: image/jpeg\r\n\r\n";
         server.sendContent(partHeader);
 
@@ -106,6 +121,10 @@ void handleFlash() {
 
 void setup() {
     Serial.begin(115200);
+    
+    // Enable Hardware Watchdog (Heals system if it freezes)
+    esp_task_wdt_init(WDT_TIMEOUT, true);
+    esp_task_wdt_add(NULL); 
     
     // 1. Load Saved WiFi or use Defaults
     prefs.begin("wifi", false);
