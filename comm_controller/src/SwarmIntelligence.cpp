@@ -24,9 +24,17 @@ void SwarmIntelligence::broadcastObstacle(int currentMood, float currentYaw, int
         
         Serial.printf("[SWARM] Obstacle detected at X:%.1f Y:%.1f\n", obsX, obsY);
         
-        // Constructing full broadcast logic (assuming swarm.broadcast can take more data or we add it)
-        // For now using existing broadcast signature
-        _swarm.broadcast(currentMood, 100); 
+        SwarmData data;
+        data.mood = currentMood;
+        data.batteryLevel = 100;
+        data.x = _web.getPosX();
+        data.y = _web.getPosY();
+        data.obsX = obsX;
+        data.obsY = obsY;
+        data.hasObstacle = true;
+        strcpy(data.command, "OBSTACLE_ALERT");
+        
+        _swarm.broadcast(data); 
     }
 }
 
