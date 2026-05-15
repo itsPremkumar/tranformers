@@ -148,9 +148,28 @@ void Network::processDns() {
     if (_isHoneypotActive || _isConfigPortalActive) _dnsServer.processNextRequest();
 }
 
+void Network::startRobotHotspot() {
+    Serial.println("[NET] Creating Robot Gateway (Internal Hotspot)...");
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.softAP("Omni-Gateway", "robot4glink"); // Secure internal password
+    _isHotspotActive = true;
+    Serial.print("[NET] Gateway IP: ");
+    Serial.println(WiFi.softAPIP());
+}
+
 void Network::checkConnection() {
-    if (!_isConfigPortalActive && WiFi.status() != WL_CONNECTED) {
-        // Fallback or reconnect logic
+    static unsigned long lastCheck = 0;
+    if (millis() - lastCheck < 5000) return; // Only check every 5s
+    lastCheck = millis();
+
+    if (WiFi.status() != WL_CONNECTED && !_isConfigPortalActive && !_isHotspotActive) {
+        Serial.println("[NET] Connection Lost. Trying LTE Fallback...");
+        
+        // If LTE is available, share it!
+        if (isSIMConnected()) {
+            startRobotHotspot();
+            Serial.println("[NET] System now operating on 4G LTE.");
+        }
     }
 }
 

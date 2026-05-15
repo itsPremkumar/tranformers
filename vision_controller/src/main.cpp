@@ -187,6 +187,22 @@ void setup() {
 
 void loop() {
     if (WiFi.status() == WL_CONNECTED) {
+        // Advanced: Auto-Bandwidth for 4G Hotspot
+        static bool isOn4G = false;
+        sensor_t * s = esp_camera_sensor_get();
+        
+        if (WiFi.SSID() == "Omni-Gateway" && !isOn4G) {
+            s->set_framesize(s, FRAMESIZE_CIF);
+            s->set_quality(s, 15);
+            isOn4G = true;
+            Serial.println("[VISION] 4G Mode Active: Lowering resolution to CIF.");
+        } else if (WiFi.SSID() != "Omni-Gateway" && isOn4G) {
+            s->set_framesize(s, FRAMESIZE_SVGA);
+            s->set_quality(s, 10);
+            isOn4G = false;
+            Serial.println("[VISION] WiFi Mode Active: Restoring SVGA resolution.");
+        }
+        
         server.handleClient();
     }
 }

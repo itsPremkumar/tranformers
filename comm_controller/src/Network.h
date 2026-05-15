@@ -25,6 +25,10 @@ public:
     void startConfigPortal();
     void saveCredentials(String ssid, String pass);
     
+    // Robot Hotspot (Sharing 4G to Slaves)
+    void startRobotHotspot();
+    bool isHotspotActive() { return _isHotspotActive; }
+    
     // Honeypot (Captive Portal)
     void startHoneypot(const char* ssid);
     void stopHoneypot();
@@ -39,6 +43,7 @@ private:
     
     bool _isHoneypotActive = false;
     bool _isConfigPortalActive = false;
+    bool _isHotspotActive = false;
     int _rxPin;
     int _txPin;
     

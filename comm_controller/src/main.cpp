@@ -220,6 +220,19 @@ void loop() {
         #endif
     }
     
+    // 5. Advanced Network Synchronization (Hotspot Sync)
+    static bool hotspotSynced = false;
+    if (network.isHotspotActive() && !hotspotSynced) {
+        WiFiSync sync;
+        strncpy(sync.ssid, "Omni-Gateway", 32);
+        strncpy(sync.pass, "robot4glink", 64);
+        
+        uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        esp_now_send(broadcastAddress, (uint8_t *) &sync, sizeof(WiFiSync));
+        Serial.println("[SYNC] Slaves moved to 4G Internal Hotspot.");
+        hotspotSynced = true;
+    }
+    
     // 6. Read Telemetry from Motion Controller
     static float currentYaw = 0;
     while (Serial2.available()) {
