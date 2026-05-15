@@ -3,6 +3,7 @@
 ServoControl::ServoControl(uint8_t addr) : _pwm(addr) {
     for (int i = 0; i < NUM_SERVOS; i++) {
         _servoPos[i] = 90;
+        _lastMoveTime[i] = millis();
     }
 }
 
@@ -15,6 +16,7 @@ void ServoControl::begin() {
     for (int i = 0; i < NUM_SERVOS; i++) {
         _pwm.setPWM(i, 0, angleToPulse(90));
         _servoPos[i] = 90;
+        _lastMoveTime[i] = millis();
     }
 }
 
@@ -22,8 +24,42 @@ int ServoControl::angleToPulse(int angle) {
     return map(angle, 0, 180, SERVOMIN, SERVOMAX);
 }
 
+void ServoControl::wakeServos() {
+    if (!_isAsleep) return;
+    for (int i = 0; i < NUM_SERVOS; i++) {
+        _pwm.setPWM(i, 0, angleToPulse(_servoPos[i]));
+    }
+    _isAsleep = false;
+    Serial.println("[SERVO] Waking all servos.");
+}
+
+void ServoControl::updateSleep() {
+    #if USE_SERVO_SLEEP
+    if (_isAsleep) return;
+    
+    bool allIdle = true;
+    for (int i = 0; i < NUM_SERVOS; i++) {
+        if (millis() - _lastMoveTime[i] < 3000) { // 3 seconds idle time
+            allIdle = false;
+            break;
+        }
+    }
+
+    if (allIdle) {
+        for (int i = 0; i < NUM_SERVOS; i++) {
+            _pwm.setPWM(i, 0, 4096); // Fully OFF for PCA9685
+        }
+        _isAsleep = true;
+        Serial.println("[SERVO] Anti-Zitter Active (Sleep).");
+    }
+    #endif
+}
+
 void ServoControl::moveServoSmooth(int channel, int targetAngle, int speedDelay) {
     if (channel < 0 || channel >= NUM_SERVOS) return;
+    
+    if (_isAsleep) wakeServos();
+    _lastMoveTime[channel] = millis();
     
     int current = _servoPos[channel];
     
@@ -40,6 +76,7 @@ void ServoControl::moveServoSmooth(int channel, int targetAngle, int speedDelay)
     }
     
     _servoPos[channel] = targetAngle;
+    _lastMoveTime[channel] = millis();
 }
 
 void ServoControl::moveGroup(int channels[], int targets[], int count) {

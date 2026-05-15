@@ -13,6 +13,10 @@
 #define USE_SERVO_DRIVER true    // Enable PCA9685 I2C driver for limbs
 #define ENABLE_WALKING   true    // Enable humanoid gait algorithms
 #define ENABLE_TRANSFORM true    // Enable mechanical transformation sequence
+#define USE_WDT          true    // Hardware Watchdog Protection
+#define USE_SERVO_SLEEP  true    // Anti-Zitter (disable servos when idle)
+#define USE_SOFT_START   true    // Ramped acceleration to protect battery
+#define USE_I2C_HEALER   true    // Auto-recovery for I2C bus locks
 
 // ==========================================
 // 📌 PIN ASSIGNMENTS (Motion Controller)

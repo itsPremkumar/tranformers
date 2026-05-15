@@ -20,6 +20,10 @@ public:
     void pushMotion();
     void kickMotion();
     void recoverFromFall(FallDirection dir);
+    
+    // 🚀 NEW: Anti-Zitter / Power Save
+    void updateSleep();
+    void wakeServos();
 
 private:
     Adafruit_PWMServoDriver _pwm;
@@ -29,6 +33,8 @@ private:
     static const int SERVOMAX = 500;
     
     int _servoPos[NUM_SERVOS];
+    unsigned long _lastMoveTime[NUM_SERVOS];
+    bool _isAsleep = false;
     
     int angleToPulse(int angle);
 };

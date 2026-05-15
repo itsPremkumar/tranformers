@@ -3,6 +3,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#include <esp_task_wdt.h>
 #include "Config.h"
 #include "MotorControl.h"
 #include "ServoControl.h"
@@ -11,6 +12,9 @@
 #include "RobotSystem.h"
 #include "Navigation.h"
 #include "CommandHandler.h"
+
+#define WDT_TIMEOUT_SECONDS 5
+unsigned long lastHeartbeatTime = 0;
 
 // --- Hardware Instances ---
 MotorControl car(MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4, MOTOR_ENA, MOTOR_ENB);
@@ -46,6 +50,11 @@ void setup() {
     Serial.begin(SERIAL_BAUD);
     Serial2.begin(SERIAL_BAUD, SERIAL_8N1, COMM_LINK_RX, COMM_LINK_TX); 
     
+    #if USE_WDT
+    esp_task_wdt_init(WDT_TIMEOUT_SECONDS, true);
+    esp_task_wdt_add(NULL);
+    #endif
+
     // 1. WiFi & Sync Init
     prefs.begin("wifi", false);
     String ssid = prefs.getString("ssid", WIFI_SSID);
@@ -73,6 +82,9 @@ void setup() {
     #if USE_MPU6050
     if (!balance.begin()) {
         Serial.println("Warning: MPU6050 connection failed.");
+        #if USE_I2C_HEALER
+        systemMgr.i2cRecovery();
+        #endif
     }
     balance.resetYaw();
     #endif
@@ -80,31 +92,55 @@ void setup() {
     #if USE_ULTRASONIC
     obstacle.begin();
     #endif
+
+    lastHeartbeatTime = millis();
 }
 
 void loop() {
+    #if USE_WDT
+    esp_task_wdt_reset();
+    #endif
+
     #if USE_OTA
     ArduinoOTA.handle();
     #endif
     
     // 1. Update Sensors & Core Systems
     #if USE_MPU6050
-    balance.update();
+    if (!balance.update() && USE_I2C_HEALER) {
+        systemMgr.i2cRecovery();
+    }
     #endif
     
     nav.updateSmoothMotors();
     systemMgr.updateTelemetry();
     systemMgr.checkBatterySafety();
     cmdHandler.updateState();
+    #if USE_SERVO_SLEEP
+    servos.updateSleep();
+    #endif
 
-    // 2. Command Processing
+    // 2. Command Processing & Heartbeat Failsafe
     if (Serial2.available()) {
         String cmd = Serial2.readStringUntil('\n');
         cmd.trim();
         if (cmd.length() > 0) {
-            Serial.println("Exec: " + cmd);
-            Serial2.println("ACK:" + cmd); 
-            cmdHandler.processCommand(cmd);
+            lastHeartbeatTime = millis(); // Refresh safety timer
+            
+            if (cmd != "BEAT") {
+                Serial.println("Exec: " + cmd);
+                Serial2.println("ACK:" + cmd); 
+                cmdHandler.processCommand(cmd);
+            }
+        }
+    }
+
+    // Safety: No heartbeat for too long? STOP!
+    if (millis() - lastHeartbeatTime > HEARTBEAT_TIMEOUT_MS) {
+        if (cmdHandler.isMovingForward() || cmdHandler.isTurning()) {
+            Serial.println("[FAILSAFE] Comm Link Lost! Emergency Stop.");
+            car.stop();
+            cmdHandler.processCommand("CMD:STOP");
         }
     }
     
