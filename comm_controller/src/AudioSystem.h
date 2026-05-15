@@ -16,6 +16,7 @@ public:
     void update(); // Add update for MP3 streaming
     int getRecentAmplitude() { return _currentAmplitude; }
     bool checkForWakeWord(int16_t* buffer, size_t samples);
+    RingbufHandle_t getBuffer() { return _audioBuffer; }
     
     // Background Feeder (static for FreeRTOS task)
     static void i2sFeederTask(void *pvParameters);

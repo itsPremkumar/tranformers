@@ -13,7 +13,12 @@ void Interaction::begin() {
     #endif
 
     #if USE_BLUETOOTH_AUDIO
-    if (_bt) _bt->begin(I2S_BCK_PIN, I2S_WS_PIN, I2S_DOUT_PIN);
+    if (_bt) {
+        _bt->begin(I2S_BCK_PIN, I2S_WS_PIN, I2S_DOUT_PIN);
+        #if USE_EXTERNAL_BT_SPEAKER
+        if (_audio) _bt->setSharedBuffer(_audio->getBuffer());
+        #endif
+    }
     #endif
 }
 

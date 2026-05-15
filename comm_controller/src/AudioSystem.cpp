@@ -221,7 +221,9 @@ void AudioSystem::i2sFeederTask(void *pvParameters) {
             self->_currentAmplitude = maxAmp;
 
             // Write to I2S. This task can block, but it won't affect the main Arduino loop.
+            #if !USE_EXTERNAL_BT_SPEAKER
             i2s_write(I2S_NUM_1, data, item_size, &bytesWritten, portMAX_DELAY);
+            #endif
             
             // Return the item to the ring buffer
             vRingbufferReturnItem(self->_audioBuffer, (void *)data);
