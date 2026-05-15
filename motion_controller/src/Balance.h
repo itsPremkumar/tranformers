@@ -25,6 +25,7 @@ public:
     float getPitch() const { return _pitch; }
     float getYaw() const { return _yaw; }
     float getGyroZ() const { return _gyroZ; }
+    float getAccelX() const { return _accX; }
     float getTerrainRoughness() const { return _roughness; }
     void resetYaw() { _yaw = 0; }
     

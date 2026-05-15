@@ -133,3 +133,26 @@ void MotorControl::turnLeftPivotBack() {
     digitalWrite(_in4, LOW);
     applySpeed();
 }
+
+void MotorControl::applySmoothSpeeds(int left, int right) {
+    // Left Motor Direction
+    if (left >= 0) {
+        digitalWrite(_in1, HIGH);
+        digitalWrite(_in2, LOW);
+    } else {
+        digitalWrite(_in1, LOW);
+        digitalWrite(_in2, HIGH);
+    }
+    
+    // Right Motor Direction
+    if (right >= 0) {
+        digitalWrite(_in3, HIGH);
+        digitalWrite(_in4, LOW);
+    } else {
+        digitalWrite(_in3, LOW);
+        digitalWrite(_in4, HIGH);
+    }
+    
+    ledcWrite(_enaChannel, constrain(abs(left), 0, 255));
+    ledcWrite(_enbChannel, constrain(abs(right), 0, 255));
+}

@@ -21,6 +21,7 @@ public:
     void turnRightPivotBack(); // Backward Pivot
     void applySmoothSpeeds(int left, int right);
     void stop();
+    int getSpeed() const { return _speed; }
 
 private:
     uint8_t _in1, _in2, _in3, _in4, _ena, _enb;
