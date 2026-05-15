@@ -43,6 +43,32 @@ unsigned long lastDisplayUpdate = 0;
 unsigned long lastSwarmBroadcast = 0;
 unsigned long aiListenStartTime = 0;
 
+// --- ADVANCED SELF-HEALING: RELIABLE SERIAL LINK ---
+void reliableSendCommand(String cmd) {
+    int retries = 0;
+    bool ackReceived = false;
+    
+    while (retries < 3 && !ackReceived) {
+        Serial2.println(cmd);
+        unsigned long start = millis();
+        
+        while (millis() - start < 150) { 
+            if (Serial2.available()) {
+                String response = Serial2.readStringUntil('\n');
+                response.trim();
+                if (response == "ACK:" + cmd) {
+                    ackReceived = true;
+                    break;
+                }
+            }
+        }
+        if (!ackReceived) {
+            retries++;
+            Serial.println("[RETRY] Command failed: " + cmd + " (Attempt " + String(retries) + ")");
+        }
+    }
+}
+
 void setup() {
     Serial.begin(SERIAL_BAUD);
     
@@ -192,7 +218,8 @@ void loop() {
             web.broadcast(cmd); 
         } else {
             // Forward everything else (Moves, Pan/Tilt, Modes) to Motion Controller
-            Serial2.println(cmd); 
+            // SELF-HEALING: Reliable Command Link with ACKs
+            reliableSendCommand(cmd); 
         }
 
         

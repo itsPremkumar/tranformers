@@ -29,7 +29,44 @@ void onDataReceive(const uint8_t * mac, const uint8_t *incomingData, int len) {
     }
 }
 
-MotorControl car(MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4, MOTOR_ENA, MOTOR_ENB);
+// --- ADVANCED SELF-HEALING: I2C BUS RECOVERY ---
+void i2cRecovery() {
+    Serial.println("[HEAL] I2C Bus Lock detected. Clearing bus...");
+    pinMode(SDA, INPUT_PULLUP);
+    pinMode(SCL, OUTPUT);
+    for (int i = 0; i < 10; i++) {
+        digitalWrite(SCL, LOW); delayMicroseconds(5);
+        digitalWrite(SCL, HIGH); delayMicroseconds(5);
+    }
+    Wire.begin();
+}
+
+// --- ADVANCED SELF-HEALING: STUCK DETECTION ---
+void checkStuckStatus(float amps) {
+    static unsigned long moveStartTime = 0;
+    static bool wasMoving = false;
+    
+    // Simple check: are we trying to move?
+    if (car.getSpeed() > 0) {
+        if (!wasMoving) moveStartTime = millis();
+        wasMoving = true;
+        
+        if (millis() - moveStartTime > 3000) {
+            // If speed is high but IMU shows zero movement, we are stuck!
+            if (abs(balance.getAccelX()) < 0.05 && amps > 0.5) {
+                Serial2.println("STATUS: I am stuck! Trying escape maneuver...");
+                car.stop();
+                delay(500);
+                car.moveBackward(150); delay(1000);
+                car.turnLeft(180); delay(800);
+                car.stop();
+                moveStartTime = millis(); // Reset
+            }
+        }
+    } else {
+        wasMoving = false;
+    }
+}
 ServoControl servos;
 Balance balance;
 ObstacleAvoidance obstacle(TRIG_PIN, ECHO_PIN, PAN_SERVO_PIN, TILT_SERVO_PIN);
@@ -335,6 +372,20 @@ void loop() {
     static unsigned long lastSensorFusion = 0;
     static FallDirection lastFall = NO_FALL;
 
+    // 1. SELF-HEALING: Battery Safety & Auto-Sleep
+    int batRaw = analogRead(BATTERY_PIN);
+    float voltage = (batRaw / 4095.0) * 3.3 * 4.0; // 1:4 voltage divider check
+    if (voltage < 6.4 && voltage > 1.0) { // 6.4V is safety for 2S LiPo
+        Serial2.println("CMD:BATTERY_CRITICAL");
+        Serial.println("[HEAL] CRITICAL BATTERY! Entering Deep Sleep to protect hardware...");
+        car.stop();
+        #if USE_SERVO_DRIVER
+        servos.standPosition();
+        #endif
+        delay(2000);
+        esp_deep_sleep_start();
+    }
+
     #if USE_OTA
     ArduinoOTA.handle();
     #endif
@@ -386,17 +437,25 @@ void loop() {
         }
     }
     
-    if (batteryCritical) {
-        car.stop();
-        delay(100);
-        return; // Halt logic
-    }
-    
+    // 3. Command Processing with ACKs
     if (Serial2.available()) {
         String cmd = Serial2.readStringUntil('\n');
-        processCommand(cmd);
+        cmd.trim();
+        if (cmd.length() > 0) {
+            Serial.println("Exec: " + cmd);
+            Serial2.println("ACK:" + cmd); 
+            processCommand(cmd);
+        }
     }
     
+    // 4. Telemetry & Safety
+    float amps = (analogRead(CURRENT_PIN) / 4095.0) * 3.3 / 0.1; 
+    if (amps > 3.0) { // Stall protection
+        car.stop();
+        Serial2.println("STATUS: MOTOR STALL! Emergency Stop.");
+    }
+    checkStuckStatus(amps);
+
     if (millis() - lastHeartbeatReceived > HEARTBEAT_TIMEOUT_MS && currentState != STATE_STAND) {
         car.stop();
         currentState = STATE_STAND;
