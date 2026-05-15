@@ -21,6 +21,10 @@ void ObstacleAvoidance::begin() {
     _tiltServo.write(_tiltForward);
 }
 
+int ObstacleAvoidance::getDistance() {
+    return getDistanceOnce();
+}
+
 int ObstacleAvoidance::getDistanceOnce() {
     digitalWrite(_trigPin, LOW);
     delayMicroseconds(2);

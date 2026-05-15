@@ -18,14 +18,14 @@ void Navigation::updateActiveScan(bool isMovingForward) {
         sweepPos += sweepDir;
         if (sweepPos >= 135 || sweepPos <= 45) sweepDir *= -1;
         
-        _servos.setPan(sweepPos);
+        _obstacle.setPan(sweepPos);
         int dist = _obstacle.getDistance();
         
         if (dist > 0 && dist < SAFE_DISTANCE_CM) {
             Serial.println("[SAFETY] Side Obstacle Detected at " + String(sweepPos) + " deg! Distance: " + String(dist));
             _car.stop();
             Serial2.println("STATUS: Safety stop! Obstacle at " + String(sweepPos) + " degrees.");
-            _servos.setPan(90); 
+            _obstacle.setPan(90); 
         }
         lastSweep = millis();
     }
