@@ -17,6 +17,7 @@ from app.core.llm_factory import LLMFactory
 from app.tools.vision import capture_frame
 from app.tools.audio import generate_tts_pcm
 from app.tools.reactive_vision import reactive_vision
+from app.tools.odometry import visual_odometry
 import subprocess
 from pydantic import BaseModel
 
@@ -164,6 +165,9 @@ async def ask_robot(user_input: UserPrompt):
                     manager.update_profile(ws, {"current_task": "Idle"})
                     reactive_vision.is_tracking = False
                 
+                if "CMD:RESET_ODO" in cmd:
+                    visual_odometry.reset()
+
                 # Check for speech command to send physical audio
                 if cmd.startswith("SAY:"):
                     text = cmd[4:]
@@ -232,6 +236,9 @@ async def gen_frames():
                         cap.release()
                     break
             
+            # --- Visual Odometry Update ---
+            visual_odometry.process_frame(frame)
+            
             ret, buffer = cv2.imencode('.jpg', frame)
             if not ret:
                 continue
@@ -260,7 +267,8 @@ async def get_status():
             "battery": profile.get("battery"),
             "distance": profile.get("distance"),
             "mode": profile.get("current_mode"),
-            "task": profile.get("current_task")
+            "task": profile.get("current_task"),
+            "pos": visual_odometry.get_position()
         })
     return {"robots": robots}
 
