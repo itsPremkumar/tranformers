@@ -41,6 +41,12 @@ private:
     Network* _net;
     float _robotX = 0, _robotY = 0;
     
+    // Dynamic AI Link State
+    bool _isUsingGlobalAi = false;
+    int _aiConnectAttempts = 0;
+    unsigned long _lastAiRetry = 0;
+    void reconnectAiBrain();
+    
     // HTML page
 
     

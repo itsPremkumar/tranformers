@@ -23,9 +23,12 @@
 #define USE_MDNS             true    // Enable omni.local access
 #define USE_NET_SNIFFER      true    // Enable WiFi packet sniffing for security audit
 #define USE_AUDIO_VISUALIZER true    // Enable OLED eyes dancing to music/voice
+#define USE_DYNAMIC_AI_LINK  true    // Auto-switch between Local and Global(ngrok) AI
+#define AI_BRAIN_LOCAL_HOST  "omni-brain.local" // Your laptop's mDNS name
+#define AI_BRAIN_LOCAL_PORT  8000
+#define AI_BRAIN_GLOBAL_HOST "your-ngrok-id.ngrok-free.app" // Your ngrok URL
+#define AI_BRAIN_GLOBAL_PORT 80
 #define BT_DEVICE_NAME   "Omni-Core-BT"
-#define AI_BRAIN_HOST    "192.168.1.100" // IP Address of your PC
-#define AI_BRAIN_PORT    8000            // FastAPI Port
 #define VISION_CAM_URL   "http://192.168.1.50/stream" // ESP32-CAM Address
 
 

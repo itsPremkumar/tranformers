@@ -38,14 +38,33 @@ void WebInterface::begin() {
     });
 
     #if USE_AI_BRAIN
-    _aiClient.begin(AI_BRAIN_HOST, AI_BRAIN_PORT, "/ws");
+    reconnectAiBrain();
     _aiClient.onEvent([this](WStype_t type, uint8_t * payload, size_t length) {
         onAiEvent(type, payload, length);
     });
-    _aiClient.setReconnectInterval(5000);
     #endif
 
     Serial.println("[SERVER] HTTP & WebSocket servers started");
+}
+
+void WebInterface::reconnectAiBrain() {
+    #if USE_AI_BRAIN
+    _aiClient.disconnect();
+    
+    // Logic: If on 4G, ALWAYS use Global. If on WiFi, try Local first.
+    bool isOnWifi = (WiFi.status() == WL_CONNECTED);
+    
+    if (!isOnWifi || (_aiConnectAttempts >= 3 && !_isUsingGlobalAi)) {
+        Serial.println("[AI-BRAIN] Switching to GLOBAL (ngrok) Link...");
+        _aiClient.begin(AI_BRAIN_GLOBAL_HOST, AI_BRAIN_GLOBAL_PORT, "/ws");
+        _isUsingGlobalAi = true;
+    } else {
+        Serial.println("[AI-BRAIN] Attempting LOCAL Link: " + String(AI_BRAIN_LOCAL_HOST));
+        _aiClient.begin(AI_BRAIN_LOCAL_HOST, AI_BRAIN_LOCAL_PORT, "/ws");
+        _isUsingGlobalAi = false;
+    }
+    _lastAiRetry = millis();
+    #endif
 }
 
 void WebInterface::handleClient() {
@@ -53,13 +72,19 @@ void WebInterface::handleClient() {
     _webSocket.loop();
     #if USE_AI_BRAIN
     _aiClient.loop();
+    
+    // Auto-reconnect/switch logic
+    if (!_aiClient.isConnected() && (millis() - _lastAiRetry > 8000)) {
+        _aiConnectAttempts++;
+        reconnectAiBrain();
+    }
     #endif
 }
 
 void WebInterface::onAiEvent(WStype_t type, uint8_t * payload, size_t length) {
     if (type == WStype_CONNECTED) {
-        Serial.println("[AI-BRAIN] Connected to AI Backend");
-        // Send identity to the AI Brain immediately
+        Serial.printf("[AI-BRAIN] Connected via %s link\n", _isUsingGlobalAi ? "GLOBAL" : "LOCAL");
+        _aiConnectAttempts = 0; // Reset on success
         String identity = "IDENTITY:{\"name\":\"" + String(ROBOT_NAME) + 
                           "\",\"persona\":\"" + String(ROBOT_PERSONA) + 
                           "\",\"version\":\"" + String(ROBOT_VERSION) + 

@@ -17,6 +17,7 @@ gTTS==2.4.0
 pydub==0.25.1
 sqlalchemy==2.0.23
 mediapipe==0.10.8
+pyngrok==7.0.5
 
 
 
