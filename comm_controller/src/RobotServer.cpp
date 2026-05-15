@@ -21,8 +21,9 @@ void WebInterface::begin() {
     _server.on("/pan", [this]() { handlePan(); });
     _server.on("/tilt", [this]() { handleTilt(); });
     _server.on("/expression", [this]() { handleExpression(); });
-    _server.on("/voice", HTTP_POST, [this]() { handleVoice(); });
-    _server.on("/scan", [this]() { handleScan(); });
+    _server.on("/voice", HTTP_POST, std::bind(&WebInterface::handleVoice, this));
+    _server.on("/say", HTTP_GET, std::bind(&WebInterface::handleSay, this));
+    _server.on("/scan", std::bind(&WebInterface::handleScan, this));
     _server.on("/takeover", [this]() { handleTakeover(); });
     _server.on("/stealth", [this]() { handleStealth(); });
     _server.on("/deauth", [this]() { handleDeauth(); });
@@ -177,6 +178,18 @@ void WebInterface::handleVoice() {
         _hasNewCommand = true;
     }
     _server.send(200, "text/plain", "OK");
+}
+
+void WebInterface::handleSay() {
+    if (_server.hasArg("text")) {
+        String text = _server.arg("text");
+        #if USE_AUDIO_SYSTEM
+        if (_audio) _audio->speak(text);
+        #endif
+        _server.send(200, "text/plain", "JARVIS speaking...");
+    } else {
+        _server.send(400, "text/plain", "Missing text arg");
+    }
 }
 
 void WebInterface::handleStatus() {

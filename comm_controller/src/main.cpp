@@ -4,7 +4,7 @@
 #include <esp_task_wdt.h>
 #include "Config.h"
 #include "Network.h"
-#include "Audio.h"
+#include "AudioSystem.h"
 #include "Display.h"
 #include "RobotServer.h"
 #include "BluetoothAudio.h"
@@ -83,6 +83,9 @@ void loop() {
     connect.update();
     interact.update(currentMood);
     swarmAI.update(currentMood);
+    #if USE_AUDIO_SYSTEM
+    audioSys.update();
+    #endif
 
     // 1. Process Web Commands
     if (web.hasNewCommand()) {

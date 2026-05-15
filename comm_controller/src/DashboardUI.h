@@ -71,7 +71,10 @@ inline String getDashboardHTML(SurroundControl* surround) {
 
     html += "<div class='card'><div class='section-title'>Intercom (Robot Voice)</div>";
     html += "<button id='micBtn' class='btn btn-stop' style='width:100%;aspect-ratio:auto;height:60px;flex-direction:row;gap:10px'>";
-    html += "<span class='icon'>🎤</span><span class='label'>Hold to Talk</span></button></div>";
+    html += "<span class='icon'>🎤</span><span class='label'>Hold to Talk</span></button>";
+    html += "<div style='margin-top:10px;display:flex;gap:5px'>";
+    html += "<input type='text' id='ttsInput' placeholder='Type for Jarvis...' style='flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px;border-radius:5px'>";
+    html += "<button onclick='say()' style='background:#00f2fe;color:#000;border:none;padding:10px;border-radius:5px;font-weight:bold'>SAY</button></div></div>";
 
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
     html += "<span>Surround Intelligence</span>";
@@ -127,6 +130,7 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "function s(){ if(document.getElementById('mode').value==='momentary'){ cmd('stop'); } }";
     html += "function val(p,v){ let c = p.toUpperCase()+':'+v; if(useWS){ socket.send(c); } else { fetch('/'+p+'?val='+v); } }";
     html += "function expr(m){ let c = 'FACE:'+m.toUpperCase(); if(useWS){ socket.send(c); } else { fetch('/expression?val='+m); } }";
+    html += "function say(){ let t = document.getElementById('ttsInput').value; if(t){ fetch('/say?text='+encodeURIComponent(t)); document.getElementById('ttsInput').value=''; } }";
     
     html += "window.onload = initWS;";
     

@@ -6,7 +6,7 @@
 #include <WebSocketsServer.h>
 #include <WebSocketsClient.h>
 #include <WiFi.h>
-#include "Audio.h"
+#include "AudioSystem.h"
 #include "Config.h"
 #include "SurroundControl.h"
 #include "Network.h"
@@ -67,6 +67,7 @@ private:
     void handleTilt();
     void handleExpression();
     void handleVoice();
+    void handleSay();
     void handleScan();
     void handleTakeover();
     void handleStealth();

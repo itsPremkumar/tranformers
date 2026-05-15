@@ -1,4 +1,10 @@
-#include "Audio.h"
+#include "AudioSystem.h"
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+
+// Note: We use the ESP32-audioI2S library's Audio class
+#include "Audio.h" 
+static Audio *mp3 = nullptr;
 
 AudioSystem::AudioSystem(int bckPin, int wsPin, int dataInPin, int dataOutPin) {
     _bckPin = bckPin;
@@ -61,7 +67,33 @@ void AudioSystem::begin() {
 
     // 3. Start the background I2S Feeder Task
     xTaskCreate(this->i2sFeederTask, "i2s_feeder", 4096, this, 5, &_feederTaskHandle);
+    
+    // 4. Setup MP3 Streamer (Jarvis Voice)
+    mp3 = new Audio();
+    mp3->setPinout(_bckPin, _wsPin, _dataOutPin);
+    mp3->setVolume(21); // 0...21
+    
     Serial.println("[AUDIO] Non-blocking Audio System Initialized.");
+}
+
+void AudioSystem::update() {
+    if (mp3) mp3->loop();
+}
+
+void AudioSystem::speak(String text) {
+    if (!mp3) return;
+    
+    Serial.println("[JARVIS] Speaking: " + text);
+    
+    // Google Translate TTS URL (British English)
+    String url = "http://translate.google.com/translate_tts?ie=UTF-8&q=";
+    // Basic URL encoding for spaces
+    String encodedText = text;
+    encodedText.replace(" ", "%20");
+    url += encodedText;
+    url += "&tl=en-gb&client=tw-ob";
+    
+    mp3->connecttohost(url.c_str());
 }
 
 void AudioSystem::playTestTone() {

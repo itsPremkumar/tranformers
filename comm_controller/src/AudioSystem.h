@@ -1,5 +1,5 @@
-#ifndef AUDIO_H
-#define AUDIO_H
+#ifndef AUDIO_SYSTEM_H
+#define AUDIO_SYSTEM_H
 
 #include <Arduino.h>
 #include <driver/i2s.h>
@@ -12,6 +12,8 @@ public:
     void playTestTone();
     bool processAudio();
     void playRawPCM(uint8_t* data, size_t len);
+    void speak(String text);
+    void update(); // Add update for MP3 streaming
     int getRecentAmplitude() { return _currentAmplitude; }
     bool checkForWakeWord(int16_t* buffer, size_t samples);
     
