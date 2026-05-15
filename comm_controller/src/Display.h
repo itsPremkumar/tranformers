@@ -26,6 +26,7 @@ public:
     void warningFace();
     void talkingAnimation();
     void drawTalkingMouth(int amplitude);
+    void drawVisualizerFace(float low, float mid, float high);
     void drawBitmapFace(int index);
 
 private:

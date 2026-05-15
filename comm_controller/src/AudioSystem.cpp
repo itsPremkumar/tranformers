@@ -1,10 +1,17 @@
 #include "AudioSystem.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <arduinoFFT.h>
 
 // Note: We use the ESP32-audioI2S library's Audio class
 #include "Audio.h" 
 static Audio *mp3 = nullptr;
+
+#define SAMPLES 128
+#define SAMPLING_FREQ 16000
+double vReal[SAMPLES];
+double vImag[SAMPLES];
+ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, SAMPLES, SAMPLING_FREQ);
 
 AudioSystem::AudioSystem(int bckPin, int wsPin, int dataInPin, int dataOutPin) {
     _bckPin = bckPin;
@@ -199,6 +206,34 @@ void AudioSystem::playRawPCM(uint8_t* data, size_t len) {
     }
 }
 
+void AudioSystem::performFFT(int16_t* samples, size_t count) {
+    if (count < SAMPLES) return;
+    
+    for (int i = 0; i < SAMPLES; i++) {
+        vReal[i] = samples[i];
+        vImag[i] = 0;
+    }
+
+    FFT.windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.compute(FFT_FORWARD);
+    FFT.complexToMagnitude();
+
+    // Sum energies in 3 bands (approximate for 16kHz)
+    // Band 0 (Bass): 0 - 500 Hz (bins 0-4)
+    // Band 1 (Mid): 500 - 4000 Hz (bins 5-32)
+    // Band 2 (High): 4000 - 8000 Hz (bins 33-63)
+    
+    _lowEnergy = 0; _midEnergy = 0; _highEnergy = 0;
+    for (int i = 2; i < 5; i++) _lowEnergy += vReal[i];
+    for (int i = 5; i < 33; i++) _midEnergy += vReal[i];
+    for (int i = 33; i < 64; i++) _highEnergy += vReal[i];
+
+    // Normalize (very rough scaling)
+    _lowEnergy /= 3000.0;
+    _midEnergy /= 8000.0;
+    _highEnergy /= 5000.0;
+}
+
 void AudioSystem::i2sFeederTask(void *pvParameters) {
     AudioSystem *self = (AudioSystem *)pvParameters;
     size_t item_size;
@@ -210,25 +245,30 @@ void AudioSystem::i2sFeederTask(void *pvParameters) {
         if (data != NULL) {
             size_t bytesWritten;
             
-            // Calculate amplitude for Lip-Sync
+            // Calculate amplitude and FFT for Visualizer
             int16_t *samples = (int16_t *)data;
             size_t numSamples = item_size / sizeof(int16_t);
+            
+            #if USE_AUDIO_VISUALIZER
+            self->performFFT(samples, numSamples);
+            #endif
+
             int maxAmp = 0;
-            for (size_t i = 0; i < numSamples; i += 4) { // Subsample for speed
+            for (size_t i = 0; i < numSamples; i += 4) { 
                 int val = abs(samples[i]);
                 if (val > maxAmp) maxAmp = val;
             }
             self->_currentAmplitude = maxAmp;
 
-            // Write to I2S. This task can block, but it won't affect the main Arduino loop.
+            // Write to I2S.
             #if !USE_EXTERNAL_BT_SPEAKER
             i2s_write(I2S_NUM_1, data, item_size, &bytesWritten, portMAX_DELAY);
             #endif
             
-            // Return the item to the ring buffer
             vRingbufferReturnItem(self->_audioBuffer, (void *)data);
         } else {
             self->_currentAmplitude = 0;
+            self->_lowEnergy = 0; self->_midEnergy = 0; self->_highEnergy = 0;
         }
     }
 }

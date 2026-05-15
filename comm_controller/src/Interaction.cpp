@@ -37,7 +37,11 @@ void Interaction::update(int currentMood) {
     if (_display && _audio) {
         int amp = _audio->getRecentAmplitude();
         if (amp > 500) {
+            #if USE_AUDIO_VISUALIZER
+            _display->drawVisualizerFace(_audio->getLowEnergy(), _audio->getMidEnergy(), _audio->getHighEnergy());
+            #else
             _display->drawTalkingMouth(amp);
+            #endif
             _lastDisplayUpdate = millis();
         } else if (millis() - _lastDisplayUpdate > 3000) {
             _display->updateRandom();

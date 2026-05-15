@@ -147,13 +147,22 @@ void DisplayController::talkingAnimation() {
     }
 }
 
-void DisplayController::drawTalkingMouth(int amplitude) {
+void DisplayController::drawVisualizerFace(float low, float mid, float high) {
     clearFace();
-    drawNormalEyes(40, 88);
-    // Map amplitude (roughly 0-16000) to height (0-20)
-    int h = map(constrain(amplitude, 0, 16000), 0, 16000, 2, 24);
-    int w = 20 + (h / 2);
-    _display.fillRect(64 - (w / 2), 52 - (h / 2), w, h, WHITE);
+    
+    // 1. Eyes react to High Frequencies (Pitch/Tone)
+    // Map high energy to eye radius (10-18)
+    int eyeR = 14 + (high * 4);
+    _display.drawCircle(40, 24, eyeR, WHITE);
+    _display.drawCircle(88, 24, eyeR, WHITE);
+    _display.fillCircle(40, 24, 5, WHITE);
+    _display.fillCircle(88, 24, 5, WHITE);
+
+    // 2. Mouth reacts to Low/Mid Frequencies (Beat/Volume)
+    int mouthH = 4 + (low * 15) + (mid * 10);
+    int mouthW = 20 + (mid * 20);
+    _display.fillRect(64 - (mouthW / 2), 52 - (mouthH / 2), mouthW, mouthH, WHITE);
+    
     showFace();
 }
 

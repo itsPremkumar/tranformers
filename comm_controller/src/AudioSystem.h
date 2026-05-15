@@ -19,12 +19,22 @@ public:
     RingbufHandle_t getBuffer() { return _audioBuffer; }
     
     // Background Feeder (static for FreeRTOS task)
+    // Background Feeder (static for FreeRTOS task)
     static void i2sFeederTask(void *pvParameters);
+
+    // 🚀 VISUALIZER DATA
+    float getLowEnergy() { return _lowEnergy; }
+    float getMidEnergy() { return _midEnergy; }
+    float getHighEnergy() { return _highEnergy; }
 
 private:
     int _bckPin, _wsPin, _dataInPin, _dataOutPin;
     RingbufHandle_t _audioBuffer;
     TaskHandle_t _feederTaskHandle;
+    
+    // FFT State
+    float _lowEnergy = 0, _midEnergy = 0, _highEnergy = 0;
+    void performFFT(int16_t* samples, size_t count);
     
     float _vadThreshold = 500.0f;
     bool isVoiceActive(int16_t* buffer, size_t samples);
