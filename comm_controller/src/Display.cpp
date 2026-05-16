@@ -131,6 +131,23 @@ void DisplayController::warningFace() {
     showFace();
 }
 
+void DisplayController::showProgress(String label, int percent) {
+    clearFace();
+    _display.setTextSize(1);
+    _display.setTextColor(WHITE);
+    _display.setCursor(20, 10);
+    _display.print(label);
+    
+    // Draw Progress Bar Frame
+    _display.drawRect(14, 30, 100, 10, WHITE);
+    // Draw Progress Fill
+    _display.fillRect(14, 30, percent, 10, WHITE);
+    
+    _display.setCursor(55, 45);
+    _display.print(String(percent) + "%");
+    showFace();
+}
+
 void DisplayController::talkingAnimation() {
     for (int i = 0; i < 3; i++) {
         clearFace();

@@ -24,6 +24,7 @@ public:
     void heroFace();
     void sleepMode();
     void warningFace();
+    void showProgress(String label, int percent);
     void talkingAnimation();
     void drawTalkingMouth(int amplitude);
     void drawVisualizerFace(float low, float mid, float high);

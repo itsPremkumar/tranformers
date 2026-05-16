@@ -72,7 +72,41 @@ void setup() {
     displayCtrl.drawBitmapFace(currentMood);
     #endif
 
-    ArduinoOTA.setHostname(BT_DEVICE_NAME); 
+    ArduinoOTA.setHostname(BT_DEVICE_NAME);
+    ArduinoOTA.setPassword("omni123");
+
+    ArduinoOTA.onStart([]() {
+        String type = (ArduinoOTA.getCommand() == U_FLASH) ? "sketch" : "filesystem";
+        Serial.println("[OTA] Updating " + type);
+        #if USE_OLED_DISPLAY
+        displayCtrl.showProgress("UPDATING BRAIN...", 0);
+        #endif
+        web.broadcast("STATUS: Wireless Update Started...");
+    });
+
+    ArduinoOTA.onEnd([]() {
+        Serial.println("\n[OTA] Success!");
+        #if USE_OLED_DISPLAY
+        displayCtrl.showProgress("REBOOTING...", 100);
+        #endif
+        web.broadcast("STATUS: Update Successful. Rebooting...");
+    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        int p = (progress / (total / 100));
+        #if USE_OLED_DISPLAY
+        displayCtrl.showProgress("UPDATING...", p);
+        #endif
+        if (p % 10 == 0) web.broadcast("OTA_PROGRESS:" + String(p));
+    });
+
+    ArduinoOTA.onError([](ota_error_t error) {
+        #if USE_OLED_DISPLAY
+        displayCtrl.warningFace();
+        #endif
+        web.broadcast("STATUS: OTA Error!");
+    });
+
     ArduinoOTA.begin();
 
     Serial.println("Comm Controller Modular Ready.");

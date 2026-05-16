@@ -4,6 +4,8 @@
 #include <Preferences.h>
 #include <esp_now.h>
 #include <esp_task_wdt.h>
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>
 
 #define WDT_TIMEOUT 8 // 8 seconds watchdog
 
@@ -197,11 +199,33 @@ void setup() {
         server.begin();
         Serial.println("Vision Stream Server Started.");
 
-        // --- AUTO-DISCOVERY ADVERTISEMENT ---
+        // --- ADVANCED AUTO-DISCOVERY & OTA ---
         if (MDNS.begin("omni-vision")) {
             MDNS.addService("robot-vision", "tcp", 80);
             Serial.println("[MDNS] Started: http://omni-vision.local");
         }
+
+        ArduinoOTA.setHostname("omni-vision");
+        ArduinoOTA.setPassword("omni123");
+
+        ArduinoOTA.onStart([]() {
+            String type = (ArduinoOTA.getCommand() == U_FLASH) ? "sketch" : "filesystem";
+            Serial.println("[OTA] Start updating " + type);
+        });
+        ArduinoOTA.onEnd([]() { Serial.println("\n[OTA] Update Complete. Rebooting..."); });
+        ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+            Serial.printf("[OTA] Progress: %u%%\r", (progress / (total / 100)));
+        });
+        ArduinoOTA.onError([](ota_error_t error) {
+            Serial.printf("[OTA] Error[%u]: ", error);
+            if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+            else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+            else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+            else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+            else if (error == OTA_END_ERROR) Serial.println("End Failed");
+        });
+        ArduinoOTA.begin();
+        Serial.println("[OTA] Wireless Update System Ready.");
     } else {
         Serial.println("\n[WIFI] Connection Failed. Staying in Wireless Sync Mode...");
     }
@@ -228,6 +252,8 @@ void loop() {
             Serial.println("[VISION] WiFi Mode Active: Restoring SVGA resolution.");
         }
         
+        
+        ArduinoOTA.handle();
         server.handleClient();
     }
 }

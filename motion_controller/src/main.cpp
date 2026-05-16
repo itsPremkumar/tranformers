@@ -67,7 +67,17 @@ void setup() {
 
     #if USE_OTA
     WiFi.begin(ssid.c_str(), pass.c_str());
-    ArduinoOTA.setHostname("Omni-Motion");
+    ArduinoOTA.setHostname("omni-motion");
+    ArduinoOTA.setPassword("omni123");
+    
+    ArduinoOTA.onStart([]() {
+        Serial.println("[OTA] Critical Motion Update Started...");
+    });
+    
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("[OTA] Progress: %u%%\r", (progress / (total / 100)));
+    });
+    
     ArduinoOTA.begin();
     #endif
 
@@ -102,7 +112,10 @@ void loop() {
     #endif
 
     #if USE_OTA
-    ArduinoOTA.handle();
+    // SAFETY INTERLOCK: Only handle OTA if robot is in a stable/stopped state
+    if (cmdHandler.getState() == STATE_STAND || cmdHandler.getState() == STATE_CAR) {
+        ArduinoOTA.handle();
+    }
     #endif
     
     // 1. Update Sensors & Core Systems
