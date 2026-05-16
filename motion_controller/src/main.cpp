@@ -238,5 +238,11 @@ void loop() {
         case STATE_CRAWLER: break;
     }
 
+    // 5. Update Hardware Subsystems
+    nav.updateSmoothMotors();
+    servos.update();
+    system.updateTelemetry();
+    system.checkBatterySafety();
+
     delay(5); 
 }

@@ -3,6 +3,8 @@
 ServoControl::ServoControl(uint8_t addr) : _pwm(addr) {
     for (int i = 0; i < NUM_SERVOS; i++) {
         _servoPos[i] = 90;
+        _targetPos[i] = 90;
+        _moveSpeed[i] = 5;
         _lastMoveTime[i] = millis();
     }
 }
@@ -59,24 +61,26 @@ void ServoControl::moveServoSmooth(int channel, int targetAngle, int speedDelay)
     if (channel < 0 || channel >= NUM_SERVOS) return;
     
     if (_isAsleep) wakeServos();
-    _lastMoveTime[channel] = millis();
+    _targetPos[channel] = targetAngle;
+    _moveSpeed[channel] = speedDelay;
+}
+
+void ServoControl::update() {
+    unsigned long now = millis();
     
-    int current = _servoPos[channel];
-    
-    if (current < targetAngle) {
-        for (int pos = current; pos <= targetAngle; pos++) {
-            _pwm.setPWM(channel, 0, angleToPulse(pos));
-            delay(speedDelay);
-        }
-    } else {
-        for (int pos = current; pos >= targetAngle; pos--) {
-            _pwm.setPWM(channel, 0, angleToPulse(pos));
-            delay(speedDelay);
+    for (int i = 0; i < NUM_SERVOS; i++) {
+        if (_servoPos[i] != _targetPos[i]) {
+            if (now - _lastMoveTime[i] >= (unsigned long)_moveSpeed[i]) {
+                if (_servoPos[i] < _targetPos[i]) _servoPos[i]++;
+                else _servoPos[i]--;
+                
+                _pwm.setPWM(i, 0, angleToPulse(_servoPos[i]));
+                _lastMoveTime[i] = now;
+            }
         }
     }
     
-    _servoPos[channel] = targetAngle;
-    _lastMoveTime[channel] = millis();
+    updateSleep();
 }
 
 void ServoControl::moveGroup(int channels[], int targets[], int count) {

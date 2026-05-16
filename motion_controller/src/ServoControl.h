@@ -23,6 +23,7 @@ public:
     
     // 🚀 NEW: Anti-Zitter / Power Save
     void updateSleep();
+    void update(); // Non-blocking movement loop
     void wakeServos();
 
 private:
@@ -33,6 +34,8 @@ private:
     static const int SERVOMAX = 500;
     
     int _servoPos[NUM_SERVOS];
+    int _targetPos[NUM_SERVOS];
+    int _moveSpeed[NUM_SERVOS]; 
     unsigned long _lastMoveTime[NUM_SERVOS];
     bool _isAsleep = false;
     
