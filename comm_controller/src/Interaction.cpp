@@ -28,6 +28,11 @@ void Interaction::update(int currentMood) {
         triggerAiListening();
     }
 
+    if (_audio && _audio->hasNoiseEvent()) {
+        _web.broadcast("EVENT:LOUD_NOISE");
+        Serial.println("[AUDIO] Loud noise detected! Alerting Brain...");
+    }
+
     if (_isAiListening && (millis() - _aiListenStartTime > 10000)) {
         stopAiListening(currentMood);
     }

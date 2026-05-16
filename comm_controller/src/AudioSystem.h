@@ -18,6 +18,10 @@ public:
     bool checkForWakeWord(int16_t* buffer, size_t samples);
     RingbufHandle_t getBuffer() { return _audioBuffer; }
     size_t getMicData(int16_t* buffer, size_t maxSamples);
+    bool hasNoiseEvent() { bool e = _hasNoiseEvent; _hasNoiseEvent = false; return e; }
+
+private:
+    bool _hasNoiseEvent = false;
     
     // Background Feeder (static for FreeRTOS task)
     // Background Feeder (static for FreeRTOS task)

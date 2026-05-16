@@ -192,7 +192,19 @@ bool AudioSystem::processAudio() {
             return true; 
         }
 
-        // 2. VAD for AI Streaming
+        // 2. VAD & Noise Detection
+        int maxAmp = 0;
+        for (int i = 0; i < samples; i++) {
+            if (abs(readBuffer[i]) > maxAmp) maxAmp = abs(readBuffer[i]);
+        }
+        _currentAmplitude = maxAmp;
+
+        static unsigned long lastNoise = 0;
+        if (maxAmp > 12000 && millis() - lastNoise > 3000) { // Loud threshold
+            _hasNoiseEvent = true;
+            lastNoise = millis();
+        }
+
         if (isVoiceActive(readBuffer, samples)) {
             // Here you would normally send the buffer to your AI backend
         }

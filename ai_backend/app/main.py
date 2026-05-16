@@ -166,6 +166,19 @@ async def ask_robot(user_input: UserPrompt):
                     manager.update_profile(ws, {"current_task": "Idle"})
                     reactive_vision.is_tracking = False
                 
+                # --- EVENT HANDLERS ---
+                if "EVENT:LOUD_NOISE" in cmd:
+                    print("[EVENT] Brain heard a loud noise!")
+                    async def curiosity_sequence():
+                        await manager.send_command("CMD:STOP", target_ws=ws)
+                        await manager.send_command("PAN:45", target_ws=ws)
+                        await asyncio.sleep(0.5)
+                        await manager.send_command("PAN:135", target_ws=ws)
+                        await asyncio.sleep(0.5)
+                        await manager.send_command("PAN:90", target_ws=ws)
+                        await manager.send_command("SAY:I heard something. Is someone there?", target_ws=ws)
+                    asyncio.create_task(curiosity_sequence())
+
                 if "CMD:RESET_ODO" in cmd:
                     visual_odometry.reset()
 
