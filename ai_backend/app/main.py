@@ -18,6 +18,7 @@ from app.tools.vision import capture_frame
 from app.tools.audio import generate_tts_pcm
 from app.tools.reactive_vision import reactive_vision
 from app.tools.odometry import visual_odometry
+from app.tools.solar import analyze_brightness
 import subprocess
 from pydantic import BaseModel
 
@@ -167,6 +168,24 @@ async def ask_robot(user_input: UserPrompt):
                 
                 if "CMD:RESET_ODO" in cmd:
                     visual_odometry.reset()
+
+                if "CMD:SUN_SEEK" in cmd:
+                    print("[SOLAR] Sun-seeking initiated...")
+                    manager.update_profile(ws, {"current_task": "Sun-Seeking"})
+                    # Start a loop to steer toward light
+                    async def solar_loop():
+                        while manager.get_profile(ws).get("current_task") == "Sun-Seeking":
+                            img = capture_frame()
+                            if img:
+                                data = analyze_brightness(img)
+                                if data and data["intensity"] > 0.4:
+                                    if data["x"] > 0.2: await manager.send_command("CMD:RIGHT", target_ws=ws)
+                                    elif data["x"] < -0.2: await manager.send_command("CMD:LEFT", target_ws=ws)
+                                    else: await manager.send_command("CMD:FORWARD", target_ws=ws)
+                                else:
+                                    await manager.send_command("CMD:LEFT", target_ws=ws) # Scan for light
+                            await asyncio.sleep(1)
+                    asyncio.create_task(solar_loop())
 
                 # Check for speech command to send physical audio
                 if cmd.startswith("SAY:"):

@@ -95,6 +95,7 @@ The AI Backend can run on your laptop for testing with a local USB camera and lo
 
 ### 🧠 Advanced AI & Interaction
 *   🧠 [**AI Super-Brain**](./docs/ai_super_brain.md): LLM logic, memory, and internet tools.
+*   ⚡ [**Autonomous Charging**](./docs/autonomous_charging_blueprint.md): Self-docking and power management.
 *   🛡️ [**Diagnostics & Safety**](./docs/diagnostics_and_safety.md): Test suites and emergency protocols.
 *   👋 [**Multimodal Interaction**](./docs/multimodal_interaction.md): Vision, voice, and gesture control.
 

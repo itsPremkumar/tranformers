@@ -236,6 +236,22 @@ void loop() {
             break;
         }
         case STATE_CRAWLER: break;
+        case STATE_SUN_SEEK: {
+            // Sun seeking is mostly handled by the AI brain sending direction commands.
+            // But we add a safety layer here.
+            #if USE_ULTRASONIC
+            if (obstacle.readFrontDistance() < 25) {
+                car.stop();
+                delay(200);
+                car.turnRight(); delay(500);
+                car.stop();
+            } else {
+                car.setSpeed(SPEED_SLOW);
+                car.moveForward();
+            }
+            #endif
+            break;
+        }
     }
 
     // 5. Update Hardware Subsystems

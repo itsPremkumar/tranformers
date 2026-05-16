@@ -139,6 +139,9 @@ void CommandHandler::processCommand(String cmd) {
         _obstacle.setPan(cmd.substring(4).toInt());
     } else if (cmd.startsWith("TILT:")) {
         _obstacle.setTilt(cmd.substring(5).toInt());
+    } else if (cmd == "CMD:SUN_SEEK") {
+        _currentState = STATE_SUN_SEEK;
+        _isMovingForward = true;
     }
 }
 

@@ -17,7 +17,8 @@ enum RobotState {
     STATE_AVOID,
     STATE_AVOID_ADVANCED,
     STATE_FALLEN,
-    STATE_CRAWLER
+    STATE_CRAWLER,
+    STATE_SUN_SEEK
 };
 
 class CommandHandler {
