@@ -8,6 +8,11 @@ Welcome, AI Agent. This guide helps you understand how to navigate, modify, and 
 - `comm_controller/`: Networking and UI firmware.
 - `docs/`: Comprehensive markdown documentation. Start with `docs/docs.md`.
 
+## Proactive Agent Responsibilities
+- **Log Monitoring**: Actively use `run_command` or read log files to identify hardware/firmware errors.
+- **Autonomous Fixing**: When a bug is identified, refactor the code and propose an implementation plan for the fix.
+- **Deployment**: Use the PlatformIO CLI (`pio run -t upload`) or the OTA system to deploy verified fixes.
+
 ## Coding Standards
 - **Firmware**: Use non-blocking code. Prefer `FreeRTOS` tasks for long-running operations.
 - **Backend**: Use asynchronous Python (`asyncio`/`FastAPI`).

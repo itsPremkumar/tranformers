@@ -7,9 +7,9 @@ This document explains the "Autonomous Evolution" system of the Omni-Morph robot
 The system follows a 4-step cycle that never stops:
 
 1.  **DATA COLLECTION**: The robot sends high-speed telemetry (Gyro, Battery, Stall Current, Vision frames) to the AI Backend.
-2.  **BEHAVIOR ANALYSIS**: The AI (Claude/GPT-4o) reviews the logs. It looks for patterns like: *"The robot keeps falling when turning left at 40% speed."*a
-3.  **CODE OPTIMIZATION**: I (the AI assistant) generate a fix (e.g., adjusting the servo center of gravity or slowing down the pivot).
-4.  **WIRELESS DEPLOYMENT**: I use the **OTA (Over-The-Air)** system to flash the new, improved code while the robot is still standing.
+2.  **BEHAVIOR ANALYSIS**: The AI reviews the logs. It looks for patterns like: *"The robot keeps falling when turning left at 40% speed."*
+3.  **CODE OPTIMIZATION**: An **Autonomous Coding Agent (Antigravity/Claude Code)** analyzes the diagnosis and generates a physical code fix (e.g., adjusting the servo center of gravity or slowing down the pivot).
+4.  **WIRELESS DEPLOYMENT**: The Agent uses the **OTA (Over-The-Air)** system or PlatformIO CLI to flash the new, improved code while the robot is still standing.
 
 ---
 
@@ -39,11 +39,12 @@ When a bug is found, the system performs an **Automated Surgery**:
 
 ---
 
-## 4. AI IDE Integration (The "Engineer in the Machine")
-As an AI coding assistant, I am integrated into this architecture as the **Firmware Engineer**:
-*   I can read the entire repository at once to ensure a change in the "Brain" doesn't break the "Legs."
-*   I use **PlatformIO** to manage dependencies automatically so you never have to worry about missing libraries.
-*   I maintain the **Master System Guide** so the documentation is always as "smart" as the code.
+## 4. Autonomous Agent Integration (The "Engineer in the Machine")
+An **Autonomous Coding Agent (Antigravity/Claude Code)** is integrated into this architecture as the **Firmware Engineer**:
+*   **Real-time Debugging**: The Agent monitors the wireless serial output to catch bugs the moment they happen.
+*   **Repo-Wide Intelligence**: The Agent can read the entire repository at once to ensure a change in the "Brain" doesn't break the "Legs."
+*   **Tool-Chain Mastery**: It uses **PlatformIO** to manage dependencies and flash hardware automatically.
+*   **Documentation Sync**: It maintains the **Master System Guide** so the documentation is always as "smart" as the code.
 
 ---
 

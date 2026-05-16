@@ -32,6 +32,7 @@
     *   **360° Safety Bubble**: Active head-scanning for collision avoidance while moving.
 *   **Persistent Robot Soul**: Flash-memory **Memory Vault** for persistent personality and learned facts.
 *   **AI Super-Brain (Cognitive Layer)**: High-level reasoning powered by Gemini 1.5 Pro/Flash and local Ollama (Llama 3).
+*   **Agentic Maintenance**: Fully compatible with **Autonomous Coding Agents (Antigravity/Claude Code)** for real-time debugging, automated bug-fixing, and wireless OTA code deployment.
 
 ## 📁 Project Structure
 
