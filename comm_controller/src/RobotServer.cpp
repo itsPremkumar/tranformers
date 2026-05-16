@@ -135,6 +135,11 @@ void WebInterface::broadcast(String msg) {
     _webSocket.broadcastTXT(msg);
 }
 
+void WebInterface::log(String msg) {
+    Serial.println("[ROBOT] " + msg);
+    broadcast("LOG:" + msg);
+}
+
 
 String WebInterface::getLastCommand() {
     return _lastCommand;

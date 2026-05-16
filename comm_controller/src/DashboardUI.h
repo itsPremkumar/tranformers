@@ -24,6 +24,8 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += ".icon{font-size:1.8em;margin-bottom:5px}.label{font-size:0.7em;text-transform:uppercase}";
     html += ".slider-container{margin-top:10px}.slider{width:100%;height:10px;border-radius:5px;background:#2c3e50;outline:none;appearance:none;margin:10px 0}.slider::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:#00f2fe;cursor:pointer;box-shadow:0 0 10px #00f2fe}";
     html += ".section-title{font-size:0.8em;color:rgba(255,255,255,0.5);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}";
+    html += ".terminal{background:#000;color:#0f0;font-family:'Courier New',monospace;padding:10px;border-radius:10px;font-size:0.7em;height:150px;overflow-y:auto;border:1px solid #333;margin-top:10px;box-shadow:inset 0 0 10px #000}";
+    html += ".log-entry{margin-bottom:2px;border-bottom:1px solid #111;padding-bottom:2px}";
     html += "</style></head><body>";
     html += "<div class='container'><div class='header'><h1>Transformer 🤖</h1></div>";
     
@@ -105,6 +107,8 @@ inline String getDashboardHTML(SurroundControl* surround) {
     }
     html += "</div></div>";
 
+    html += "<div class='card'><div class='section-title'>Wireless Serial Monitor</div>";
+    html += "<div id='terminal' class='terminal'>[SYSTEM] Waiting for logs...</div></div>";
     html += "</div>"; // end container
     html += "<script>";
     html += "let socket; let useWS = false;";
@@ -120,7 +124,15 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "      let utterance = new SpeechSynthesisUtterance(text);";
     html += "      utterance.lang = ROBOT_LANG;";
     html += "      utterance.pitch = 0.8; utterance.rate = 1.0; ";
-    html += "      window.speechSynthesis.speak(utterance);";
+    html += "      window.speechSynthesis.speak(utterance);
+    } else if(e.data.startsWith('LOG:')){
+      let terminal = document.getElementById('terminal');
+      let msg = e.data.substring(4);
+      let entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      terminal.appendChild(entry);
+      terminal.scrollTop = terminal.scrollHeight;";
     html += "    }";
     html += "  };";
     html += "}";

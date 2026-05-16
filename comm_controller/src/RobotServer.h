@@ -19,6 +19,7 @@ public:
     void handleClient();
     void broadcast(String msg);
     void sendToAi(String msg);
+    void log(String msg);
 
     
     // Commands received from Web UI that need to be forwarded to Motion Controller
