@@ -313,6 +313,21 @@ async def websocket_endpoint(websocket: WebSocket):
                         await manager.send_command("CMD:STOP")
                         print("[SAFETY] Emergency Stop: High Current Detected!")
                 except: pass
+            elif data == "CMD:IDLE_OBSERVE":
+                profile = manager.get_profile(websocket)
+                robot_name = profile.get("name", "Unknown")
+                print(f"[CURIOSITY] {robot_name} is bored. Triggering investigation...")
+                image = capture_frame()
+                json_response = await llm.get_response(
+                    "You have been idle. Look at the camera feed, find something interesting (an object, person, or color), and announce that you are going to investigate it. Be curious and scientific.",
+                    robot_name,
+                    image
+                )
+                try:
+                    commands = json.loads(json_response)
+                    for cmd in commands:
+                        await manager.send_command(cmd, target_ws=websocket)
+                except: pass
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -326,13 +341,22 @@ async def proactive_loop():
                 profile = manager.get_profile(ws)
                 robot_name = profile.get("name", "Unknown")
                 
+                # Only engage if the robot is idle
+                if profile.get("current_task", "Idle") != "Idle":
+                    continue
+
                 print(f"[PROACTIVE] Engaging {robot_name}...")
-                json_response = await llm.get_response("Look around and make a curious observation.", robot_name)
+                image = capture_frame()
+                json_response = await llm.get_response(
+                    "Make a short, curious observation about what you see in the camera or how you feel. Keep it under 20 words.", 
+                    robot_name,
+                    image
+                )
                 commands = json.loads(json_response)
                 for cmd in commands:
                     await manager.send_command(cmd, target_ws=ws)
             except Exception as e:
-                print(f"Proactive Loop Error for {robot_name if 'robot_name' in locals() else 'Unknown'}: {e}")
+                print(f"Proactive Loop Error: {e}")
 
 def check_ollama():
     """Ensures Ollama is running before the backend starts."""

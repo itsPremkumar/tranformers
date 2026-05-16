@@ -4,9 +4,33 @@ Navigation::Navigation(MotorControl& car, Balance& balance, ObstacleAvoidance& o
     : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos) {}
 
 void Navigation::updateSmoothMotors() {
-    _currentLeftSpeed += (_targetLeftSpeed - _currentLeftSpeed) * SMOOTHING_FACTOR;
-    _currentRightSpeed += (_targetRightSpeed - _currentRightSpeed) * SMOOTHING_FACTOR;
-    _car.applySmoothSpeeds((int)_currentLeftSpeed, (int)_currentRightSpeed);
+    unsigned long now = millis();
+    if (now - _lastSmoothUpdate < 10) return; // Update at ~100Hz
+    _lastSmoothUpdate = now;
+
+    // 1. Acceleration Ramping (The "Feel")
+    float leftDiff = _targetLeftSpeed - _currentLeftSpeed;
+    float rightDiff = _targetRightSpeed - _currentRightSpeed;
+
+    if (abs(leftDiff) > 1.0) {
+        _currentLeftSpeed += constrain(leftDiff, (float)-ACCEL_LIMIT, (float)ACCEL_LIMIT);
+    } else {
+        _currentLeftSpeed = _targetLeftSpeed;
+    }
+
+    if (abs(rightDiff) > 1.0) {
+        _currentRightSpeed += constrain(rightDiff, (float)-ACCEL_LIMIT, (float)ACCEL_LIMIT);
+    } else {
+        _currentRightSpeed = _targetRightSpeed;
+    }
+
+    // 2. Low-Pass Filter (The "Smoothness")
+    static float filteredLeft = 0;
+    static float filteredRight = 0;
+    filteredLeft = (filteredLeft * (1.0 - SMOOTHING_ALPHA)) + (_currentLeftSpeed * SMOOTHING_ALPHA);
+    filteredRight = (filteredRight * (1.0 - SMOOTHING_ALPHA)) + (_currentRightSpeed * SMOOTHING_ALPHA);
+
+    _car.applySmoothSpeeds((int)filteredLeft, (int)filteredRight);
 }
 
 void Navigation::updateActiveScan(bool isMovingForward) {

@@ -135,7 +135,9 @@ void loop() {
     #endif
 
     // 1. Process Web Commands
+    static unsigned long lastInteraction = millis();
     if (web.hasNewCommand()) {
+        lastInteraction = millis(); // Reset idle timer
         String cmd = web.getLastCommand();
         if (DEBUG_LEVEL >= 2) Serial.println("Action Received: " + cmd);
         
@@ -176,7 +178,14 @@ void loop() {
         web.clearCommand();
     }
 
-    // 2. Process Telemetry from Motion Controller
+    // 2. Curiosity Engine: Trigger if idle for 2 minutes
+    if (millis() - lastInteraction > 120000) {
+        lastInteraction = millis(); // Reset to avoid spamming
+        Serial.println("[CURIOSITY] Idle detected. Requesting AI observation...");
+        web.sendToAi("CMD:IDLE_OBSERVE");
+    }
+
+    // 3. Process Telemetry from Motion Controller
     while (Serial2.available()) {
         String telemetry = Serial2.readStringUntil('\n');
         telemetry.trim();

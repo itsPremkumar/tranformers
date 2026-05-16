@@ -55,5 +55,9 @@
 #define TURN_BASE_MS_MAX    540
 #define SERVO_STEP_DELAY_MS 8
 
+// Organic Motion Dynamics
+#define ACCEL_LIMIT 10           // PWM units per update (Acceleration)
+#define SMOOTHING_ALPHA 0.12     // Low-pass filter for jitter reduction
+
 #endif
 

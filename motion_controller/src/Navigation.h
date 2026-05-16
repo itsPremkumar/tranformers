@@ -38,7 +38,7 @@ private:
     int _targetRightSpeed = 0;
     float _currentLeftSpeed = 0;
     float _currentRightSpeed = 0;
-    const float SMOOTHING_FACTOR = 0.15;
+    unsigned long _lastSmoothUpdate = 0;
     
     float _targetX = 0, _targetY = 0;
     float _currentX = 0, _currentY = 0;

@@ -201,13 +201,35 @@ void WebInterface::handleExpression() {
 }
 
 void WebInterface::handleVoice() {
-    if (_server.hasArg("plain")) {
-        // Here we would push the binary data to the AudioSystem
-        // For now, we'll mark it as a voice command
-        _lastCommand = "AUDIO:DATA";
-        _hasNewCommand = true;
+    #if USE_AUDIO_SYSTEM
+    if (_audio) {
+        WiFiClient client = _server.client();
+        int len = _server.contentLength();
+        
+        if (len > 0) {
+            uint8_t* buffer = (uint8_t*)malloc(len);
+            if (buffer) {
+                // Read binary data from the request body
+                int read = 0;
+                while (read < len) {
+                    int r = client.read(buffer + read, len - read);
+                    if (r <= 0) break;
+                    read += r;
+                }
+                
+                // Push to the non-blocking ring buffer
+                _audio->playRawPCM(buffer, read);
+                free(buffer);
+                
+                _lastCommand = "AUDIO:INTERCOM";
+                _hasNewCommand = true;
+                _server.send(200, "text/plain", "OK");
+                return;
+            }
+        }
     }
-    _server.send(200, "text/plain", "OK");
+    #endif
+    _server.send(400, "text/plain", "AUDIO_ERROR");
 }
 
 void WebInterface::handleSay() {
