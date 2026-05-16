@@ -51,6 +51,14 @@ int currentMood = 0;
 unsigned long lastDisplayUpdate = 0;
 float currentYaw = 0;
 
+void checkMemory() {
+    size_t freeHeap = ESP.getFreeHeap();
+    if (freeHeap < MIN_FREE_MEMORY) {
+        Serial.printf("[WARN] Low Memory: %u bytes. Cleaning up...\n", freeHeap);
+        // Clear caches or disconnect non-essential clients if needed
+    }
+}
+
 void setup() {
     Serial.begin(SERIAL_BAUD);
     Serial2.begin(SERIAL_BAUD, SERIAL_8N1, MOTION_LINK_RX, MOTION_LINK_TX);
@@ -109,11 +117,14 @@ void setup() {
 
     ArduinoOTA.begin();
 
-    Serial.println("Comm Controller Modular Ready.");
+    ArduinoOTA.begin();
+
+    if (DEBUG_LEVEL >= 1) Serial.println("Comm Controller Modular Ready.");
 }
 
 void loop() {
     esp_task_wdt_reset();
+    checkMemory();
     ArduinoOTA.handle();
 
     connect.update();
@@ -126,7 +137,7 @@ void loop() {
     // 1. Process Web Commands
     if (web.hasNewCommand()) {
         String cmd = web.getLastCommand();
-        Serial.println("Action Received: " + cmd);
+        if (DEBUG_LEVEL >= 2) Serial.println("Action Received: " + cmd);
         
         if (cmd == "CMD:SCAN") {
             surroundCtrl.scanNetwork();

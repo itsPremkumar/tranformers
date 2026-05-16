@@ -237,23 +237,26 @@ async def gen_frames():
                     break
             
             # --- Visual Odometry Update ---
-            visual_odometry.process_frame(frame)
+            # Run in a separate thread to avoid blocking the stream
+            await asyncio.to_thread(visual_odometry.process_frame, frame)
             
-            # Sync position back to robot for Swarm Mapping
+            # Sync position back to robot
             pos = visual_odometry.get_position()
             for ws in list(manager.active_connections):
-                await manager.send_command(f"POS:{pos['x']},{pos['y']}", target_ws=ws)
+                try:
+                    await manager.send_command(f"POS:{pos['x']},{pos['y']}", target_ws=ws)
+                except: pass
             
-            ret, buffer = cv2.imencode('.jpg', frame)
+            ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
             if not ret:
                 continue
                 
             frame_bytes = buffer.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            await asyncio.sleep(0.03) # ~30 FPS
+            await asyncio.sleep(0.01) # Faster 60+ FPS potential
     except Exception as e:
-        print(f"[VIDEO] Exception in gen_frames: {e}")
+        print(f"[VIDEO] Exception: {e}")
     # Note: We don't release global_cap here so other clients can use it
 
 @app.get("/video_feed")

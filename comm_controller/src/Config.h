@@ -61,6 +61,13 @@
 #define WS_PORT 81               // WebSocket Server Port
 
 // ==========================================
+// 🛡️ STABILITY & DEBUGGING
+// ==========================================
+#define DEBUG_LEVEL 2            // 0: Silent, 1: Errors, 2: Full Info
+#define MIN_FREE_MEMORY 20000    // Minimum bytes of RAM before auto-cleanup
+#define I2C_TIMEOUT_MS  100      // Timeout for I2C recovery logic
+
+// ==========================================
 // 🤖 ROBOT IDENTITY (The 'Soul' of the Robot)
 // ==========================================
 #define ROBOT_NAME "Omni-Core"
