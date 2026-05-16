@@ -24,7 +24,9 @@ public:
     // 🚀 NEW: Anti-Zitter / Power Save
     void updateSleep();
     void update(); // Non-blocking movement loop
+    void updateBreathing(); // 🚀 NEW: Organic idle movement
     void wakeServos();
+    void setBreathing(bool enabled) { _breathingEnabled = enabled; }
 
 private:
     Adafruit_PWMServoDriver _pwm;
@@ -37,7 +39,9 @@ private:
     int _targetPos[NUM_SERVOS];
     int _moveSpeed[NUM_SERVOS]; 
     unsigned long _lastMoveTime[NUM_SERVOS];
+    unsigned long _lastActivityTime = 0;
     bool _isAsleep = false;
+    bool _breathingEnabled = true;
     
     int angleToPulse(int angle);
 };

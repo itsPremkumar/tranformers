@@ -67,9 +67,11 @@ void ServoControl::moveServoSmooth(int channel, int targetAngle, int speedDelay)
 
 void ServoControl::update() {
     unsigned long now = millis();
+    bool moving = false;
     
     for (int i = 0; i < NUM_SERVOS; i++) {
         if (_servoPos[i] != _targetPos[i]) {
+            moving = true;
             if (now - _lastMoveTime[i] >= (unsigned long)_moveSpeed[i]) {
                 if (_servoPos[i] < _targetPos[i]) _servoPos[i]++;
                 else _servoPos[i]--;
@@ -80,7 +82,31 @@ void ServoControl::update() {
         }
     }
     
+    if (moving) _lastActivityTime = now;
+    
+    updateBreathing();
     updateSleep();
+}
+
+void ServoControl::updateBreathing() {
+    if (!_breathingEnabled || _isAsleep) return;
+    
+    // Only breathe if we haven't moved manually for 2 seconds
+    if (millis() - _lastActivityTime < 2000) return;
+
+    static float angle = 0;
+    angle += 0.03; // Speed of breathing
+    if (angle > TWO_PI) angle = 0;
+
+    // Subtle sway for Head (Channel 14/15) and Hips (Channel 0/1)
+    float offset = sin(angle) * 2.5; // 2.5 degree sway
+    
+    // Apply offset to target to let update() handle the smooth transition
+    // Head Tilt (Subtle up/down)
+    _pwm.setPWM(15, 0, angleToPulse(90 + offset)); 
+    // Hips (Subtle side sway)
+    _pwm.setPWM(0, 0, angleToPulse(90 + offset * 0.5));
+    _pwm.setPWM(1, 0, angleToPulse(90 - offset * 0.5));
 }
 
 void ServoControl::moveGroup(int channels[], int targets[], int count) {
