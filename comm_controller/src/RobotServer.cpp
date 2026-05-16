@@ -114,6 +114,28 @@ void WebInterface::onAiEvent(WStype_t type, uint8_t * payload, size_t length) {
 }
 
 
+void WebInterface::broadcast(uint8_t* payload, size_t length) {
+    _webSocket.broadcastBIN(payload, length);
+}
+
+void WebInterface::update() {
+    #if USE_AUDIO_SYSTEM
+    if (_isLiveStreaming && _audio) {
+        static unsigned long lastStream = 0;
+        if (millis() - lastStream > 100) { // Stream every 100ms
+            int16_t buffer[512];
+            size_t samples = _audio->getMicData(buffer, 512);
+            if (samples > 0) {
+                // Prepend 'MIC:' to distinguish binary data if needed, 
+                // but usually, pure binary is better. Let's send raw PCM.
+                broadcast((uint8_t*)buffer, samples * sizeof(int16_t));
+            }
+            lastStream = millis();
+        }
+    }
+    #endif
+}
+
 void WebInterface::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
     if (type == WStype_CONNECTED) {
         // Send identity to the new client
@@ -124,8 +146,17 @@ void WebInterface::onWebSocketEvent(uint8_t num, WStype_t type, uint8_t * payloa
         Serial.println("[WS] Sent Identity to client " + String(num));
     }
     else if (type == WStype_TEXT) {
-        _lastCommand = String((char*)payload);
-        _hasNewCommand = true;
+        String msg = String((char*)payload);
+        if (msg == "CMD:LISTEN_ON") {
+            _isLiveStreaming = true;
+            broadcast("LOG: Live Audio Stream Started");
+        } else if (msg == "CMD:LISTEN_OFF") {
+            _isLiveStreaming = false;
+            broadcast("LOG: Live Audio Stream Stopped");
+        } else {
+            _lastCommand = msg;
+            _hasNewCommand = true;
+        }
         _webSocket.sendTXT(num, "ACK"); // Acknowledge command
     }
 }

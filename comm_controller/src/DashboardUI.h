@@ -77,7 +77,8 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "<span class='icon'>🎤</span><span class='label'>Hold to Talk</span></button>";
     html += "<div style='margin-top:10px;display:flex;gap:5px'>";
     html += "<input type='text' id='ttsInput' placeholder='Type for Jarvis...' style='flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px;border-radius:5px'>";
-    html += "<button onclick='say()' style='background:#00f2fe;color:#000;border:none;padding:10px;border-radius:5px;font-weight:bold'>SAY</button></div></div>";
+    html += "<button onclick='say()' style='background:#00f2fe;color:#000;border:none;padding:10px;border-radius:5px;font-weight:bold'>SAY</button></div>";
+    html += "<button id='listenBtn' onclick='toggleListen()' style='margin-top:10px;width:100%;background:#2c3e50;color:#fff;border:none;padding:10px;border-radius:5px;font-weight:bold'>🔊 LIVE LISTEN: OFF</button></div>";
 
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
     html += "<span>Surround Intelligence</span>";
@@ -118,23 +119,52 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "  socket.onopen = () => { console.log('WS Connected'); useWS = true; document.getElementById('status').textContent='⚡ REAL-TIME'; };";
     html += "  socket.onclose = () => { console.log('WS Disconnected'); useWS = false; document.getElementById('status').textContent='FALLBACK (HTTP)'; setTimeout(initWS, 2000); };";
     html += "  socket.onmessage = (e) => { ";
-    html += "    if(e.data.startsWith('SAY:')){";
+    html += "    if(e.data instanceof Blob){";
+    html += "       if(!isListening) return;";
+    html += "       e.data.arrayBuffer().then(buf => {";
+    html += "           let pcm16 = new Int16Array(buf);";
+    html += "           let f32 = new Float32Array(pcm16.length);";
+    html += "           for(let i=0; i<pcm16.length; i++) f32[i] = pcm16[i]/32768;";
+    html += "           playStream(f32);";
+    html += "       });";
+    html += "    } else if(e.data.startsWith('SAY:')){";
     html += "      let text = e.data.substring(4);";
     html += "      document.getElementById('status').textContent = 'ROBOT: ' + text;";
     html += "      let utterance = new SpeechSynthesisUtterance(text);";
     html += "      utterance.lang = ROBOT_LANG;";
     html += "      utterance.pitch = 0.8; utterance.rate = 1.0; ";
-    html += "      window.speechSynthesis.speak(utterance);
-    } else if(e.data.startsWith('LOG:')){
-      let terminal = document.getElementById('terminal');
-      let msg = e.data.substring(4);
-      let entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-      terminal.appendChild(entry);
-      terminal.scrollTop = terminal.scrollHeight;";
+    html += "      window.speechSynthesis.speak(utterance);";
+    html += "    } else if(e.data.startsWith('LOG:')){";
+    html += "      let terminal = document.getElementById('terminal');";
+    html += "      let msg = e.data.substring(4);";
+    html += "      let entry = document.createElement('div');";
+    html += "      entry.className = 'log-entry';";
+    html += "      entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;";
+    html += "      terminal.appendChild(entry);";
+    html += "      terminal.scrollTop = terminal.scrollHeight;";
     html += "    }";
     html += "  };";
+    html += "}";
+    
+    html += "let isListening = false; let audioCtx; let nextTime = 0;";
+    html += "function toggleListen(){";
+    html += "  isListening = !isListening;";
+    html += "  document.getElementById('listenBtn').textContent = isListening ? '🔇 LIVE LISTEN: ON' : '🔊 LIVE LISTEN: OFF';";
+    html += "  document.getElementById('listenBtn').style.background = isListening ? '#ed213a' : '#2c3e50';";
+    html += "  if(isListening){ if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 16000}); socket.send('CMD:LISTEN_ON'); }";
+    html += "  else { socket.send('CMD:LISTEN_OFF'); }";
+    html += "}";
+    
+    html += "function playStream(data){";
+    html += "  if(!audioCtx) return;";
+    html += "  let buffer = audioCtx.createBuffer(1, data.length, 16000);";
+    html += "  buffer.getChannelData(0).set(data);";
+    html += "  let source = audioCtx.createBufferSource();";
+    html += "  source.buffer = buffer;";
+    html += "  source.connect(audioCtx.destination);";
+    html += "  let startTime = Math.max(nextTime, audioCtx.currentTime);";
+    html += "  source.start(startTime);";
+    html += "  nextTime = startTime + buffer.duration;";
     html += "}";
 
     
@@ -151,25 +181,25 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "const micBtn = document.getElementById('micBtn');";
     html += "let mediaRecorder;";
 
-    html += "micBtn.onmousedown = async () => {";
-    html += "    try {";
-    html += "        micBtn.style.background = 'linear-gradient(45deg, #ff0000, #990000)';";
-    html += "        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });";
-    html += "        mediaRecorder = new MediaRecorder(stream);";
-    html += "        mediaRecorder.ondataavailable = (e) => {";
-    html += "            fetch('/voice', { method: 'POST', body: e.data });";
-    html += "        };";
-    html += "        mediaRecorder.start(100); ";
-    html += "    } catch(e) { console.error('Mic Error:', e); }";
-    html += "};";
+    html += "micBtn.onmousedown = async () => {\n";
+    html += "    try {\n";
+    html += "        micBtn.style.background = 'linear-gradient(45deg, #ff0000, #990000)';\n";
+    html += "        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });\n";
+    html += "        mediaRecorder = new MediaRecorder(stream);\n";
+    html += "        mediaRecorder.ondataavailable = (e) => {\n";
+    html += "            fetch('/voice', { method: 'POST', body: e.data });\n";
+    html += "        };\n";
+    html += "        mediaRecorder.start(100); \n";
+    html += "    } catch(e) { console.error('Mic Error:', e); }\n";
+    html += "};\n";
 
-    html += "micBtn.onmouseup = () => {";
-    html += "    micBtn.style.background = '';";
-    html += "    if(mediaRecorder && mediaRecorder.state !== 'inactive') {";
-    html += "        mediaRecorder.stop();";
-    html += "        mediaRecorder.stream.getTracks().forEach(t => t.stop());";
-    html += "    }";
-    html += "};";
+    html += "micBtn.onmouseup = () => {\n";
+    html += "    micBtn.style.background = '';\n";
+    html += "    if(mediaRecorder && mediaRecorder.state !== 'inactive') {\n";
+    html += "        mediaRecorder.stop();\n";
+    html += "        mediaRecorder.stream.getTracks().forEach(t => t.stop());\n";
+    html += "    }\n";
+    html += "};\n";
     html += "</script></body></html>";
     return html;
 }

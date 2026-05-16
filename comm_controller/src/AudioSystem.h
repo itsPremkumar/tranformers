@@ -17,6 +17,7 @@ public:
     int getRecentAmplitude() { return _currentAmplitude; }
     bool checkForWakeWord(int16_t* buffer, size_t samples);
     RingbufHandle_t getBuffer() { return _audioBuffer; }
+    size_t getMicData(int16_t* buffer, size_t maxSamples);
     
     // Background Feeder (static for FreeRTOS task)
     // Background Feeder (static for FreeRTOS task)

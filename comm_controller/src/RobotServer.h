@@ -17,7 +17,9 @@ public:
     WebInterface(AudioSystem* audio, SurroundControl* surround, Network* net, int port = 80);
     void begin();
     void handleClient();
+    void update(); // Main loop update for audio streaming
     void broadcast(String msg);
+    void broadcast(uint8_t* payload, size_t length); // Overload for binary data
     void sendToAi(String msg);
     void log(String msg);
 
@@ -40,6 +42,7 @@ private:
     AudioSystem* _audio;
     SurroundControl* _surround;
     Network* _net;
+    bool _isLiveStreaming = false;
     float _robotX = 0, _robotY = 0;
     
     // Dynamic AI Link State

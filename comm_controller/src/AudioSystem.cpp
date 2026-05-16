@@ -169,6 +169,13 @@ bool AudioSystem::checkForWakeWord(int16_t* buffer, size_t samples) {
     return false;
 }
 
+size_t AudioSystem::getMicData(int16_t* buffer, size_t maxSamples) {
+    size_t bytesRead;
+    esp_err_t res = i2s_read(I2S_NUM_0, buffer, maxSamples * sizeof(int16_t), &bytesRead, 0); // No wait
+    if (res == ESP_OK) return bytesRead / sizeof(int16_t);
+    return 0;
+}
+
 bool AudioSystem::processAudio() {
     #if USE_AUDIO_SYSTEM
     int16_t readBuffer[512];

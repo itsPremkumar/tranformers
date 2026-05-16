@@ -128,6 +128,7 @@ void loop() {
     ArduinoOTA.handle();
 
     connect.update();
+    web.update();
     interact.update(currentMood);
     swarmAI.update(currentMood);
     #if USE_AUDIO_SYSTEM
