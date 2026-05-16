@@ -29,7 +29,8 @@ inline String getDashboardHTML(SurroundControl* surround) {
     
     html += "<div class='video-container'>";
     html += "  <div class='video-overlay'>● LIVE FPV</div>";
-    html += "  <img src='" + String(VISION_CAM_URL) + "' onerror=\"this.src='https://via.placeholder.com/400x300?text=Camera+Offline'\" />";
+    String streamUrl = surround ? surround->getVisionURL() : String(VISION_CAM_URL);
+    html += "  <img src='" + streamUrl + "' onerror=\"this.src='https://via.placeholder.com/400x300?text=Camera+Offline'\" />";
     html += "</div>";
 
     html += "<div class='card'><div class='status-bar'><span>IP: " + WiFi.localIP().toString() + "</span><span id='status'>READY</span></div></div>";

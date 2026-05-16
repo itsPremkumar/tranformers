@@ -15,11 +15,30 @@ void SurroundControl::begin() {
 }
 
 void SurroundControl::update() {
-    if (millis() - _lastScanTime > 120000) { // Every 2 minutes
+    if (millis() - _lastScanTime > 30000) { // Every 30 seconds for discovery
+        discoverRobotParts();
         scanNetwork();
         startBleScan(2);
         _lastScanTime = millis();
     }
+}
+
+void SurroundControl::discoverRobotParts() {
+    Serial.println("[SURROUND] Searching for robot eyes (mDNS)...");
+    int n = MDNS.queryService("robot-vision", "tcp");
+    if (n > 0) {
+        _visionIP = MDNS.IP(0).toString();
+        Serial.println("[SURROUND] SUCCESS: Found Eyes at " + _visionIP);
+    } else {
+        Serial.println("[SURROUND] Eyes not found. Using fallback from Config.");
+    }
+}
+
+String SurroundControl::getVisionURL() {
+    if (_visionIP != "") {
+        return "http://" + _visionIP + "/stream";
+    }
+    return String(VISION_CAM_URL); // Original hardcoded fallback
 }
 
 void SurroundControl::scanNetwork() {

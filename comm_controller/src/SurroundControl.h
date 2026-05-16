@@ -55,6 +55,10 @@ public:
     // Takeover Actions
     void controlTasmota(String ip, bool power);
     
+    // Discovery & Auto-Config
+    void discoverRobotParts();
+    String getVisionURL();
+    
     int getDeviceCount() { return _deviceCount; }
     ScannedDevice getDevice(int index);
 
@@ -63,6 +67,8 @@ private:
     int _deviceCount = 0;
     BLEScan* _pBLEScan;
     unsigned long _lastScanTime = 0;
+    
+    String _visionIP = "";
     
     void addDevice(String name, String ip, String mac, int rssi, bool isBle);
 };

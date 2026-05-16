@@ -196,6 +196,12 @@ void setup() {
         server.on("/flash", HTTP_GET, handleFlash);
         server.begin();
         Serial.println("Vision Stream Server Started.");
+
+        // --- AUTO-DISCOVERY ADVERTISEMENT ---
+        if (MDNS.begin("omni-vision")) {
+            MDNS.addService("robot-vision", "tcp", 80);
+            Serial.println("[MDNS] Started: http://omni-vision.local");
+        }
     } else {
         Serial.println("\n[WIFI] Connection Failed. Staying in Wireless Sync Mode...");
     }
