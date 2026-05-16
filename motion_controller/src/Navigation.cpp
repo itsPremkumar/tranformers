@@ -47,7 +47,7 @@ void Navigation::updateActiveScan(bool isMovingForward) {
         
         if (dist > 0 && dist < SAFE_DISTANCE_CM) {
             Serial.println("[SAFETY] Side Obstacle Detected at " + String(sweepPos) + " deg! Distance: " + String(dist));
-            _car.stop();
+            setTargetSpeeds(0, 0); // Use smoothing for safety stop
             Serial2.println("STATUS: Safety stop! Obstacle at " + String(sweepPos) + " degrees.");
             _obstacle.setPan(90); 
         }
@@ -63,22 +63,46 @@ void Navigation::processNavigation(float currentYaw) {
     float distance = sqrt(dx*dx + dy*dy);
     float angleToTarget = atan2(dy, dx) * 180.0 / PI;
     
+    // 1. Safety Check: Stop if something is in front while navigating
+    #if USE_ULTRASONIC
+    int frontDist = _obstacle.readFrontDistance();
+    if (frontDist > 0 && frontDist < BLOCK_DISTANCE_CM) {
+        setTargetSpeeds(0, 0); 
+        return;
+    }
+    #else
+    int frontDist = 100; // Assume clear if no sensor
+    #endif
+
+    // 2. Target Reached logic
     if (distance < 5.0) { 
         Serial.println("[NAV] Target Reached!");
-        _targetLeftSpeed = 0; _targetRightSpeed = 0;
+        setTargetSpeeds(0, 0);
         _isNavigating = false;
         return;
     }
     
+    // 3. Smooth Steering Calculation
     float yawError = angleToTarget - currentYaw;
-    if (yawError > 180) yawError -= 360;
-    if (yawError < -180) yawError += 360;
+    while (yawError > 180) yawError -= 360;
+    while (yawError < -180) yawError += 360;
     
     if (abs(yawError) > 15) {
-        if (yawError > 0) { _targetLeftSpeed = 150; _targetRightSpeed = -150; }
-        else { _targetLeftSpeed = -150; _targetRightSpeed = 150; }
+        // Pivot toward target with proportional power
+        int turnPower = constrain(abs(yawError) * 5, SPEED_SLOW, SPEED_TURN);
+        if (yawError > 0) { _targetLeftSpeed = turnPower; _targetRightSpeed = -turnPower; }
+        else { _targetLeftSpeed = -turnPower; _targetRightSpeed = turnPower; }
     } else {
-        _targetLeftSpeed = 180; _targetRightSpeed = 180;
+        // Drive forward with adaptive speed based on distance to obstacles
+        int forwardSpeed = adaptiveForwardSpeed(frontDist);
+        
+        // 4. Dynamic Braking: Slow down as we get very close to target
+        if (distance < 30.0) {
+            forwardSpeed = map(distance, 5, 30, SPEED_SLOW, forwardSpeed);
+        }
+        
+        _targetLeftSpeed = forwardSpeed;
+        _targetRightSpeed = forwardSpeed;
     }
 }
 
