@@ -1,7 +1,7 @@
 
 # 🧬 THE SELF-IMPROVING ROBOT ARCHITECTURE
 
-This document explains the "Autonomous Evolution" system of the Omni-Morph robot. It allows the robot to analyze its own performance and receive wireless code upgrades automatically.a
+This document explains the "Autonomous Evolution" system of the Omni-Morph robot. It allows the robot to analyze its own performance and receive wireless code upgrades automatically.
 
 ## 1. The Autonomous Evolution Loop
 The system follows a 4-step cycle that never stops:
@@ -50,3 +50,24 @@ As an AI coding assistant, I am integrated into this architecture as the **Firmw
 **This architecture ensures that your robot gets smarter and more stable the more you use it.**
 
 **Would you like me to set up a "Deep Learning" task in the backend that specifically tries to optimize the robot's battery life?**
+
+---
+
+## 5. Technical Implementation Details (Advanced)
+These details represent the active implementation in the current firmware stack as of May 2026.
+
+### A. Hardware Self-Healing (Active)
+*   **I2C Bus Recovery**: The `systemMgr.i2cRecovery()` logic actively monitors for SCL/SDA hang-ups. If the MPU6050 or OLED becomes unresponsive, the robot performs an automated bus-clear sequence to restore communication without a full system reboot.
+*   **Vision Watchdog**: The Vision Controller monitors frame capture success. If the sensor freezes (detected via `capture_failures > 5`), the controller triggers a hardware `ESP.restart()` specifically for the camera module while the Communication module maintains the link.
+
+### B. Network-Aware Vision Intelligence
+*   **SSID Auto-Detection**: The Vision Controller detects the `Omni-Gateway` (4G LTE Hotspot) vs. standard Home WiFi.
+*   **Adaptive Quality**: When on 4G, it automatically throttles to `CIF` resolution and reduces JPEG quality to 15 to minimize latency. It restores `SVGA` and quality 10 when a high-bandwidth WiFi link is restored.
+
+### C. Safety-First Wireless Deployment
+*   **OTA State Interlocks**: The Motion Controller implements a safety check during OTA updates. It will **reject** or delay an incoming flash if the robot is in a `WALK` or `AVOID` state, ensuring it is only updated when in a stable `STAND` or `CAR` position.
+*   **ESP-NOW Credentials Sync**: To prevent "Wireless Brick" scenarios, the Communication Controller uses **ESP-NOW** to broadcast WiFi credentials to the sub-controllers (Vision & Motion). This ensures that if the robot is moved to a new network, all modules update their connections simultaneously.
+
+### D. Hardware Watchdog & Rollback
+*   **ESP-Task-WDT**: All microcontrollers are protected by a 5-10 second hardware watchdog. 
+*   **Rollback Mechanism**: If a new firmware update contains a logic loop that blocks the main task, the watchdog triggers a hardware reset, effectively "rolling back" the system to a clean boot state.
