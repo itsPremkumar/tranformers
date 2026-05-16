@@ -109,9 +109,9 @@ void Navigation::checkStuckStatus(float amps) {
 }
 
 int Navigation::adaptiveForwardSpeed(int distance) {
-    if (distance > 85) return 190;
-    if (distance > SAFE_DISTANCE_CM) return 165;
-    return 135;
+    if (distance > 85) return SPEED_NAV_TARGET;
+    if (distance > SAFE_DISTANCE_CM) return SPEED_NORMAL;
+    return SPEED_SLOW;
 }
 
 void Navigation::escapeObstacle(bool& lastTurnWasLeft) {

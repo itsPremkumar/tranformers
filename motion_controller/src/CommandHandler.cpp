@@ -39,7 +39,7 @@ void CommandHandler::processCommand(String cmd) {
     if (cmd == "CMD:FORWARD") {
         #if USE_ULTRASONIC
         if (_obstacle.readFrontDistance() > 20) {
-            _nav.setTargetSpeeds(200, 200);
+            _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
             _currentState = STATE_CAR;
             _isMovingForward = true;
             #if USE_MPU6050
@@ -52,22 +52,22 @@ void CommandHandler::processCommand(String cmd) {
             _isMovingForward = false;
         }
         #else
-        _nav.setTargetSpeeds(200, 200);
+        _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
         _currentState = STATE_CAR;
         _isMovingForward = true;
         #endif
     } else if (cmd == "CMD:BACKWARD") {
-        _nav.setTargetSpeeds(-200, -200);
+        _nav.setTargetSpeeds(-SPEED_NORMAL, -SPEED_NORMAL);
         _currentState = STATE_CAR;
         _isMovingForward = false;
         _isAidingGyro = false;
     } else if (cmd == "CMD:LEFT") {
-        _nav.setTargetSpeeds(-150, 150);
+        _nav.setTargetSpeeds(-SPEED_TURN, SPEED_TURN);
         _currentState = STATE_CAR;
         _isMovingForward = false;
         _isAidingGyro = false;
     } else if (cmd == "CMD:RIGHT") {
-        _nav.setTargetSpeeds(150, -150);
+        _nav.setTargetSpeeds(SPEED_TURN, -SPEED_TURN);
         _currentState = STATE_CAR;
         _isMovingForward = false;
         _isAidingGyro = false;

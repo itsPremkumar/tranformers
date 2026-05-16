@@ -66,6 +66,13 @@
 #define TURN_BASE_MS_MAX    540
 #define SERVO_STEP_DELAY_MS 8
 
+// 🏎️ MOTOR SPEED PRESETS
+#define SPEED_FAST          220  // Full speed cruising
+#define SPEED_NORMAL        185  // Standard movement
+#define SPEED_SLOW          145  // Cautious movement
+#define SPEED_TURN          165  // Pivot/Turning power
+#define SPEED_NAV_TARGET    190  // Auto-navigation speed
+
 // Organic Motion Dynamics
 #define ACCEL_LIMIT 10           // PWM units per update (Acceleration)
 #define SMOOTHING_ALPHA 0.12     // Low-pass filter for jitter reduction
