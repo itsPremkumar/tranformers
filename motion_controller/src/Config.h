@@ -53,6 +53,7 @@
 #define COMM_LINK_RX 4           // Connect to Comm Controller TX
 #define COMM_LINK_TX 15          // Connect to Comm Controller RX
 #define BATTERY_PIN 34           // Analog battery voltage sensor
+#define BATTERY_MULTIPLIER 4.0   // Calibration for voltage divider
 #define CURRENT_PIN 35           // Analog current sensor
 #define HEARTBEAT_TIMEOUT_MS 2500 // Safety halt if no comms for 2.5s
 

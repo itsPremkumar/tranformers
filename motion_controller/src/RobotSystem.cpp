@@ -65,17 +65,17 @@ void RobotSystem::updateTelemetry() {
     if (millis() - _lastTelemetryUpdate > TELEMETRY_INTERVAL) {
         #if USE_ULTRASONIC
         int dist = _obstacle.readFrontDistance();
-        Serial.println("DISTANCE:" + String(dist));
+        Serial2.println("DISTANCE:" + String(dist));
         #endif
         
-        float vBat = (analogRead(BATTERY_PIN) / 4095.0) * 3.3 * 4.0; // Fixed from 2.0 based on line 472 in main.cpp
-        Serial.println("BATTERY:" + String(vBat, 2));
+        float vBat = (analogRead(BATTERY_PIN) / 4095.0) * 3.3 * BATTERY_MULTIPLIER;
+        Serial2.println("BATTERY:" + String(vBat, 2));
         
         float vCurr = (analogRead(CURRENT_PIN) / 4095.0) * 3.3;
         float amps = (vCurr - 1.65) / 0.1;
-        Serial.println("CURRENT:" + String(amps, 2));
-        Serial.println("ROUGHNESS:" + String(_balance.getTerrainRoughness(), 4));
-        Serial.println("YAW:" + String(_balance.getYaw(), 2));
+        Serial2.println("CURRENT:" + String(amps, 2));
+        Serial2.println("ROUGHNESS:" + String(_balance.getTerrainRoughness(), 4));
+        Serial2.println("YAW:" + String(_balance.getYaw(), 2));
         
         _lastTelemetryUpdate = millis();
     }
@@ -84,7 +84,7 @@ void RobotSystem::updateTelemetry() {
 void RobotSystem::checkBatterySafety() {
     if (millis() - _lastBatteryCheck > 5000) {
         int batRaw = analogRead(BATTERY_PIN);
-        float voltage = (batRaw / 4095.0) * 3.3 * 4.0;
+        float voltage = (batRaw / 4095.0) * 3.3 * BATTERY_MULTIPLIER;
         
         if (voltage < 6.4 && voltage > 1.0) {
             Serial2.println("CMD:BATTERY_CRITICAL");
