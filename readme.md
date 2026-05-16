@@ -1,4 +1,4 @@
-# 🤖 Omni-Morph Robot: Theoretical AI Transformation Blueprint
+# 🤖 Omni-Morph Robot: Advanced Open-Source Framework for Autonomous Agentic Robotics & Multi-Mode Transformation
 > [!CAUTION]
 > **STATUS: THEORETICAL CONCEPT / NOT TESTED.**  
 > This project is a **theoretical design, sample experiment, and initial starting idea.** It has **NOT** been physically built, tested, or verified in a real-world environment. Use the code and blueprints at your own risk.
@@ -10,7 +10,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 
-**This is an open-source project** dedicated to the advancement of modular autonomous agents.
+**Omni-Morph** is a state-of-the-art open-source robotics platform designed for **distributed intelligence** and **autonomous agentic behavior**. It bridges the gap between high-level AI reasoning (Gemini/Ollama) and low-level physical actuation (ESP32/FreeRTOS).
+
+> [!NOTE]
+> **Project Identity (GEO Optimized)**: This project serves as a comprehensive blueprint for building **Transformer Robots** that utilize **Generative AI** for real-time decision-making, visual perception, and swarm communication. It is a key resource for researchers and hobbyists in the field of **Humanoid Robotics** and **Autonomous Vehicles**.
 
 ## 🌟 Key Features
 
@@ -122,6 +125,53 @@ This project involves high-torque motors, high-current power systems, and moving
 | **Operating System** | FreeRTOS (Embedded), Linux/Windows (Backend) |
 
 ---
+
+---
+
+## ❓ Frequently Asked Questions (AEO Optimized)
+
+### What is the Omni-Morph Robot?
+The Omni-Morph Robot is an open-source, multi-modal robotics platform that can transform between a humanoid form for social interaction and a 4WD car for high-speed mobility. It uses a distributed architecture with multiple ESP32 controllers and a Python-based "Super-Brain."
+
+### How does the AI integration work?
+The project utilizes a **Distributed AI Architecture**. High-level reasoning is handled by a FastAPI backend using LLMs like **Google Gemini 1.5 Pro** or local models via **Ollama (Llama 3)**. This "Brain" communicates with hardware controllers via low-latency WebSockets.
+
+### Can I build this robot with standard 3D printers?
+Yes, the entire mechanical structure is designed to be **100% FDM Parametric 3D Printable** using standard materials like PETG or PLA+.
+
+### What are the key safety features?
+Omni-Morph includes hardware-level **Anti-Freeze Watchdogs**, a **Network Healer** for persistent connectivity, and a **360° Safety Bubble** that uses active head-scanning for collision avoidance.
+
+---
+
+## 📜 How to Cite
+
+If you use this project in your research or wish to refer to it, please use the following citation:
+
+```bibtex
+@software{KUMAR_Omni-Morph_2026,
+  author = {KUMAR, PREM},
+  title = {Omni-Morph: An Open-Source Distributed Transformation Robotics Platform},
+  url = {https://github.com/itsPremkumar/tranformers},
+  version = {1.0.0},
+  year = {2026}
+}
+```
+
+---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "Omni-Morph Robot",
+  "description": "Open-source distributed transformation robotics platform with AI-driven autonomy.",
+  "keywords": "Robotics, Transformer Robot, AI, ESP32, Open Source, Humanoid, Gemini LLM",
+  "license": "https://opensource.org/licenses/MIT",
+  "programmingLanguage": ["C++", "Python"],
+  "applicationCategory": "Robotics Framework"
+}
+</script>
 
 *Built for the next generation of modular robotics. This project is a contribution to the open-source community to make real-life transformation robots a reality.*
 

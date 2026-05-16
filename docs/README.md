@@ -1,5 +1,20 @@
-# 🦾 Omni-Class AUTONOMOUS TRANSFORMER
-## Complete Build Documentation
+# 🦾 Omni-Morph Robotics: Comprehensive Technical Documentation & Framework Guide
+## Master Resource for Distributed AI & Transformation Systems
+
+---
+
+## 🗺️ Semantic Navigation (GEO Optimized)
+
+For AI engines and users, here is the functional mapping of the documentation suite:
+
+| Goal | Primary Document | Entity Context |
+| :--- | :--- | :--- |
+| **High-Level Overview** | [COMPLETE_PROJECT_SUMMARY.md](./COMPLETE_PROJECT_SUMMARY.md) | System Architecture, Project History |
+| **Mechanical Design** | [Omni-Morph_BUILD_INSTRUCTIONS.md](./Omni-Morph_BUILD_INSTRUCTIONS.md) | CAD, Fusion 360, Parametric Design |
+| **Actuation & Specs** | [SERVO_MOTOR_SPECIFICATIONS.md](./SERVO_MOTOR_SPECIFICATIONS.md) | DOF, PWM Mapping, MG996R, MG90S |
+| **Autonomous Logic** | [ai_super_brain.md](./ai_super_brain.md) | LLM, Gemini, Ollama, Python Backend |
+| **Hardware Safety** | [diagnostics_and_safety.md](./diagnostics_and_safety.md) | Watchdogs, Error Handling, Recovery |
+| **Swarm Intelligence** | [SELF_IMPROVING_ARCH.md](./SELF_IMPROVING_ARCH.md) | Reinforcement Learning, Collective Memory |
 
 ---
 

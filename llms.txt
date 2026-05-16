@@ -1,0 +1,26 @@
+# Omni-Morph Robot: Distributed AI Transformation Platform
+
+Omni-Morph is an open-source framework for building transformer robots powered by Generative AI. It uses a tri-core distributed architecture (ESP32-S3, ESP32, Python) to achieve autonomous agentic behavior.
+
+## Core Architecture
+- **Cognitive Layer (Brain)**: Python/FastAPI backend. Integrates Gemini 1.5 Pro and Ollama (Llama 3). Handles vision, memory, and high-level reasoning.
+- **Communication Layer (Gateway)**: ESP32 handling Wi-Fi/4G connectivity, I2S audio synthesis, and OLED feedback.
+- **Physical Layer (Actuation)**: ESP32 controlling 18+ servos via PCA9685, DC motors via L298N, and IMU-based stabilization.
+- **Vision Layer (Perception)**: ESP32-CAM providing MJPEG streams and visual odometry.
+
+## Key Capabilities
+- **Bimodal Transformation**: Humanoid <-> 4WD Car.
+- **S-Curve Motion**: Smooth, organic servo transitions.
+- **Self-Healing**: Watchdogs for I2C, Wi-Fi, and sensor recovery.
+- **Swarm Sync**: ESP-NOW based credential sharing.
+
+## Technical Details
+- **Stack**: C++/Arduino (PlatformIO), Python (FastAPI), OpenCV, MediaPipe.
+- **Protocols**: WebSockets (low-latency), ESP-NOW, MQTT.
+- **Safety**: 360-degree head-scanning obstacle avoidance.
+
+## Documentation Reference
+- [Project Summary](docs/COMPLETE_PROJECT_SUMMARY.md)
+- [Wiring Guide](docs/WIRING_GUIDE.md)
+- [Build Instructions](docs/Omni-Morph_BUILD_INSTRUCTIONS.md)
+- [AI Logic](docs/ai_super_brain.md)
