@@ -4,6 +4,17 @@ CommandHandler::CommandHandler(MotorControl& car, Balance& balance, ObstacleAvoi
                               ServoControl& servos, Navigation& nav, RobotSystem& system)
     : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos), _nav(nav), _system(system) {
     _lastHeartbeatReceived = millis();
+
+    // Set Initial Hardware State based on Profile
+    #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
+    _currentState = STATE_CAR;
+    #elif CURRENT_HARDWARE_PROFILE == PROFILE_BIPED_ONLY
+    _currentState = STATE_STAND;
+    #elif CURRENT_HARDWARE_PROFILE == PROFILE_CRAWLER_ONLY
+    _currentState = STATE_CRAWLER;
+    #else
+    _currentState = STATE_STAND; // Full Transformer defaults to Stand
+    #endif
 }
 
 void CommandHandler::processCommand(String cmd) {
@@ -82,20 +93,28 @@ void CommandHandler::processCommand(String cmd) {
         _isMovingForward = false;
     } else if (cmd == "CMD:STOP") {
         _nav.setTargetSpeeds(0, 0);
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
+        _currentState = STATE_CAR;
+        #else
         _currentState = STATE_STAND;
+        #endif
         _isMovingForward = false;
         _isAidingGyro = false;
         _nav.stopNavigation();
     } else if (cmd == "CMD:WALK") {
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH || CURRENT_HARDWARE_PROFILE == PROFILE_BIPED_ONLY
         #if ENABLE_WALKING
         _currentState = STATE_WALK;
         _isMovingForward = true;
         #endif
+        #endif
     } else if (cmd == "CMD:TRANSFORM") {
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH
         #if ENABLE_TRANSFORM
         _servos.transformToCar();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        #endif
         #endif
     } else if (cmd == "CMD:PUSH") {
         _servos.pushMotion();
@@ -105,10 +124,12 @@ void CommandHandler::processCommand(String cmd) {
         _currentState = STATE_AVOID;
         #endif
     } else if (cmd == "CMD:CRAWLER") {
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH || CURRENT_HARDWARE_PROFILE == PROFILE_CRAWLER_ONLY
         #if ENABLE_TRANSFORM
         _servos.transformToCrawler();
         _currentState = STATE_CRAWLER;
         _isMovingForward = false;
+        #endif
         #endif
     } else if (cmd == "CMD:AUTO_ADV") {
         #if USE_ULTRASONIC
@@ -126,7 +147,11 @@ void CommandHandler::updateState() {
     if (millis() - _lastHeartbeatReceived > HEARTBEAT_TIMEOUT_MS && _currentState != STATE_STAND) {
         _car.stop();
         _nav.setTargetSpeeds(0, 0);
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
+        _currentState = STATE_CAR;
+        #else
         _currentState = STATE_STAND;
+        #endif
     }
 
     // 2. Gyro Assistance

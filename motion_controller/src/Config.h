@@ -19,6 +19,17 @@
 #define USE_I2C_HEALER   true    // Auto-recovery for I2C bus locks
 
 // ==========================================
+// 🏗️ HARDWARE PROFILES
+// ==========================================
+#define PROFILE_CAR_ONLY    0   // Permanent 4-wheel robot
+#define PROFILE_BIPED_ONLY  1   // Permanent Bipedal robot
+#define PROFILE_CRAWLER_ONLY 2  // Permanent Crawler robot
+#define PROFILE_OMNI_MORPH  3   // Full Transformer (Default)
+
+// SET YOUR PROFILE HERE:
+#define CURRENT_HARDWARE_PROFILE PROFILE_CAR_ONLY 
+
+// ==========================================
 // 📌 PIN ASSIGNMENTS (Motion Controller)
 // ==========================================
 // L298N DC Motor Driver Pins
