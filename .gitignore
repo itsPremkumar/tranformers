@@ -56,3 +56,8 @@ docs/_build/
 # Screenshots and Camera Captures
 ai_backend/app/debug_screenshots/
 ai_backend/last_capture.jpg
+
+# Persistent Vector Databases
+ai_backend/app/data/vector_store/
+ai_backend/temp_research_paper.pdf
+

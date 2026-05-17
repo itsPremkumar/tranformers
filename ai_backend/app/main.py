@@ -386,6 +386,29 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
+# Feature 6: Active Swarm Knowledge Sharing via WebSockets
+swarm_connections = []
+
+@app.websocket("/ws/swarm_knowledge")
+async def swarm_knowledge_endpoint(websocket: WebSocket):
+    """
+    Broadcasts discovered scientific facts and telemetry diagnoses to all connected swarm nodes.
+    """
+    await websocket.accept()
+    swarm_connections.append(websocket)
+    try:
+        while True:
+            # When a node shares knowledge, broadcast it to the rest of the swarm
+            knowledge_payload = await websocket.receive_text()
+            print(f"[SWARM] Broadcasting new knowledge: {knowledge_payload[:50]}...")
+            for connection in swarm_connections:
+                if connection != websocket:
+                    try:
+                        await connection.send_text(knowledge_payload)
+                    except: pass
+    except WebSocketDisconnect:
+        swarm_connections.remove(websocket)
+
 async def proactive_loop():
     """Background task to engage humans every 60 seconds across all robots."""
     while True:

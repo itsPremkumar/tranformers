@@ -435,6 +435,13 @@ def generate_perspectives(query: str) -> dict:
 
 def deep_research(query: str) -> str:
     """Performs advanced, multi-perspective deep research by launching a visible browser with anti-bot overrides."""
+    # Route to the new Advanced Orchestrator (Features 1-6)
+    try:
+        from app.tools.research_engine.orchestrator import execute_advanced_research
+        return execute_advanced_research(query)
+    except Exception as e:
+        print(f"[FALLBACK] Orchestrator failed, falling back to legacy: {e}")
+
     print(f"\n[ACTION] ======= VISUAL DEEP RESEARCH START =======")
     print(f"Original Request: '{query}'")
     
