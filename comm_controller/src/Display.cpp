@@ -17,6 +17,7 @@ void DisplayController::begin() {
         Serial.println("OLED not found");
         return;
     }
+    Wire.setClock(400000); // Set I2C frequency to 400kHz for buttery-smooth high-fps animations!
     _display.clearDisplay();
     _display.display();
     randomSeed(analogRead(0));
@@ -430,8 +431,10 @@ void DisplayController::drawTopStatusBar(int wifiPercent, int batteryPercent, bo
         _display.drawLine(micX, micY, micX + 6, micY + 6, WHITE);
     }
 
-    // 4. Horizontal Separator Line below the top bar
-    _display.drawLine(0, 10, 128, 10, WHITE);
+    // 4. High-Tech Dashed Horizontal Separator Line below the top bar (Sci-Fi HUD Aesthetic)
+    for (int i = 0; i < 128; i += 4) {
+        _display.drawFastHLine(i, 10, 2, WHITE);
+    }
 }
 
 void DisplayController::drawDebugHUD() {
