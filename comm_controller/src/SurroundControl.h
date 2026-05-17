@@ -2,6 +2,7 @@
 #define SURROUND_CONTROL_H
 
 #include <Arduino.h>
+#include "Config.h"
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include <BLEDevice.h>

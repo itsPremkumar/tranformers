@@ -11,7 +11,7 @@ static Audio *mp3 = nullptr;
 #define SAMPLING_FREQ 16000
 double vReal[SAMPLES];
 double vImag[SAMPLES];
-ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, SAMPLES, SAMPLING_FREQ);
+arduinoFFT FFT = arduinoFFT(vReal, vImag, SAMPLES, SAMPLING_FREQ);
 
 AudioSystem::AudioSystem(int bckPin, int wsPin, int dataInPin, int dataOutPin) {
     _bckPin = bckPin;
@@ -233,9 +233,9 @@ void AudioSystem::performFFT(int16_t* samples, size_t count) {
         vImag[i] = 0;
     }
 
-    FFT.windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-    FFT.compute(FFT_FORWARD);
-    FFT.complexToMagnitude();
+    FFT.Windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.Compute(FFT_FORWARD);
+    FFT.ComplexToMagnitude();
 
     // Sum energies in 3 bands (approximate for 16kHz)
     // Band 0 (Bass): 0 - 500 Hz (bins 0-4)

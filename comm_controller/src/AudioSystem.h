@@ -20,17 +20,17 @@ public:
     size_t getMicData(int16_t* buffer, size_t maxSamples);
     bool hasNoiseEvent() { bool e = _hasNoiseEvent; _hasNoiseEvent = false; return e; }
 
+    // 🚀 VISUALIZER DATA
+    float getLowEnergy() { return _lowEnergy; }
+    float getMidEnergy() { return _midEnergy; }
+    float getHighEnergy() { return _highEnergy; }
+
 private:
     bool _hasNoiseEvent = false;
     
     // Background Feeder (static for FreeRTOS task)
     // Background Feeder (static for FreeRTOS task)
     static void i2sFeederTask(void *pvParameters);
-
-    // 🚀 VISUALIZER DATA
-    float getLowEnergy() { return _lowEnergy; }
-    float getMidEnergy() { return _midEnergy; }
-    float getHighEnergy() { return _highEnergy; }
 
 private:
     int _bckPin, _wsPin, _dataInPin, _dataOutPin;

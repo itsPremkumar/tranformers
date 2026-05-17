@@ -235,7 +235,7 @@ void WebInterface::handleVoice() {
     #if USE_AUDIO_SYSTEM
     if (_audio) {
         WiFiClient client = _server.client();
-        int len = _server.contentLength();
+        int len = client.available();
         
         if (len > 0) {
             uint8_t* buffer = (uint8_t*)malloc(len);

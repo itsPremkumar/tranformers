@@ -39,7 +39,7 @@ void BluetoothAudio::beginSource(const char* targetName) {
     #if USE_EXTERNAL_BT_SPEAKER
     Serial.println("[BT-SOURCE] Starting Bluetooth A2DP Source...");
     
-    _a2dpSource.start(targetName, get_data_callback);
+    _a2dpSource.start_raw(targetName, get_data_callback);
     _isStarted = true;
     _isSource = true;
     Serial.println("[BT-SOURCE] Scanning for External Speakers...");
