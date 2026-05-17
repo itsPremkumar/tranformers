@@ -73,8 +73,9 @@ def deep_research(query: str) -> str:
     try:
         with sync_playwright() as p:
             # Launch headful (visible) by default so the user can watch the robot learn live!
-            print("[BROWSER] Launching VISIBLE Chrome instance...")
-            browser = p.chromium.launch(headless=False)
+            # Using channel="chrome" opens their actual Google Chrome system browser
+            print("[BROWSER] Launching VISIBLE Google Chrome instance...")
+            browser = p.chromium.launch(headless=False, channel="chrome")
             context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             
             for url, p_name in unique_urls_to_scrape.items():
