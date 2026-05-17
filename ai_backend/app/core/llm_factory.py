@@ -127,6 +127,10 @@ class LLMFactory:
             
             parsed = json.loads(clean)
             
+            # Ensure the output is actually a list, otherwise fallback
+            if not isinstance(parsed, list):
+                raise ValueError("Model did not return a list")
+                
             # Prevent hallucinated coordinates from being treated as valid commands
             if isinstance(parsed, list) and len(parsed) > 0 and any(isinstance(x, (int, float)) for x in parsed):
                 raise ValueError("Model hallucinated coordinates")
