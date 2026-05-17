@@ -1,33 +1,32 @@
 # Backend Test Report
 
-**Date:** 2026-05-11 19:57:39
+**Date:** 2026-05-17 18:57:41
 
 ## Performance Metrics
 | Prompt | Latency (ms) |
 |---|---|
-| Who is the current Chief Minister of Tamil Nadu as of May 11, 2026? | 8326.45 |
-| Which political party does the current CM of Tamil Nadu belong to? | 1432.66 |
+| Who is the current Chief Minister of Tamil Nadu as of May 11, 2026? | 11770.46 |
+| Which political party does the current CM of Tamil Nadu belong to? | 1025.46 |
 
 ## Hardware Simulation Summary
 - **Audio Packets Received:** 2
-- **Commands Received:** 3
+- **Commands Received:** 2
 
 ## Detailed Logs
 ```
-[19:57:16] Starting End-to-End Backend Test...
-[19:57:18] WebSocket connected to backend.
-[19:57:18] Sent IDENTITY packet.
-[19:57:18] --- Sending Prompt: Who is the current Chief Minister of Tamil Nadu as of May 11, 2026? ---
-[19:57:23] Received WS Text: SAY:Here is what I found: 10 hours ago - There have been four instances of President's rule in Tamil Nadu, most recently in 1991. C. Joseph Vijay of the Tamilaga Vettri Kazhagam is the incumbent since 10 May 2026, and the firs
-[19:57:26] Received WS Text: SAY:I'm thinking, but I couldn't find a clear answer for that right now.
-[19:57:27] AI Response received in 8326.45ms
-[19:57:27] Commands: ["SAY:Here is what I found: 10 hours ago - There have been four instances of President's rule in Tamil Nadu, most recently in 1991. C. Joseph Vijay of the Tamilaga Vettri Kazhagam is the incumbent since 10 May 2026, and the firs"]
-[19:57:27] Received WS Binary Audio: 649728 bytes (Chunk #1)
-[19:57:30] --- Sending Prompt: Which political party does the current CM of Tamil Nadu belong to? ---
-[19:57:30] Received WS Text: SAY:ระมายงสวนี้ทองการบัดพิมายง
-[19:57:31] Received WS Binary Audio: 102912 bytes (Chunk #2)
-[19:57:31] AI Response received in 1432.66ms
-[19:57:31] Commands: ['SAY:ระมายงสวนี้ทองการบัดพิมายง']
-[19:57:34] Waiting for final responses...
-[19:57:39] Generating Test Report...
+[18:57:15] Starting End-to-End Backend Test...
+[18:57:17] WebSocket connected to backend.
+[18:57:17] Sent IDENTITY packet.
+[18:57:17] --- Sending Prompt: Who is the current Chief Minister of Tamil Nadu as of May 11, 2026? ---
+[18:57:28] Received WS Text: SAY:C Joseph Vijay
+[18:57:29] Received WS Binary Audio: 56064 bytes (Chunk #1)
+[18:57:29] AI Response received in 11770.46ms
+[18:57:29] Commands: ['SAY:C Joseph Vijay']
+[18:57:32] --- Sending Prompt: Which political party does the current CM of Tamil Nadu belong to? ---
+[18:57:33] Received WS Text: SAY:செர்கேர்
+[18:57:33] Received WS Binary Audio: 31488 bytes (Chunk #2)
+[18:57:33] AI Response received in 1025.46ms
+[18:57:33] Commands: ['SAY:செர்கேர்']
+[18:57:36] Waiting for final responses...
+[18:57:41] Generating Test Report...
 ```
