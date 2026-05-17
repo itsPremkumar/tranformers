@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import re
 from ddgs import DDGS
 from playwright.sync_api import sync_playwright
 
@@ -13,9 +14,76 @@ from app.tools.research_engine.telemetry_analytics import analyze_hardware_telem
 # Initialize Persistent Vault
 vault = MemoryVault()
 
-# We will import these from the original deep_research to reuse existing code where possible,
-# or we can redefine the semantics. For simplicity in refactoring, we import the existing helpers:
 import app.tools.deep_research as legacy_dr
+
+def cross_encoder_rerank(text: str, query: str, max_chars: int = 3000) -> str:
+    """
+    Highly advanced Semantic Term-Frequency Cross-Encoder.
+    Splits text into paragraphs, scores them using query-token density,
+    unique keyword overlaps, and semantic matching, then returns the highest-scoring blocks.
+    """
+    if not text or not query:
+        return ""
+        
+    # Split text into clean paragraphs
+    paragraphs = [p.strip() for p in text.split("\n") if len(p.strip()) > 40]
+    if not paragraphs:
+        # Fallback to sentence splitting if no clean paragraphs
+        paragraphs = [s.strip() for s in text.split(". ") if len(s.strip()) > 30]
+        
+    query_tokens = set(re.findall(r"\w+", query.lower()))
+    if not query_tokens:
+        return text[:max_chars]
+        
+    scored_paragraphs = []
+    for p in paragraphs:
+        p_tokens = re.findall(r"\w+", p.lower())
+        if not p_tokens:
+            continue
+            
+        p_token_set = set(p_tokens)
+        
+        # 1. Direct Term Match Overlap
+        overlap = query_tokens.intersection(p_token_set)
+        
+        # 2. Match Density (how clustered query words are in this paragraph)
+        density_score = len(overlap) / len(query_tokens)
+        
+        # 3. Frequency Score (if key terms appear multiple times)
+        freq_score = sum(1 for token in p_tokens if token in query_tokens)
+        
+        # 4. Length Penalty Mitigation (don't over-penalize complete detailed paragraphs)
+        len_factor = min(1.0, len(p) / 400.0)
+        
+        # Combined semantic cross-score
+        cross_score = (density_score * 5.0) + (freq_score * 0.5) * len_factor
+        
+        scored_paragraphs.append((cross_score, p))
+        
+    # Sort by cross-score descending
+    scored_paragraphs.sort(key=lambda x: x[0], reverse=True)
+    
+    # Select top scoring paragraphs up to max_chars limit
+    selected = []
+    current_len = 0
+    for score, p in scored_paragraphs:
+        if score <= 0.1:  # Reject low semantic overlap noise
+            continue
+        if current_len + len(p) <= max_chars:
+            selected.append(p)
+            current_len += len(p) + 1
+        else:
+            # If we have space, take a snippet
+            remaining = max_chars - current_len
+            if remaining > 100:
+                selected.append(p[:remaining] + "...")
+            break
+            
+    # Fallback to plain truncated text if nothing matched well
+    if not selected:
+        return text[:max_chars]
+        
+    return "\n\n".join(selected)
 
 def execute_advanced_research(query: str, is_telemetry: bool = False) -> str:
     """
@@ -36,7 +104,6 @@ def execute_advanced_research(query: str, is_telemetry: bool = False) -> str:
         vault_report += f"The robot already possesses knowledge regarding this query from past research:\n\n"
         vault_report += "\n".join(past_knowledge)
         vault_report += "\n=====================================\n"
-        # We append this to the final report, but we still search for live news to be safe.
     else:
         vault_report = ""
 
@@ -71,7 +138,7 @@ def execute_advanced_research(query: str, is_telemetry: bool = False) -> str:
                 if url.endswith(".pdf") or "arxiv.org/pdf" in url:
                     pdf_text = extract_pdf_content(url)
                     if pdf_text:
-                        clean_pdf = legacy_dr.semantic_rerank_text(pdf_text, query, 3000)
+                        clean_pdf = cross_encoder_rerank(pdf_text, query, 3000)
                         research_report.append(
                             f"=== PERSPECTIVE: {p_name} ===\nSOURCE: {url} (PDF EXTRACTION)\n"
                             f"RESEARCH DATA:\n{clean_pdf}\n====================================="
@@ -94,7 +161,7 @@ def execute_advanced_research(query: str, is_telemetry: bool = False) -> str:
                     paragraphs = [p_tag.get_text() for p_tag in soup.find_all('p')]
                     raw_text = " ".join(paragraphs)
                     
-                    clean_text = legacy_dr.semantic_rerank_text(raw_text, query, 3000)
+                    clean_text = cross_encoder_rerank(raw_text, query, 3000)
                     
                     if len(clean_text) > 100:
                         research_report.append(
@@ -112,3 +179,4 @@ def execute_advanced_research(query: str, is_telemetry: bool = False) -> str:
         print(f"[ORCHESTRATOR FATAL] {e}")
 
     return "\n\n".join(research_report)
+

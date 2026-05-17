@@ -31,6 +31,7 @@ public:
     
     RobotState getState() const { return _currentState; }
     bool isMovingForward() const { return _isMovingForward; }
+    bool isTurning() const { return _isTurning; }
 
 private:
     MotorControl& _car;
@@ -42,6 +43,7 @@ private:
     
     RobotState _currentState = STATE_STAND;
     bool _isMovingForward = false;
+    bool _isTurning = false;
     bool _isAidingGyro = false;
     float _targetYaw = 0;
     unsigned long _lastHeartbeatReceived = 0;

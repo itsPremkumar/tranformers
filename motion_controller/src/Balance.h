@@ -19,7 +19,7 @@ public:
     Balance();
     bool begin();
     
-    void update();
+    bool update();
     
     float getRoll() const { return _roll; }
     float getPitch() const { return _pitch; }

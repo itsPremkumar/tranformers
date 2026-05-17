@@ -10,7 +10,7 @@ bool Balance::begin() {
     return _mpu.testConnection();
 }
 
-void Balance::update() {
+bool Balance::update() {
     _mpu.getMotion6(&_ax, &_ay, &_az, &_gx, &_gy, &_gz);
     
     uint32_t now = millis();
@@ -48,6 +48,7 @@ void Balance::update() {
     if (abs(_gyroZ) > 0.5) { // Deadzone to reduce drift
         _yaw += _gyroZ * dt;
     }
+    return _mpu.testConnection();
 }
 
 bool Balance::isStanding() const {

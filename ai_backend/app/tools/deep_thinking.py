@@ -77,6 +77,7 @@ async def run_swarm_reasoning(prompt: str, manager, llm_factory: LLMFactory, rob
         first_pass_data = f"Failed to gather first pass data: {e}"
 
     # 3. Critic Phase (DeepSeek - Gap Identification)
+    await manager.send_command("CMD:OLED_THINK")
     await manager.send_command("SAY:Critic Agent evaluating data. Identifying potential technical gaps and contradictions...")
     await manager.send_command("PAN:90")
     await manager.send_command("TILT:140")
@@ -113,6 +114,7 @@ async def run_swarm_reasoning(prompt: str, manager, llm_factory: LLMFactory, rob
         second_pass_data = f"Failed to gather secondary pass data: {e}"
 
     # 5. Synthesis Phase (Hermes / DeepSeek Final <think>)
+    await manager.send_command("CMD:OLED_NORMAL")
     await manager.send_command("SAY:Swarm consensus reached. Synthesizing final multi-perspective briefing...")
     
     combined_context = (

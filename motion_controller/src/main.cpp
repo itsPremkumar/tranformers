@@ -257,8 +257,8 @@ void loop() {
     // 5. Update Hardware Subsystems
     nav.updateSmoothMotors();
     servos.update();
-    system.updateTelemetry();
-    system.checkBatterySafety();
+    systemMgr.updateTelemetry();
+    systemMgr.checkBatterySafety();
 
     delay(5); 
 }

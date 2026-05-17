@@ -42,6 +42,7 @@ void CommandHandler::processCommand(String cmd) {
             _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
             _currentState = STATE_CAR;
             _isMovingForward = true;
+            _isTurning = false;
             #if USE_MPU6050
             _targetYaw = _balance.getYaw();
             _isAidingGyro = true;
@@ -50,47 +51,57 @@ void CommandHandler::processCommand(String cmd) {
             Serial.println("[SAFETY] Blocked Forward move!");
             _nav.setTargetSpeeds(0, 0);
             _isMovingForward = false;
+            _isTurning = false;
         }
         #else
         _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
         _currentState = STATE_CAR;
         _isMovingForward = true;
+        _isTurning = false;
         #endif
     } else if (cmd == "CMD:BACKWARD") {
         _nav.setTargetSpeeds(-SPEED_NORMAL, -SPEED_NORMAL);
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = false;
         _isAidingGyro = false;
     } else if (cmd == "CMD:LEFT") {
         _nav.setTargetSpeeds(-SPEED_TURN, SPEED_TURN);
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
         _isAidingGyro = false;
     } else if (cmd == "CMD:RIGHT") {
         _nav.setTargetSpeeds(SPEED_TURN, -SPEED_TURN);
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
         _isAidingGyro = false;
     } else if (cmd == "CMD:RIGHT_PIVOT") {
         _car.turnRightPivot();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
     } else if (cmd == "CMD:LEFT_PIVOT_BACK") {
         _car.turnLeftPivotBack();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
     } else if (cmd == "CMD:RIGHT_PIVOT_BACK") {
         _car.turnRightPivotBack();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
     } else if (cmd == "CMD:LEFT_ZERO") {
         _car.turnLeftZero();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
     } else if (cmd == "CMD:RIGHT_ZERO") {
         _car.turnRightZero();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = true;
     } else if (cmd == "CMD:STOP") {
         _nav.setTargetSpeeds(0, 0);
         #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
@@ -99,6 +110,7 @@ void CommandHandler::processCommand(String cmd) {
         _currentState = STATE_STAND;
         #endif
         _isMovingForward = false;
+        _isTurning = false;
         _isAidingGyro = false;
         _nav.stopNavigation();
     } else if (cmd == "CMD:WALK") {
@@ -106,6 +118,7 @@ void CommandHandler::processCommand(String cmd) {
         #if ENABLE_WALKING
         _currentState = STATE_WALK;
         _isMovingForward = true;
+        _isTurning = false;
         #endif
         #endif
     } else if (cmd == "CMD:TRANSFORM") {
@@ -114,6 +127,7 @@ void CommandHandler::processCommand(String cmd) {
         _servos.transformToCar();
         _currentState = STATE_CAR;
         _isMovingForward = false;
+        _isTurning = false;
         #endif
         #endif
     } else if (cmd == "CMD:PUSH") {
@@ -129,6 +143,7 @@ void CommandHandler::processCommand(String cmd) {
         _servos.transformToCrawler();
         _currentState = STATE_CRAWLER;
         _isMovingForward = false;
+        _isTurning = false;
         #endif
         #endif
     } else if (cmd == "CMD:AUTO_ADV") {
@@ -142,6 +157,7 @@ void CommandHandler::processCommand(String cmd) {
     } else if (cmd == "CMD:SUN_SEEK") {
         _currentState = STATE_SUN_SEEK;
         _isMovingForward = true;
+        _isTurning = false;
     }
 }
 

@@ -26,17 +26,44 @@ class MemoryVault:
             return
             
         try:
-            # Chunking large content into manageable sentences/blocks
-            chunks = [content[i:i+500] for i in range(0, len(content), 500)]
-            ids = [f"{url}_{i}" for i in range(len(chunks))]
-            metadatas = [{"source": url, "perspective": perspective} for _ in chunks]
+            # Parent Chunks (approx 800 characters, overlap 200)
+            parent_size = 800
+            parent_overlap = 200
+            parents = []
+            start = 0
+            while start < len(content):
+                parents.append(content[start:start+parent_size])
+                start += (parent_size - parent_overlap)
+                
+            documents = []
+            metadatas = []
+            ids = []
             
-            self.collection.add(
-                documents=chunks,
-                metadatas=metadatas,
-                ids=ids
-            )
-            print(f"[MEMORY VAULT] Saved {len(chunks)} knowledge chunks from {url}")
+            for p_idx, parent in enumerate(parents):
+                # Child Chunks (approx 150 characters, overlap 50)
+                child_size = 150
+                child_overlap = 50
+                c_idx = 0
+                start_c = 0
+                while start_c < len(parent):
+                    child = parent[start_c:start_c+child_size]
+                    documents.append(child)
+                    metadatas.append({
+                        "source": url, 
+                        "perspective": perspective, 
+                        "parent_chunk": parent
+                    })
+                    ids.append(f"{url}_{p_idx}_{c_idx}")
+                    c_idx += 1
+                    start_c += (child_size - child_overlap)
+            
+            if documents:
+                self.collection.add(
+                    documents=documents,
+                    metadatas=metadatas,
+                    ids=ids
+                )
+                print(f"[MEMORY VAULT] Saved {len(documents)} Child-Parent knowledge pairs from {url}")
         except Exception as e:
             print(f"[MEMORY VAULT ERROR] Failed saving knowledge: {e}")
 
@@ -50,10 +77,22 @@ class MemoryVault:
                 n_results=n_results
             )
             
-            if results and results['documents'] and results['documents'][0]:
-                print(f"[MEMORY VAULT] Retrieved {len(results['documents'][0])} relevant past memories.")
-                return results['documents'][0]
+            retrieved_contexts = []
+            if results and results['metadatas'] and results['metadatas'][0]:
+                for meta in results['metadatas'][0]:
+                    if meta and "parent_chunk" in meta:
+                        retrieved_contexts.append(meta["parent_chunk"])
+                    
+                # De-duplicate matching parent paragraphs
+                unique_contexts = []
+                for ctx in retrieved_contexts:
+                    if ctx not in unique_contexts:
+                        unique_contexts.append(ctx)
+                        
+                print(f"[MEMORY VAULT] Retrieved {len(unique_contexts)} unique high-fidelity parent memories.")
+                return unique_contexts
             return []
         except Exception as e:
             print(f"[MEMORY VAULT ERROR] Search failed: {e}")
             return []
+
