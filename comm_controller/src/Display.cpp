@@ -24,6 +24,7 @@ void DisplayController::begin() {
 
 void DisplayController::clearFace() {
     _display.clearDisplay();
+    drawTopStatusBar(_wifiPercent, _batteryPercent, _isMuted);
 }
 
 void DisplayController::showFace() {
@@ -324,5 +325,92 @@ void DisplayController::updateFaceEngine() {
         case FaceState::Speaking:
             SpeakingBehavior(eyeHeight);
             break;
+        case FaceState::DebugHUD:
+            drawDebugHUD();
+            break;
     }
+}
+
+void DisplayController::updateSystemStatus(int wifi, int battery, bool muted) {
+    _wifiPercent = wifi;
+    _batteryPercent = battery;
+    _isMuted = muted;
+}
+
+void DisplayController::drawTopStatusBar(int wifiPercent, int batteryPercent, bool isMuted) {
+    // 1. Wi-Fi Icon (simple cell signal-style bars)
+    int wifiX = 4;
+    int wifiY = 8;
+    if (wifiPercent > 0) {
+        _display.fillRect(wifiX, wifiY - 2, 2, 2, WHITE);
+        if (wifiPercent > 30) _display.fillRect(wifiX + 3, wifiY - 4, 2, 4, WHITE);
+        if (wifiPercent > 60) _display.fillRect(wifiX + 6, wifiY - 6, 2, 6, WHITE);
+        if (wifiPercent > 80) _display.fillRect(wifiX + 9, wifiY - 8, 2, 8, WHITE);
+    } else {
+        // Draw a small warning cross if Wi-Fi is disconnected
+        _display.drawLine(wifiX, wifiY - 6, wifiX + 6, wifiY, WHITE);
+        _display.drawLine(wifiX + 6, wifiY - 6, wifiX, wifiY, WHITE);
+    }
+
+    // 2. Battery Shape on the top-right
+    int batX = 110;
+    int batY = 1;
+    _display.drawRect(batX, batY, 14, 7, WHITE); // Battery body frame
+    _display.fillRect(batX + 14, batY + 2, 2, 3, WHITE); // Battery nipple
+    
+    // Draw battery level fill inside bat frame
+    int fillW = map(batteryPercent, 0, 100, 0, 10);
+    if (fillW > 10) fillW = 10;
+    if (fillW > 0) {
+        _display.fillRect(batX + 2, batY + 2, fillW, 3, WHITE);
+    }
+
+    // 3. Microphone Mute / Slash slash icon next to battery
+    if (isMuted) {
+        int micX = 98;
+        int micY = 1;
+        _display.drawCircle(micX + 3, micY + 3, 2, WHITE);
+        _display.drawLine(micX, micY, micX + 6, micY + 6, WHITE);
+    }
+
+    // 4. Horizontal Separator Line below the top bar
+    _display.drawLine(0, 10, 128, 10, WHITE);
+}
+
+void DisplayController::drawDebugHUD() {
+    // Clear screen and draw Status Bar
+    clearFace();
+
+    _display.setTextSize(1);
+    _display.setTextColor(WHITE);
+    
+    // 1. Diagnostics Title Header
+    _display.setCursor(4, 12);
+    _display.print("--- SYS DIAGNOSTICS ---");
+    
+    // 2. System Uptime (seconds)
+    _display.setCursor(4, 24);
+    _display.print("Uptime:   ");
+    _display.print(millis() / 1000);
+    _display.print("s");
+
+    // 3. Dynamic Wi-Fi Strength
+    _display.setCursor(4, 34);
+    _display.print("Signal:   ");
+    _display.print(_wifiPercent);
+    _display.print("%");
+
+    // 4. Free Heap Memory (RAM monitor)
+    _display.setCursor(4, 44);
+    _display.print("Free RAM: ");
+    _display.print(ESP.getFreeHeap() / 1024);
+    _display.print(" KB");
+
+    // 5. Min Free Heap (Lowest recorded RAM stability monitor)
+    _display.setCursor(4, 54);
+    _display.print("Min RAM:  ");
+    _display.print(ESP.getMinFreeHeap() / 1024);
+    _display.print(" KB");
+
+    showFace();
 }

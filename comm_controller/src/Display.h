@@ -6,7 +6,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-enum class FaceState { Idle, Listening, Speaking };
+enum class FaceState { Idle, Listening, Speaking, DebugHUD };
 
 class DisplayController {
 public:
@@ -21,6 +21,7 @@ public:
     // FaceState Management
     void SetState(FaceState state);
     void updateFaceEngine();
+    void updateSystemStatus(int wifi, int battery, bool muted);
     
     // Expressions
     void happyFace();
@@ -40,6 +41,13 @@ private:
     Adafruit_SSD1306 _display;
     uint8_t _address;
     
+    // System Status Bar Variables
+    int _wifiPercent = 85;
+    int _batteryPercent = 95;
+    bool _isMuted = false;
+    
+    void drawTopStatusBar(int wifiPercent, int batteryPercent, bool isMuted);
+    
     // New FaceEngine States & Offsets
     FaceState _state = FaceState::Idle;
     int _blinkPhase = 0;
@@ -54,6 +62,7 @@ private:
     void IdleBehavior(int eyeHeight);
     void ListeningBehavior(int eyeHeight);
     void SpeakingBehavior(int eyeHeight);
+    void drawDebugHUD();
     
     // Drawing helpers
     void drawNormalEyes(int leftX, int rightX, int y = 24);

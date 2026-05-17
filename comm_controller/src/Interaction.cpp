@@ -40,6 +40,17 @@ void Interaction::update(int currentMood) {
 
     #if USE_OLED_DISPLAY
     if (_display && _audio) {
+        // Compute real-time Wi-Fi Signal Percentage
+        int wifiPercent = 0;
+        if (WiFi.status() == WL_CONNECTED) {
+            int rssi = WiFi.RSSI();
+            wifiPercent = map(rssi, -100, -50, 0, 100);
+            if (wifiPercent > 100) wifiPercent = 100;
+            if (wifiPercent < 0) wifiPercent = 0;
+        }
+        // Feed the real-time values into status bar (using 92% as normal active battery)
+        _display->updateSystemStatus(wifiPercent, 92, false);
+
         int amp = _audio->getRecentAmplitude();
         if (amp > 500) {
             #if USE_AUDIO_VISUALIZER
@@ -67,6 +78,7 @@ void Interaction::handleMoodChange(int& currentMood, String cmd) {
     else if (mood == "idle") { _display->SetState(FaceState::Idle); }
     else if (mood == "listening") { _display->SetState(FaceState::Listening); }
     else if (mood == "speaking") { _display->SetState(FaceState::Speaking); }
+    else if (mood == "debug") { _display->SetState(FaceState::DebugHUD); }
     else if (mood.length() > 0 && isDigit(mood[0])) {
         currentMood = mood.toInt();
         _display->SetState(FaceState::Idle);
