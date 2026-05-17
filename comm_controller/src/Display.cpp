@@ -1,6 +1,11 @@
 #include "Display.h"
 #include "expressionbitmap.h"
 
+// --- EMOTION PARTICLES (16x16 px) FROM DESKBUDDY ---
+const unsigned char bmp_heart[] PROGMEM = { 0x00, 0x00, 0x0c, 0x60, 0x1e, 0xf0, 0x3f, 0xf8, 0x7f, 0xfc, 0x7f, 0xfc, 0x7f, 0xfc, 0x3f, 0xf8, 0x1f, 0xf0, 0x0f, 0xe0, 0x07, 0xc0, 0x03, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+const unsigned char bmp_zzz[] PROGMEM = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3c, 0x00, 0x0c, 0x00, 0x18, 0x00, 0x30, 0x00, 0x7e, 0x00, 0x00, 0x3c, 0x00, 0x0c, 0x00, 0x18, 0x00, 0x30, 0x00, 0x7c, 0x00, 0x00, 0x00, 0x00, 0x00 };
+const unsigned char bmp_anger[] PROGMEM = { 0x00, 0x00, 0x11, 0x10, 0x2a, 0x90, 0x44, 0x40, 0x80, 0x20, 0x80, 0x20, 0x44, 0x40, 0x2a, 0x90, 0x11, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 void DisplayController::drawBitmapFace(int index) {
     if (index < 0 || index >= 10) return;
     clearFace();
@@ -33,10 +38,24 @@ void DisplayController::showFace() {
 }
 
 void DisplayController::drawNormalEyes(int leftX, int rightX, int y) {
+    /* OLD OUTLINE EYES CODE PRESERVED FOR REFERENCE:
     _display.drawCircle(40, y, 14, WHITE);
     _display.drawCircle(88, y, 14, WHITE);
     _display.fillCircle(leftX, y, 5, WHITE);
     _display.fillCircle(rightX, y, 5, WHITE);
+    */
+
+    // 1. Solid white eye sclera base
+    _display.fillCircle(40, y, 14, WHITE);
+    _display.fillCircle(88, y, 14, WHITE);
+    
+    // 2. Solid black pupils (dragging gaze)
+    _display.fillCircle(leftX, y, 6, BLACK);
+    _display.fillCircle(rightX, y, 6, BLACK);
+    
+    // 3. Crisp white specular glints (the glint of life!)
+    _display.fillCircle(leftX + 2, y - 2, 2, WHITE);
+    _display.fillCircle(rightX + 2, y - 2, 2, WHITE);
 }
 
 void DisplayController::drawClosedEyes() {
@@ -110,10 +129,19 @@ void DisplayController::heroFace() {
 }
 
 void DisplayController::loveFace() {
+    /* OLD OUTLINE CODES PRESERVED FOR REFERENCE:
     clearFace();
     drawHeart(40, 26);
     drawHeart(88, 26);
     drawSmile();
+    showFace();
+    */
+    clearFace();
+    drawHeart(40, 26);
+    drawHeart(88, 26);
+    drawSmile();
+    // Render the beautiful floating love heart particle in the top center (x=56, y=12) below the status bar!
+    _display.drawBitmap(56, 12, bmp_heart, 16, 16, WHITE);
     showFace();
 }
 
@@ -161,6 +189,7 @@ void DisplayController::wonderFace() {
 }
 
 void DisplayController::angryFace() {
+    /* OLD OUTLINE CODES PRESERVED FOR REFERENCE:
     clearFace();
     _display.drawLine(28, 14, 50, 24, WHITE);
     _display.drawLine(78, 24, 100, 14, WHITE);
@@ -170,15 +199,34 @@ void DisplayController::angryFace() {
     _display.fillCircle(88, 28, 4, WHITE);
     drawStraightMouth();
     showFace();
+    */
+    clearFace();
+    _display.drawLine(28, 14, 50, 24, WHITE);
+    _display.drawLine(78, 24, 100, 14, WHITE);
+    _display.drawCircle(40, 28, 10, WHITE);
+    _display.drawCircle(88, 28, 10, WHITE);
+    _display.fillCircle(40, 28, 4, WHITE);
+    _display.fillCircle(88, 28, 4, WHITE);
+    drawStraightMouth();
+    // Render the comic-book style anger pop mark on the top left side (x=12, y=12) below the status bar!
+    _display.drawBitmap(12, 12, bmp_anger, 16, 16, WHITE);
+    showFace();
 }
 
 void DisplayController::sleepMode() {
+    /* OLD OUTLINE CODES PRESERVED FOR REFERENCE:
     clearFace();
     drawClosedEyes();
     _display.setTextSize(1);
     _display.setTextColor(WHITE);
     _display.setCursor(90, 8);
     _display.print("Z Z");
+    showFace();
+    */
+    clearFace();
+    drawClosedEyes();
+    // Render the floating sleepy ZZZ particle graphic on the top right side (x=98, y=14) below the status bar!
+    _display.drawBitmap(98, 14, bmp_zzz, 16, 16, WHITE);
     showFace();
 }
 
@@ -273,11 +321,25 @@ void DisplayController::IdleBehavior(int eyeHeight) {
     if (eyeHeight <= 2) {
         drawClosedEyes();
     } else {
-        // Draw open eyes with scaled height (blink size)
+        /* OLD OUTLINE CODES PRESERVED FOR REFERENCE:
         _display.drawCircle(40, eyeY, eyeHeight, WHITE);
         _display.drawCircle(88, eyeY, eyeHeight, WHITE);
         _display.fillCircle(leftEyeX, eyeY, 5, WHITE);
         _display.fillCircle(rightEyeX, eyeY, 5, WHITE);
+        */
+        // Premium solid eyes with pupil & dynamic specular glint scaled proportionally!
+        _display.fillCircle(40, eyeY, eyeHeight, WHITE);
+        _display.fillCircle(88, eyeY, eyeHeight, WHITE);
+        
+        int pupilR = eyeHeight / 2.3;
+        if (pupilR < 1) pupilR = 1;
+        _display.fillCircle(leftEyeX, eyeY, pupilR, BLACK);
+        _display.fillCircle(rightEyeX, eyeY, pupilR, BLACK);
+        
+        int glintR = eyeHeight / 7.0;
+        if (glintR < 1) glintR = 1;
+        _display.fillCircle(leftEyeX + 2, eyeY - 2, glintR, WHITE);
+        _display.fillCircle(rightEyeX + 2, eyeY - 2, glintR, WHITE);
     }
 
     // 3. Render idle mouth with offsets
@@ -298,10 +360,29 @@ void DisplayController::ListeningBehavior(int eyeHeight) {
     if (eyeHeight <= 2) {
         drawClosedEyes();
     } else {
+        /* OLD OUTLINE CODES PRESERVED FOR REFERENCE:
         _display.drawCircle(40, eyeY, leftEyeR, WHITE);
         _display.drawCircle(88, eyeY, rightEyeR, WHITE);
         _display.fillCircle(40, eyeY, 4, WHITE);
         _display.fillCircle(88, eyeY, 5, WHITE);
+        */
+        // Premium solid eyes with pupil & dynamic specular glint scaled proportionally!
+        _display.fillCircle(40, eyeY, leftEyeR, WHITE);
+        _display.fillCircle(88, eyeY, rightEyeR, WHITE);
+        
+        int leftPupilR = leftEyeR / 2.3;
+        if (leftPupilR < 1) leftPupilR = 1;
+        int rightPupilR = rightEyeR / 2.3;
+        if (rightPupilR < 1) rightPupilR = 1;
+        _display.fillCircle(40, eyeY, leftPupilR, BLACK);
+        _display.fillCircle(88, eyeY, rightPupilR, BLACK);
+        
+        int leftGlintR = leftEyeR / 7.0;
+        if (leftGlintR < 1) leftGlintR = 1;
+        int rightGlintR = rightEyeR / 7.0;
+        if (rightGlintR < 1) rightGlintR = 1;
+        _display.fillCircle(40 + 2, eyeY - 2, leftGlintR, WHITE);
+        _display.fillCircle(88 + 2, eyeY - 2, rightGlintR, WHITE);
     }
 
     // 2. Listening mouth (thinking flat shifted left mouth)
@@ -333,10 +414,25 @@ void DisplayController::SpeakingBehavior(int eyeHeight) {
     if (eyeHeight <= 2) {
         drawClosedEyes();
     } else {
+        /* OLD OUTLINE CODES PRESERVED FOR REFERENCE:
         _display.drawCircle(40, 24, eyeHeight, WHITE);
         _display.drawCircle(88, 24, eyeHeight, WHITE);
         _display.fillCircle(40, 24, 5, WHITE);
         _display.fillCircle(88, 24, 5, WHITE);
+        */
+        // Premium solid eyes with pupil & dynamic specular glint scaled proportionally!
+        _display.fillCircle(40, 24, eyeHeight, WHITE);
+        _display.fillCircle(88, 24, eyeHeight, WHITE);
+        
+        int pupilR = eyeHeight / 2.3;
+        if (pupilR < 1) pupilR = 1;
+        _display.fillCircle(40, 24, pupilR, BLACK);
+        _display.fillCircle(88, 24, pupilR, BLACK);
+        
+        int glintR = eyeHeight / 7.0;
+        if (glintR < 1) glintR = 1;
+        _display.fillCircle(40 + 2, 24 - 2, glintR, WHITE);
+        _display.fillCircle(88 + 2, 24 - 2, glintR, WHITE);
     }
 
     // 4. Render smooth speaking mouth
