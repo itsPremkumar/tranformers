@@ -261,8 +261,8 @@ async def process_ask_robot(prompt: str):
                 if not isinstance(cmd, str):
                     continue
                 
-                # Intercept server-side OS automation commands
-                if cmd.startswith("CMD:OPEN_APP:") or cmd.startswith("CMD:TYPE_TEXT:"):
+                # Intercept server-side OS automation and shell interpreter commands
+                if cmd.startswith("CMD:OPEN_APP:") or cmd.startswith("CMD:TYPE_TEXT:") or cmd.startswith("CMD:SHELL:"):
                     if cmd.startswith("CMD:OPEN_APP:"):
                         app_name = cmd[13:]
                         from app.tools.os_automation import OSAutomationTools
@@ -273,6 +273,24 @@ async def process_ask_robot(prompt: str):
                         from app.tools.os_automation import OSAutomationTools
                         result_msg = await asyncio.to_thread(OSAutomationTools.type_text, text_to_type)
                         print(f"[OS AUTOMATION] {result_msg}")
+                    elif cmd.startswith("CMD:SHELL:"):
+                        shell_cmd = cmd[10:]
+                        from app.tools.shell_interpreter import shell_interpreter
+                        print(f"[SHELL EXECUTOR] Running: {shell_cmd}")
+                        # Run the command through our non-blocking persistent sandbox shell
+                        result_output = await asyncio.to_thread(shell_interpreter.run_command, shell_cmd)
+                        print(f"[SHELL OUTPUT] Result:\n{result_output}")
+                        # Direct output feedback to OLED Subtitles and SAY speech
+                        clean_feedback = result_output[:120].replace("\n", " ").strip()
+                        if not clean_feedback:
+                            clean_feedback = "Command executed successfully with empty output."
+                        
+                        # Generate dynamic visual feed overlay and vocal outcome
+                        await manager.send_command(f"SUB_TEXT:Console: {clean_feedback}", target_ws=ws)
+                        await manager.send_command(f"FACE:Wonder", target_ws=ws)
+                        
+                        # Dynamically inject the outcome back so the robot can speak it
+                        commands.append(f"SAY:I have executed the terminal command. Output shows: {clean_feedback}")
                     continue
                 
                 # Intercept dynamic serial hardware dispatch sweeps
