@@ -14,6 +14,7 @@
 #include "Interaction.h"
 #include "SwarmIntelligence.h"
 #include "BLEManager.h"
+#include "McpEngine.h"
 
 #define WDT_TIMEOUT 10 
 
@@ -73,6 +74,7 @@ void setup() {
     interact.begin();
     connect.begin();
     swarmAI.begin();
+    McpEngine::getInstance().begin();
 
     prefs.begin("robot", false);
     currentMood = prefs.getInt("mood", 0);
@@ -154,6 +156,11 @@ void loop() {
             displayCtrl.talkingAnimation();
             #endif
             web.broadcast(cmd); 
+        } else if (cmd.startsWith("SUB_TEXT:")) {
+            #if USE_OLED_DISPLAY
+            String text = cmd.substring(9);
+            displayCtrl.SetSubtitle(text);
+            #endif
         } else if (cmd.startsWith("MEM:")) {
             // Memory logic kept in main for now as it uses local Preferences
             int eqIdx = cmd.indexOf('=');

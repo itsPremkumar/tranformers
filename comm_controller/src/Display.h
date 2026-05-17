@@ -41,6 +41,7 @@ public:
     void drawTalkingMouth(int amplitude);
     void drawVisualizerFace(float low, float mid, float high);
     void drawBitmapFace(int index);
+    void SetSubtitle(String text);
 
 private:
     Adafruit_SSD1306 _display;
@@ -52,6 +53,7 @@ private:
     bool _isMuted = false;
     
     void drawTopStatusBar(int wifiPercent, int batteryPercent, bool isMuted);
+    void drawScrollingSubtitle();
     
     // New FaceEngine States & Offsets
     FaceState _state = FaceState::Idle;
@@ -63,6 +65,11 @@ private:
     unsigned long _transformStartTime = 0;
     int _speakMouthTarget = 4;
     int _speakMouthCurrent = 4;
+
+    // Chat Scrolling Subtitles (Xiaozhi Inspired)
+    String _chatSubtitle = "";
+    int _scrollOffset = 0;
+    unsigned long _lastScrollUpdate = 0;
 
     // New FaceEngine Behaviors
     void IdleBehavior(int eyeHeight);

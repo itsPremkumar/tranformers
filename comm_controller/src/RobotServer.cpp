@@ -1,5 +1,6 @@
 #include "RobotServer.h"
 #include <WiFi.h>
+#include "McpEngine.h"
 
 WebInterface::WebInterface(AudioSystem* audio, SurroundControl* surround, Network* net, int port) 
     : _audio(audio), _surround(surround), _net(net), _server(port), _hasNewCommand(false) {}
@@ -94,7 +95,10 @@ void WebInterface::onAiEvent(WStype_t type, uint8_t * payload, size_t length) {
         String msg = String((char*)payload);
         Serial.println("[AI-BRAIN] Received: " + msg);
         
-        if (msg.startsWith("POS:")) {
+        if (msg.indexOf("\"jsonrpc\"") != -1) {
+            String response = McpEngine::getInstance().parseAndExecute(msg);
+            _aiClient.sendTXT(response);
+        } else if (msg.startsWith("POS:")) {
             int comma = msg.indexOf(',');
             _robotX = msg.substring(4, comma).toFloat();
             _robotY = msg.substring(comma + 1).toFloat();

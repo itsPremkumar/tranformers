@@ -41,6 +41,24 @@ async def websocket_endpoint(websocket: WebSocket):
                         await manager.send_command("CMD:STOP")
                         print("[SAFETY] Emergency Stop: High Current Detected!")
                 except: pass
+            elif data.startswith('{"jsonrpc"'):
+                try:
+                    payload = json.loads(data)
+                    res_id = payload.get("id")
+                    result = payload.get("result", {})
+                    content = result.get("content", [{}])[0]
+                    text_val = content.get("text", "")
+                    print(f"[MCP TOOL RESPONSE] ID: {res_id} | Response: {text_val}")
+                    
+                    if "wifi_rssi" in text_val:
+                        status_data = json.loads(text_val)
+                        manager.update_profile(websocket, {
+                            "battery": int(status_data.get("battery", "0").replace("%", "")),
+                            "wifi_rssi": status_data.get("wifi_rssi")
+                        })
+                        print(f"[MCP PROFILE UPDATE] Sync: {manager.get_profile(websocket)}")
+                except Exception as e:
+                    print(f"[MCP ERROR] Failed to parse: {e}")
             elif data == "CMD:IDLE_OBSERVE":
                 profile = manager.get_profile(websocket)
                 robot_name = profile.get("name", "Unknown")

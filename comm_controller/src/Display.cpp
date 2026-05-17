@@ -34,6 +34,7 @@ void DisplayController::clearFace() {
 }
 
 void DisplayController::showFace() {
+    drawScrollingSubtitle();
     _display.display();
 }
 
@@ -503,6 +504,36 @@ void DisplayController::updateSystemStatus(int wifi, int battery, bool muted) {
     _wifiPercent = wifi;
     _batteryPercent = battery;
     _isMuted = muted;
+}
+
+void DisplayController::SetSubtitle(String text) {
+    _chatSubtitle = text;
+    _scrollOffset = 0;
+    _lastScrollUpdate = millis();
+}
+
+void DisplayController::drawScrollingSubtitle() {
+    if (_chatSubtitle.length() == 0) return;
+
+    // Clear bottom strip for subtitle
+    _display.fillRect(0, 56, 128, 8, BLACK);
+    _display.setTextSize(1);
+    _display.setTextColor(WHITE);
+
+    int textWidth = _chatSubtitle.length() * 6;
+    int xPos = 128 - _scrollOffset;
+
+    _display.setCursor(xPos, 56);
+    _display.print(_chatSubtitle);
+
+    // Dynamic non-blocking horizontal scrolling update (every 30ms)
+    if (millis() - _lastScrollUpdate > 30) {
+        _scrollOffset += 2;
+        if (_scrollOffset > textWidth + 128) {
+            _scrollOffset = 0;
+        }
+        _lastScrollUpdate = millis();
+    }
 }
 
 void DisplayController::drawTopStatusBar(int wifiPercent, int batteryPercent, bool isMuted) {

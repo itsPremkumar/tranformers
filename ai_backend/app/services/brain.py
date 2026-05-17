@@ -242,6 +242,37 @@ async def process_ask_robot(prompt: str):
                 # Check for speech command to send physical audio
                 if cmd.startswith("SAY:"):
                     text = cmd[4:]
+                    
+                    # 1. Parse and synchronize dynamic emotion qualifiers (Xiaozhi Inspired)
+                    detected_emotion = None
+                    emotions_map = {
+                        "[HAPPY]": "Happy",
+                        "[SAD]": "Sad",
+                        "[ANGRY]": "Angry",
+                        "[PEACE]": "Peace",
+                        "[HERO]": "Hero",
+                        "[LOVE]": "Love",
+                        "[FEAR]": "Fear",
+                        "[DISGUST]": "Disgust",
+                        "[WONDER]": "Wonder",
+                        "[WARNING]": "Warning",
+                        "[SLEEP]": "Sleep"
+                    }
+                    
+                    for marker, mood_str in emotions_map.items():
+                        if marker in text.upper():
+                            detected_emotion = mood_str
+                            import re
+                            text = re.sub(re.escape(marker), "", text, flags=re.IGNORECASE).strip()
+                    
+                    if detected_emotion:
+                        print(f"[EMOTION SYNC] Detected qualifier '{detected_emotion}'. Dispatching FACE change...")
+                        await manager.send_command(f"FACE:{detected_emotion}")
+                        
+                    # 2. Dispatch real-time horizontal scrolling subtitles (Xiaozhi Inspired)
+                    print(f"[SUBTITLE SYNC] Dispatching scrolling subtitle text: '{text}'")
+                    await manager.send_command(f"SUB_TEXT:{text}")
+                    
                     # Get language from robot profile
                     robot_lang = "en"
                     if manager.active_connections:
