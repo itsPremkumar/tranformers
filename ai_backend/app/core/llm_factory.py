@@ -131,6 +131,9 @@ class LLMFactory:
             if isinstance(parsed, list) and len(parsed) > 0 and any(isinstance(x, (int, float)) for x in parsed):
                 raise ValueError("Model hallucinated coordinates")
                 
+            if isinstance(parsed, list) and len(parsed) == 0:
+                raise ValueError("Model returned an empty list, falling back to text extraction.")
+                
             return clean
         except:
             clean_text = text.replace('"', '').replace("'", "").replace('[', '').replace(']', '').strip()

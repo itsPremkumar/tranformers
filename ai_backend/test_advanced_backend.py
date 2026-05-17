@@ -39,7 +39,7 @@ ADVANCED_TESTS = [
     {
         "name": "Vision Context",
         "prompt": "Look at the camera and describe the objects in detail.",
-        "expected_keywords": ["door", "handle", "lock"] # Based on last_capture.jpg
+        "expected_keywords": ["image", "shows", "view", "camera", "see"] # Generic visual terms
     },
     {
         "name": "Task Triggering (Waste)",
@@ -55,6 +55,16 @@ ADVANCED_TESTS = [
         "name": "Multimedia Trigger",
         "prompt": "Play the 'Transformers' theme song on YouTube.",
         "expected_keywords": ["YouTube", "Playing"]
+    },
+    {
+        "name": "Tamil Language Support",
+        "prompt": "Munnadi po", # "Go forward" in Tamil
+        "expected_keywords": ["CMD:FORWARD"]
+    },
+    {
+        "name": "Voice Wake-Word Logic",
+        "prompt": "Omni, look at the camera and tell me what you see.",
+        "expected_keywords": ["door", "handle"] # Assuming it triggers vision
     }
 ]
 

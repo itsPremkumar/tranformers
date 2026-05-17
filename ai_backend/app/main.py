@@ -22,6 +22,13 @@ from app.tools.solar import analyze_brightness
 import subprocess
 from pydantic import BaseModel
 
+try:
+    from app.tools.voice_assistant import voice_assistant
+    VOICE_ENABLED = True
+except Exception as e:
+    print(f"[VOICE] Voice Assistant disabled (Missing dependencies or model): {e}")
+    VOICE_ENABLED = False
+
 app = FastAPI(title=settings.PROJECT_NAME)
 llm = LLMFactory(manager)
 
@@ -390,6 +397,34 @@ async def proactive_loop():
             except Exception as e:
                 print(f"Proactive Loop Error: {e}")
 
+async def proactive_voice_loop():
+    """Background task to listen for the wake-word and process voice commands locally."""
+    if not VOICE_ENABLED:
+        return
+        
+    print("[VOICE] Proactive Voice Loop started (using local microphone).")
+    while True:
+        try:
+            # This will block until wake-word is detected, then record and transcribe
+            text, language = await voice_assistant.process_speech()
+            
+            if not text:
+                continue
+                
+            print(f"[VOICE] Submitting to brain: '{text}' (Lang: {language})")
+            
+            # Update the robot profile with the detected language so TTS responds correctly
+            if manager.active_connections:
+                ws = manager.active_connections[0]
+                manager.update_profile(ws, {"language": language})
+            
+            # Trigger the standard brain flow
+            await ask_robot(UserPrompt(prompt=text))
+            
+        except Exception as e:
+            print(f"[VOICE] Loop Error: {e}")
+            await asyncio.sleep(1)
+
 def check_ollama():
     """Ensures Ollama is running before the backend starts."""
     import socket
@@ -407,6 +442,8 @@ def check_ollama():
 async def startup():
     check_ollama()
     asyncio.create_task(proactive_loop())
+    if VOICE_ENABLED:
+        asyncio.create_task(proactive_voice_loop())
 
 if __name__ == "__main__":
     import uvicorn
