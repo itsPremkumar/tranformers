@@ -67,9 +67,14 @@ ADVANCED_TESTS = [
         "expected_keywords": ["image", "shows", "view", "camera", "see"] # Generic visual terms
     },
     {
-        "name": "Deep Research Web Agent",
-        "prompt": "Do deep research on what is an omni-morph robot?",
-        "expected_keywords": ["morph", "robot", "SAY:"]
+        "name": "Science Perspective Research",
+        "prompt": "Do deep research on why quantum computing is difficult to scale?",
+        "expected_keywords": ["quantum", "scale", "qubit", "SAY:"]
+    },
+    {
+        "name": "News Perspective Research",
+        "prompt": "Do deep research on latest news about SpaceX Starship launches",
+        "expected_keywords": ["SpaceX", "Starship", "launch", "SAY:"]
     }
 ]
 
