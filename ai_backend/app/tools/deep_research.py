@@ -337,6 +337,59 @@ def harvest_google_ai_overview(page, query: str) -> dict | None:
         print(f"[AI OVERVIEW ERROR] Failed harvesting Google AI Overview: {e}")
         return None
 
+def semantic_rerank_text(text: str, query: str, max_chars: int = 3000) -> str:
+    """PhD-Grade Sentence-Level Semantic Reranking to extract the most fact-dense and relevant scientific content."""
+    if not text or len(text) <= max_chars:
+        return text or ""
+        
+    # Extract clean terms from query (ignore small stopwords)
+    stopwords = {"what", "is", "ai", "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "with", "about", "latest", "news", "deep", "research"}
+    query_terms = [word.strip(",.?!()\"'").lower() for word in query.split() if len(word) > 2 and word.lower() not in stopwords]
+    
+    # Fallback to standard split if query is empty or too generic
+    if not query_terms:
+        return text[:max_chars]
+        
+    # Split text into sentences using common punctuation boundaries
+    import re
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    
+    scored_sentences = []
+    for idx, sentence in enumerate(sentences):
+        sentence_clean = sentence.lower()
+        score = 0
+        # Calculate term overlap and term proximity scores
+        for term in query_terms:
+            if term in sentence_clean:
+                score += 10 # Exact match bonus
+                
+        # Give a slight score boost to earlier sentences for contextual structure
+        score += max(0, 5 - (idx * 0.1))
+        
+        if score > 0:
+            scored_sentences.append((score, idx, sentence))
+            
+    # Sort by score descending
+    scored_sentences.sort(key=lambda x: x[0], reverse=True)
+    
+    # Grab the top scoring sentences
+    selected = []
+    current_len = 0
+    # To keep reading natural, we sort them back by their original index
+    scored_sentences_selection = scored_sentences[:30] # Limit pool to top 30
+    scored_sentences_selection.sort(key=lambda x: x[1])
+    
+    for _, _, sentence in scored_sentences_selection:
+        if current_len + len(sentence) + 1 > max_chars:
+            break
+        selected.append(sentence)
+        current_len += len(sentence) + 1
+        
+    if not selected:
+        return text[:max_chars]
+        
+    return " ".join(selected)
+
 def human_scroll(page):
     """Simulates a natural human scrolling through the webpage to trigger dynamic content loading."""
     try:
@@ -515,7 +568,7 @@ def deep_research(query: str) -> str:
                     
                     # Scrape DOM content
                     paragraphs = [p_tag.get_text() for p_tag in soup.find_all('p')]
-                    content = " ".join(paragraphs)[:3000].strip()
+                    content = semantic_rerank_text(" ".join(paragraphs), query, 3000)
                     
                     # Harvest SEO/GEO/AEO Structured schemas
                     metadata = harvest_seo_geo_metadata(soup)
@@ -659,7 +712,7 @@ def deep_research(query: str) -> str:
                         soup = BeautifulSoup(html, 'html.parser')
                         title = page.title()
                         paragraphs = [p_tag.get_text() for p_tag in soup.find_all('p')]
-                        content = " ".join(paragraphs)[:3000].strip()
+                        content = semantic_rerank_text(" ".join(paragraphs), query, 3000)
                         
                         metadata = harvest_seo_geo_metadata(soup)
                         grade, rationale = grade_research_content(html, content, title)
