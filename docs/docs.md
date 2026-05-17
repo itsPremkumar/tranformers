@@ -186,6 +186,52 @@ The robot ecosystem has been upgraded with "High-End" autonomous capabilities th
 
 ---
 
-## 🏁 13. Project Status: V1.0 COMPLETE
-The Transformer Robot is now a fully autonomous physical agent with vision, voice, memory, and reactive intelligence.
+---
+
+## 🧠 13. Advanced Cognitive Research Engine (ISRO / NASA Scientist Upgrade)
+
+To elevate the robot's swarm to top-level scientific capability, the cognitive layer has been equipped with a standardized **Research Engine package (`app/tools/research_engine/`)** that integrates frontier real-time RAG, database persistence, and multi-agent consensus loops.
+
+### 🔍 13.1 Autonomous RAG Query Expansion (Perplexity-Inspired)
+*   **Engine**: `query_expansion.py`
+*   **Logic**: Parses the incoming user prompt to determine lexical/semantic intent (Scientific, Live News, or General). Rather than searching the raw query, it expands it into a **3-Perspective Search Matrix** (e.g., Core Mechanisms, Technological Breakthroughs, and Limitations/Critiques) to compile highly diverse, cited source indexes.
+
+### 🔄 13.2 Multi-Step Iterative Scraper Loop (Claude-Inspired)
+*   **Engine**: `agentic_scraper.py`
+*   **Logic**: The scraper operates as an active, autonomous agent. If it visits a target URL and finds high-grade citations, broken links, or redirected resources, it **autonomously navigates and follows the citation links** rather than ending the search cycle. This ensures it retrieves the deepest ground-truth scientific sources.
+
+### 💾 13.3 Closed-Loop Skill Reflexion & Vault (Hermes-Inspired)
+*   **Engine**: `memory_vault.py`
+*   **Logic**: Powered by a local **ChromaDB vector database** loaded with local sentence transformer embeddings (`all-MiniLM-L6-v2`).
+*   **Function**: Highly graded paragraphs scraped from the web are chunked, embedded, and permanently stored in `app/data/vector_store/`. When a user asks a high-knowledge question, the robot **queries the local vault first** to recall past memories instantly before spending network resources.
+
+### 📄 13.4 Academic PDF & Scientific Paper Extractor
+*   **Engine**: `pdf_parser.py`
+*   **Logic**: Seamlessly intercepts `.pdf` URLs from arXiv or NASA ADS, downloads them streaming to disk, and uses `pdfplumber` to extract scientific raw text from academic journals to feed the semantic reranker.
+
+### 🩺 13.5 Physical Hardware Telemetry Science
+*   **Engine**: `telemetry_analytics.py`
+*   **Logic**: The backend acts as a diagnostic physician. It receives JSON/CSV telemetry packets (IMU drift values, motor current readings, battery states) and analyzes them:
+    *   Triggers **Critical Alert** if Battery drops below 20%.
+    *   Triggers **Warning Recalibration** if IMU Pitch/Roll drift exceeds absolute `5.0`.
+    *   Triggers **Stall Alert** if motor current exceeds `1500mA` (indicating physical jam).
+
+### 📡 13.6 Active Swarm WebSockets Integration
+*   **Endpoint**: `/ws/swarm_knowledge` in `app/main.py`
+*   **Logic**: Creates an active WebSocket server connection. Whenever one robot node in your swarm executes a deep research path or diagnoses a hardware failure, it immediately **broadcasts the scientific consensus or hardware skill** to all other connected robots in the workspace in real-time.
+
+### 🤖 13.7 Swarm Reasoning Loop (DeepSeek-style <think>)
+*   **Engine**: `deep_thinking.py`
+*   **Logic**: Implements a multi-agent thinking thread that steers the physical robot in real-time:
+    1.  **Skill Check**: Retrieves cached briefs from the Hermes memory vault.
+    2.  **Explorer Phase**: Pans head 50° and executes broad sweeps.
+    3.  **Critic Phase**: Pans/Tilts head down in heavy thought and runs the critic prompt to identify scientific gaps or contradictions.
+    4.  **Targeted Probe**: Pans 71° to scrape the missing scientific details to fill the Critic's gap.
+    5.  **Synthesis**: Builds a final multi-perspective consensus and compiles a complete visual markdown debugger audit report (`research_audit_report.md`).
+
+---
+
+## 🏁 14. Project Status: V2.0 COMPLETE (Cognitive Scientist Swarm)
+The Transformer Robot is now a state-of-the-art cognitive agent capable of high-level PhD research, vector memory vaults, physical sensor data science, and swarm knowledge WebSockets.
+
 
