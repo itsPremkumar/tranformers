@@ -184,6 +184,145 @@ void DisplayController::drawVisualizerFace(float low, float mid, float high) {
 }
 
 void DisplayController::updateRandom() {
-    int rnd = random(0, 100);
-    if (rnd < 5) randomBlink();
+    // If running under a custom State, process dynamic organic face updates
+    if (_state != FaceState::Idle || random(0, 10) < 4) {
+        updateFaceEngine();
+    } else {
+        int rnd = random(0, 100);
+        if (rnd < 5) randomBlink();
+    }
+}
+
+void DisplayController::SetState(FaceState state) {
+    _state = state;
+}
+
+void DisplayController::IdleBehavior(int eyeHeight) {
+    // 1. Drifting looking around logic from new engine
+    if (random(0, 40) == 0) {
+        _idleOffsetX = random(-3, 4); // Drift -3 to 3
+        _idleOffsetY = random(-2, 3); // Drift -2 to 2
+    }
+
+    clearFace();
+
+    // 2. Render normal eyes with drift offsets
+    int leftEyeX = 40 + _idleOffsetX;
+    int rightEyeX = 88 + _idleOffsetX;
+    int eyeY = 24 + _idleOffsetY;
+
+    if (eyeHeight <= 2) {
+        drawClosedEyes();
+    } else {
+        // Draw open eyes with scaled height (blink size)
+        _display.drawCircle(40, eyeY, eyeHeight, WHITE);
+        _display.drawCircle(88, eyeY, eyeHeight, WHITE);
+        _display.fillCircle(leftEyeX, eyeY, 5, WHITE);
+        _display.fillCircle(rightEyeX, eyeY, 5, WHITE);
+    }
+
+    // 3. Render idle mouth with offsets
+    _display.drawLine(48 + _idleOffsetX, 46 + _idleOffsetY, 80 + _idleOffsetX, 46 + _idleOffsetY, WHITE);
+    
+    showFace();
+}
+
+void DisplayController::ListeningBehavior(int eyeHeight) {
+    clearFace();
+
+    // 1. Asymmetric listening eyes from new engine (left eye smaller than right)
+    int leftEyeR = eyeHeight - 3;
+    if (leftEyeR < 2) leftEyeR = 2;
+    int rightEyeR = eyeHeight;
+    int eyeY = 24;
+
+    if (eyeHeight <= 2) {
+        drawClosedEyes();
+    } else {
+        _display.drawCircle(40, eyeY, leftEyeR, WHITE);
+        _display.drawCircle(88, eyeY, rightEyeR, WHITE);
+        _display.fillCircle(40, eyeY, 4, WHITE);
+        _display.fillCircle(88, eyeY, 5, WHITE);
+    }
+
+    // 2. Listening mouth (thinking flat shifted left mouth)
+    _display.drawLine(44, 46, 64, 46, WHITE);
+
+    showFace();
+}
+
+void DisplayController::SpeakingBehavior(int eyeHeight) {
+    unsigned long now = millis();
+
+    // 1. Update random speak mouth target size (from new speaking engine)
+    if (now - _lastSpeakUpdate > 120) {
+        _lastSpeakUpdate = now;
+        int r = random(0, 100);
+        if (r < 20) _speakMouthTarget = 2;
+        else if (r < 50) _speakMouthTarget = 8;
+        else if (r < 80) _speakMouthTarget = 14;
+        else _speakMouthTarget = 20;
+    }
+
+    // 2. Smoothly step towards speaking mouth height target (lerping)
+    if (_speakMouthCurrent < _speakMouthTarget) _speakMouthCurrent += 2;
+    else if (_speakMouthCurrent > _speakMouthTarget) _speakMouthCurrent -= 2;
+
+    clearFace();
+
+    // 3. Render normal eyes
+    if (eyeHeight <= 2) {
+        drawClosedEyes();
+    } else {
+        _display.drawCircle(40, 24, eyeHeight, WHITE);
+        _display.drawCircle(88, 24, eyeHeight, WHITE);
+        _display.fillCircle(40, 24, 5, WHITE);
+        _display.fillCircle(88, 24, 5, WHITE);
+    }
+
+    // 4. Render smooth speaking mouth
+    int mouthH = _speakMouthCurrent;
+    int mouthW = 20;
+    _display.fillRect(64 - (mouthW / 2), 48 - (mouthH / 2), mouthW, mouthH, WHITE);
+
+    showFace();
+}
+
+void DisplayController::updateFaceEngine() {
+    unsigned long now = millis();
+    int eyeHeight = 14; // Base eye radius for 128x64 face
+
+    // 1. Organic 3-Phase Blink Machine from new engine
+    if (_blinkPhase == 0) {
+        if (random(0, 150) == 0) {
+            _blinkPhase = 1;
+            _lastBlinkUpdate = now;
+        }
+    }
+
+    if (_blinkPhase > 0 && now - _lastBlinkUpdate > 50) {
+        _lastBlinkUpdate = now;
+        _blinkPhase++;
+        if (_blinkPhase > 3) _blinkPhase = 0; // Blink completed
+    }
+
+    switch (_blinkPhase) {
+        case 1: eyeHeight = 6; break;
+        case 2: eyeHeight = 1; break; // Fully closed
+        case 3: eyeHeight = 8; break;
+        default: eyeHeight = 14; break; // Fully open
+    }
+
+    // 2. Render state-based behaviors
+    switch (_state) {
+        case FaceState::Idle:
+            IdleBehavior(eyeHeight);
+            break;
+        case FaceState::Listening:
+            ListeningBehavior(eyeHeight);
+            break;
+        case FaceState::Speaking:
+            SpeakingBehavior(eyeHeight);
+            break;
+    }
 }

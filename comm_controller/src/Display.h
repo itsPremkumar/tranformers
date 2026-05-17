@@ -6,6 +6,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+enum class FaceState { Idle, Listening, Speaking };
+
 class DisplayController {
 public:
     DisplayController(uint8_t address = 0x3C, int width = 128, int height = 64);
@@ -15,6 +17,10 @@ public:
     void clearFace();
     void showFace();
     void updateRandom();
+    
+    // FaceState Management
+    void SetState(FaceState state);
+    void updateFaceEngine();
     
     // Expressions
     void happyFace();
@@ -33,6 +39,21 @@ public:
 private:
     Adafruit_SSD1306 _display;
     uint8_t _address;
+    
+    // New FaceEngine States & Offsets
+    FaceState _state = FaceState::Idle;
+    int _blinkPhase = 0;
+    int _idleOffsetX = 0;
+    int _idleOffsetY = 0;
+    unsigned long _lastBlinkUpdate = 0;
+    unsigned long _lastSpeakUpdate = 0;
+    int _speakMouthTarget = 4;
+    int _speakMouthCurrent = 4;
+
+    // New FaceEngine Behaviors
+    void IdleBehavior(int eyeHeight);
+    void ListeningBehavior(int eyeHeight);
+    void SpeakingBehavior(int eyeHeight);
     
     // Drawing helpers
     void drawNormalEyes(int leftX, int rightX, int y = 24);
