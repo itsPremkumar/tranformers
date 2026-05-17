@@ -6,7 +6,7 @@ Welcome, AI Agent. This guide helps you understand how to navigate, modify, and 
 - `ai_backend/`: Python source code. Entry point is `app/main.py`.
 - `motion_controller/`: ESP32 firmware for servos/motors. Core logic in `src/main.cpp`.
 - `comm_controller/`: Networking and UI firmware.
-- `docs/`: Comprehensive markdown documentation. Start with `docs/docs.md`.
+- `docs/`: Comprehensive markdown documentation. Start with `docs/Omni-Morph_TECHNICAL_DOCUMENTATION.md`.
 
 ## Proactive Agent Responsibilities
 - **Log Monitoring**: Actively use `run_command` or read log files to identify hardware/firmware errors.

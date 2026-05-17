@@ -88,7 +88,7 @@ The AI Backend can run on your laptop for testing with a local USB camera and lo
 ### 🚀 Core Guides
 *   📋 [**Project Summary**](./docs/COMPLETE_PROJECT_SUMMARY.md): Master overview of the entire build.
 *   📐 [**3D Model Quick Start**](./docs/COMPLETE_3D_MODEL_QUICK_START.md): Immediate steps for CAD design.
-*   📘 [**Technical Documentation**](./docs/docs.md): Deep dive into protocols and architecture.
+*   📘 [**Technical Documentation**](./docs/Omni-Morph_TECHNICAL_DOCUMENTATION.md): Deep dive into protocols and architecture.
 *   🦾 [**Omni-Morph Build Guide**](./docs/README.md): Step-by-step instructions for hardware.
 *   ⚡ [**Electronics & Wiring Guide**](./docs/WIRING_GUIDE.md): Master pin mapping and wiring.
 *   📋 [**Components List**](./docs/list.md): Detailed BOM for fabrication.
