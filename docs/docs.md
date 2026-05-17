@@ -1,6 +1,6 @@
-# 🤖 Transformer Robot – Technical Documentation
+# 🤖 Omni-Morph Robot – Technical Documentation
 
-This document provides a deep dive into the system architecture, software logic, and communication protocols of the Transformer Robot.
+This document provides a deep dive into the system architecture, software logic, and communication protocols of the Omni-Morph Robot.
 
 ---
 
@@ -229,9 +229,19 @@ To elevate the robot's swarm to top-level scientific capability, the cognitive l
     4.  **Targeted Probe**: Pans 71° to scrape the missing scientific details to fill the Critic's gap.
     5.  **Synthesis**: Builds a final multi-perspective consensus and compiles a complete visual markdown debugger audit report (`research_audit_report.md`).
 
+### 🚀 13.8 Future Cognitive & Knowledge-Based Upgrades (Roadmap)
+To keep the robot at the bleeding-edge of retrieval-augmented intelligence, the following knowledge-based expansions have been detailed for future implementation:
+
+1.  **Parent-Child Hierarchical Chunking**: Transition the `MemoryVault` chunking mechanism from flat 500-character blocks to small Child Chunks (100–150 chars) for dense vector search matching, linked directly to full Parent Chunks (800–1000 chars) for high-context LLM injection.
+2.  **Cross-Encoder Semantic Reranking**: Inject a secondary local Cross-Encoder scoring pass (`ms-marco-MiniLM-L-6-v2`) to re-score candidate paragraphs against the exact user query before generation, raising accuracy to 95%+.
+3.  **Domain Authority & Trust-Score Weights**: Implement automated trust multiplier scoring in the scraper agent that prioritizes `.edu`, `.gov`, and `arxiv.org` scientific domains over generic internet blogs.
+4.  **Reciprocal Rank Fusion (RRF)**: Implement RRF sorting in the Query Expansion engine to mathematically calculate the most authoritative hub page across all three perspective search matrices.
+
 ---
 
+
 ## 🏁 14. Project Status: V2.0 COMPLETE (Cognitive Scientist Swarm)
-The Transformer Robot is now a state-of-the-art cognitive agent capable of high-level PhD research, vector memory vaults, physical sensor data science, and swarm knowledge WebSockets.
+The Omni-Morph Robot is now a state-of-the-art cognitive agent capable of high-level PhD research, vector memory vaults, physical sensor data science, and swarm knowledge WebSockets.
+
 
 
