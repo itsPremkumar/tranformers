@@ -48,6 +48,42 @@ async def process_ask_robot(prompt: str):
 
     print(f"[DEBUG] Robot: {robot_name}, Mode: {robot_mode}")
 
+    # 0. Local Offline Command Interceptor (Jarvis-Inspired Sub-Millisecond Router)
+    offline_prompt = prompt.lower().strip()
+    offline_response = None
+    
+    if any(k in offline_prompt for k in ["what is the time", "what's the time", "tell me the time"]):
+        from datetime import datetime
+        offline_response = f"It's {datetime.now().strftime('%I:%M %p')} right now."
+    elif any(k in offline_prompt for k in ["what is the date", "what's the date", "tell me the date"]):
+        from datetime import datetime
+        offline_response = f"It's {datetime.now().strftime('%B %d, %Y')} today."
+    elif any(k in offline_prompt for k in ["what is the battery", "what's the battery", "check battery"]):
+        offline_response = f"My battery level is {round(reactive_vision.last_battery, 1)} percent."
+    elif any(k in offline_prompt for k in ["clear conversation", "clear history", "reset memory"]):
+        offline_response = "Dialogue memory cleared successfully."
+
+    if offline_response:
+        print(f"[OFFLINE INTERCEPT] Match found! Responding with: {offline_response}")
+        commands = [
+            "FACE:Wonder",
+            f"SUB_TEXT:{offline_response}",
+            f"SAY:{offline_response}"
+        ]
+        
+        if manager.active_connections:
+            ws = manager.active_connections[0]
+            for cmd in commands:
+                await manager.send_command(cmd, target_ws=ws)
+                
+        try:
+            from app.services.diagnostic_logger import log_diagnostic_event
+            log_diagnostic_event("Offline Intercept", f"Responded to query: '{prompt}' locally.", "success")
+        except Exception:
+            pass
+            
+        return {"status": "success", "commands": commands}
+
     # 1. Swarm Reasoning Interceptor (Runs the multi-minute deep thinking loop)
     swarm_keywords = ["think deeply", "thinking mode", "swarm reasoning", "analyze deeply", "contemplate"]
     if any(k in prompt.lower() for k in swarm_keywords):
