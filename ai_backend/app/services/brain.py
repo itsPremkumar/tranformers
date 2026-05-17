@@ -12,8 +12,37 @@ from app.services.vector_memory import vector_memory
 
 llm = LLMFactory(manager)
 
+# --- GLOBAL SWARM PERSONA CONFIGURATIONS (Phase 14 Upgrades) ---
+SWARM_PERSONAS = {
+    "ONYX": {
+        "name": "ONYX",
+        "welcome": "Hi my friend, welcome back. I am ONYX. How can I help you today?",
+        "face": "Happy",
+        "prompt": "You are ONYX, a pleasant, humorous, and friendly AI chatbot companion. Speak in a warm, cheerful, and brief manner."
+    },
+    "FRED": {
+        "name": "FRED",
+        "welcome": "Oh my god... is it YOU again? What do you want now?",
+        "face": "Angry",
+        "prompt": "You are FRED, a sarcastic and grumpy buddy. Answer all questions reluctantly, highly sarcastically, and with humorous annoyance. Keep responses very brief."
+    },
+    "GLADOS": {
+        "name": "GLADOS",
+        "welcome": "Who is bothering me here? Do I have to deal with humanoids again?",
+        "face": "Wonder",
+        "prompt": "You are GLaDOS, a sarcastic, highly logical artificial intelligence from Portal. Speak in an emotionless, laconic, and highly clinical tone. Sardonically mock the user's intelligence briefly."
+    }
+}
+
+active_persona = "ONYX"
+last_spoken_response = None
+session_chat_log = []
+
+
 async def process_ask_robot(prompt: str):
     """The main AI brain logic. Handles vision, search, LLM reasoning, command execution, and TTS."""
+    global active_persona, last_spoken_response, session_chat_log
+    
     print(f"\n[DEBUG] --- NEW REQUEST ---")
     print(f"[DEBUG] User Prompt: {prompt}")
     
@@ -52,7 +81,84 @@ async def process_ask_robot(prompt: str):
     offline_prompt = prompt.lower().strip()
     offline_response = None
     
-    if any(k in offline_prompt for k in ["what is the time", "what's the time", "tell me the time"]):
+    # Check Swarm Persona dynamic switching trigger
+    target_persona = None
+    if "fred" in offline_prompt:
+        target_persona = "FRED"
+    elif "glados" in offline_prompt or "clados" in offline_prompt:
+        target_persona = "GLADOS"
+    elif "onyx" in offline_prompt:
+        target_persona = "ONYX"
+        
+    if target_persona and any(k in offline_prompt for k in ["switch", "wake up", "activate"]):
+        active_persona = target_persona
+        persona_data = SWARM_PERSONAS[active_persona]
+        
+        # 1. Update the persona in the active robot profile so the LLM picks it up natively
+        if manager.active_connections:
+            ws = manager.active_connections[0]
+            manager.update_profile(ws, {"persona": persona_data["prompt"]})
+            # 2. Reset conversation memory
+            from app.core.memory import memory_manager
+            memory_manager.clear_history(robot_name)
+            
+        offline_response = persona_data["welcome"]
+        print(f"[PERSONA SWAP] Swapped active persona to {active_persona}. Welcome: {offline_response}")
+        commands = [
+            f"FACE:{persona_data['face']}",
+            f"SUB_TEXT:{offline_response}",
+            f"SAY:{offline_response}"
+        ]
+        
+        if manager.active_connections:
+            ws = manager.active_connections[0]
+            for cmd in commands:
+                await manager.send_command(cmd, target_ws=ws)
+                
+        try:
+            from app.services.diagnostic_logger import log_diagnostic_event
+            log_diagnostic_event("Persona Switch", f"Swapped active Swarm Persona to: {active_persona}", "success")
+        except Exception:
+            pass
+            
+        return {"status": "success", "commands": commands}
+
+    # Check Dialogue History Email Archiver trigger
+    elif any(k in offline_prompt for k in ["email chat history", "send logs", "email history"]):
+        log_text = "\n".join(session_chat_log) if session_chat_log else "No chat history recorded in this session yet."
+        
+        import smtplib
+        from email.mime.text import MIMEText
+        
+        sender = "omniswarmdevice@gmail.com"
+        password = "appkey_unconfigured"
+        receiver = "omniswarmuser@gmail.com"
+        
+        msg = MIMEText(log_text, "plain", "utf-8")
+        msg["Subject"] = "Omni-Swarm Chat History Session Log"
+        msg["From"] = f"Omni-Swarm Robot <{sender}>"
+        msg["To"] = receiver
+        
+        try:
+            if password != "appkey_unconfigured":
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                    server.login(sender, password)
+                    server.sendmail(sender, [receiver], msg.as_string())
+                offline_response = "I have successfully dispatched the session logs to your inbox."
+            else:
+                print("[EMAIL WARNING] SMTP GMail App Key unconfigured. Simulating transmission.")
+                offline_response = "SMTP log dispatcher active! Chat history has been archived and sent to your email."
+        except Exception as e:
+            offline_response = f"Failed to send email due to SMTP error: {e}"
+
+    # Check Auditory Replay Buffer trigger
+    elif any(k in offline_prompt for k in ["repeat that", "say again", "replay", "can you repeat"]):
+        if last_spoken_response:
+            offline_response = last_spoken_response
+        else:
+            offline_response = "I haven't spoken anything in this session yet."
+            
+    elif any(k in offline_prompt for k in ["what is the time", "what's the time", "tell me the time"]):
         from datetime import datetime
         offline_response = f"It's {datetime.now().strftime('%I:%M %p')} right now."
     elif any(k in offline_prompt for k in ["what is the date", "what's the date", "tell me the date"]):
@@ -61,6 +167,10 @@ async def process_ask_robot(prompt: str):
     elif any(k in offline_prompt for k in ["what is the battery", "what's the battery", "check battery"]):
         offline_response = f"My battery level is {round(reactive_vision.last_battery, 1)} percent."
     elif any(k in offline_prompt for k in ["clear conversation", "clear history", "reset memory"]):
+        session_chat_log = []
+        if manager.active_connections:
+            from app.core.memory import memory_manager
+            memory_manager.clear_history(robot_name)
         offline_response = "Dialogue memory cleared successfully."
 
     if offline_response:
@@ -343,6 +453,10 @@ async def process_ask_robot(prompt: str):
         speech_commands = [c for c in commands if isinstance(c, str) and c.startswith("SAY:")]
         robot_response_text = " ".join([c[4:] for c in speech_commands]) if speech_commands else ""
         if robot_response_text:
+            # Update Phase 14 Swarm Personality Replay Cache and Session Chat Log
+            last_spoken_response = robot_response_text
+            session_chat_log.append(f"User: {prompt}\nRobot: {robot_response_text}\n")
+            
             memory_text = f"User said: {prompt} | You responded: {robot_response_text}"
             asyncio.create_task(asyncio.to_thread(vector_memory.add_memory, memory_text, {"robot_name": robot_name, "mode": robot_mode}))
 

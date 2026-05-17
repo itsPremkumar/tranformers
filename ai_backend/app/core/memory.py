@@ -153,4 +153,13 @@ class MemoryManager:
         session.close()
         return "Failed to find active robot profile."
 
+    def clear_history(self, name: str):
+        """Clears conversation history for a specific robot."""
+        session = Session()
+        robot = session.query(RobotMemory).filter_by(robot_name=name).first()
+        if robot:
+            robot.history = "[]"
+            session.commit()
+        session.close()
+
 memory_manager = MemoryManager()
