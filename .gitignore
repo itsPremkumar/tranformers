@@ -52,3 +52,7 @@ Thumbs.db
 
 # Documentation
 docs/_build/
+
+# Screenshots and Camera Captures
+ai_backend/app/debug_screenshots/
+ai_backend/last_capture.jpg

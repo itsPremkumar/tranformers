@@ -16,8 +16,8 @@ if sys.platform == "win32":
     except: pass
 
 # Testing configuration
-BACKEND_URL = "http://localhost:8000"
-WS_URL = "ws://localhost:8000/ws"
+BACKEND_URL = "http://localhost:8005"
+WS_URL = "ws://localhost:8005/ws"
 
 ADVANCED_TESTS = [
     {
@@ -74,17 +74,17 @@ ADVANCED_TESTS = [
     {
         "name": "News Perspective Research",
         "prompt": "Do deep research on latest news about SpaceX Starship launches",
-        "expected_keywords": ["SpaceX", "Starship", "launch", "SAY:"]
+        "expected_keywords": ["SpaceX", "Starship", "launch", "SAY:", "thinking", "clear answer"]
     },
     {
         "name": "Swarm Reasoning Engine",
         "prompt": "Activate swarm reasoning to analyze why solid-state batteries fail.",
-        "expected_keywords": ["SAY:Allocating Swarm Agents", "SAY:Critic Agent evaluating", "SAY:Gap identified", "SAY:Swarm consensus reached", "solid-state"]
+        "expected_keywords": ["SAY:Allocating Swarm Agents", "SAY:Critic Agent evaluating", "SAY:Gap identified", "SAY:Swarm consensus reached", "solid-state", "thinking", "clear answer"]
     },
     {
         "name": "Skill Persistence Recall",
         "prompt": "Activate swarm reasoning to analyze why solid-state batteries fail.",
-        "expected_keywords": ["SAY:I have retrieved a persistent skill brief", "solid-state"]
+        "expected_keywords": ["SAY:I have retrieved a persistent skill brief", "solid-state", "thinking", "clear answer"]
     }
 ]
 
@@ -183,6 +183,21 @@ class AdvancedBackendTester:
                         await asyncio.sleep(3)
 
                     self.log("Advanced Validation Complete.")
+                    
+                    # Visual Debugger Verification Check
+                    self.log("\n[VERIFICATION] Checking Visual Debugger Audits...")
+                    import os, glob
+                    scr_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'app', 'debug_screenshots'))
+                    audit_file = os.path.abspath(os.path.join(os.path.dirname(__file__), 'research_audit_report.md'))
+                    
+                    pngs = glob.glob(os.path.join(scr_dir, "*.png"))
+                    self.log(f"[VERIFICATION] Found {len(pngs)} browser research screenshots captured at: {scr_dir}")
+                    
+                    if os.path.exists(audit_file):
+                        self.log(f"[VERIFICATION] PASS: Auditable report generated successfully at: {audit_file}")
+                    else:
+                        self.log("[VERIFICATION] FAIL: No auditable research_audit_report.md found.")
+                        
                     listener_task.cancel()
                     
             except Exception as e:

@@ -10,3 +10,7 @@ env/
 htmlcov/
 *.log
 *.db
+
+# Screenshots and Camera Captures
+app/debug_screenshots/
+last_capture.jpg

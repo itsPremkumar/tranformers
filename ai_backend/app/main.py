@@ -114,9 +114,9 @@ async def ask_robot(user_input: UserPrompt):
     search_keywords = ["search", "google", "weather", "news", "who is", "what is the price", "latest"]
     
     if any(k in user_input.prompt.lower() for k in deep_keywords):
-        from app.tools.deep_research import deep_research
+        from app.tools.deep_research import run_research_subprocess
         print(f"[DEBUG] Playwright Deep Research Triggered. Scrapping: {user_input.prompt}")
-        internet_results = deep_research(user_input.prompt)
+        internet_results = await run_research_subprocess(user_input.prompt)
         print(f"[DEBUG] Deep Research Results Length: {len(internet_results) if internet_results else 0}")
     elif any(k in user_input.prompt.lower() for k in search_keywords):
         from app.tools.internet import web_search
