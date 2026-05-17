@@ -116,6 +116,49 @@ void DisplayController::loveFace() {
     showFace();
 }
 
+void DisplayController::fearFace() {
+    clearFace();
+    // Large open terrified eyes with tiny pupils
+    _display.drawCircle(40, 26, 12, WHITE);
+    _display.drawCircle(88, 26, 12, WHITE);
+    _display.fillCircle(40, 26, 2, WHITE);
+    _display.fillCircle(88, 26, 2, WHITE);
+    // Trembling circular mouth
+    _display.drawCircle(64, 48, 5, WHITE);
+    showFace();
+}
+
+void DisplayController::disgustFace() {
+    clearFace();
+    // Squinting disgusted eyes
+    // Left eye: >
+    _display.drawLine(30, 20, 46, 26, WHITE);
+    _display.drawLine(30, 32, 46, 26, WHITE);
+    // Right eye: <
+    _display.drawLine(98, 20, 82, 26, WHITE);
+    _display.drawLine(98, 32, 82, 26, WHITE);
+    // Wavy horizontal mouth
+    _display.drawLine(48, 48, 56, 52, WHITE);
+    _display.drawLine(56, 52, 64, 48, WHITE);
+    _display.drawLine(64, 48, 72, 52, WHITE);
+    _display.drawLine(72, 52, 80, 48, WHITE);
+    showFace();
+}
+
+void DisplayController::wonderFace() {
+    clearFace();
+    // Standard wide open eyes
+    drawNormalEyes(40, 88);
+    // Arched highly raised eyebrows
+    _display.drawLine(28, 10, 40, 6, WHITE);
+    _display.drawLine(40, 6, 52, 10, WHITE);
+    _display.drawLine(76, 10, 88, 6, WHITE);
+    _display.drawLine(88, 6, 100, 10, WHITE);
+    // Wide open gasp/surprise mouth
+    _display.drawCircle(64, 48, 7, WHITE);
+    showFace();
+}
+
 void DisplayController::angryFace() {
     clearFace();
     _display.drawLine(28, 14, 50, 24, WHITE);

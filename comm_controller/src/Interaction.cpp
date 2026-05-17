@@ -77,6 +77,10 @@ void Interaction::handleMoodChange(int& currentMood, String cmd) {
     else if (mood == "angry") { currentMood = 2; _display->SetState(FaceState::Idle); _display->angryFace(); }
     else if (mood == "hero") { currentMood = 3; _display->SetState(FaceState::Idle); _display->heroFace(); }
     else if (mood == "love") { currentMood = 5; _display->SetState(FaceState::Idle); _display->loveFace(); }
+    else if (mood == "peace") { currentMood = 4; _display->SetState(FaceState::Idle); _display->peaceFace(); }
+    else if (mood == "fear") { currentMood = 6; _display->SetState(FaceState::Idle); _display->fearFace(); }
+    else if (mood == "disgust") { currentMood = 7; _display->SetState(FaceState::Idle); _display->disgustFace(); }
+    else if (mood == "wonder") { currentMood = 8; _display->SetState(FaceState::Idle); _display->wonderFace(); }
     else if (mood == "idle") { _display->SetState(FaceState::Idle); }
     else if (mood == "listening") { _display->SetState(FaceState::Listening); }
     else if (mood == "speaking") { _display->SetState(FaceState::Speaking); }

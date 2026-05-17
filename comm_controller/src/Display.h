@@ -30,6 +30,9 @@ public:
     void peaceFace();
     void heroFace();
     void loveFace();
+    void fearFace();
+    void disgustFace();
+    void wonderFace();
     void sleepMode();
     void warningFace();
     void showProgress(String label, int percent);

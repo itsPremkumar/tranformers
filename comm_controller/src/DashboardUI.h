@@ -67,13 +67,17 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "</div></div>";
 
     html += "<div class='card'>";
-    html += "<div class='section-title'>OLED Facial Expressions</div>";
+    html += "<div class='section-title'>Navarasa Control Suite (9 Emotions)</div>";
     html += "<div class='grid-3' style='margin-bottom:15px'>";
-    html += "<button class='btn btn-mood' onclick='expr(\"happy\")'><span class='icon'>😊</span><span class='label'>Happy</span></button>";
-    html += "<button class='btn btn-mood' onclick='expr(\"sad\")'><span class='icon'>😢</span><span class='label'>Sad</span></button>";
-    html += "<button class='btn btn-mood' onclick='expr(\"angry\")'><span class='icon'>😠</span><span class='label'>Angry</span></button>";
-    html += "<button class='btn btn-mood' onclick='expr(\"hero\")'><span class='icon'>😎</span><span class='label'>Hero</span></button>";
-    html += "<button class='btn btn-mood' onclick='expr(\"love\")'><span class='icon'>😍</span><span class='label'>Love</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"love\")'><span class='icon'>😍</span><span class='label'>Shringara (Love)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"happy\")'><span class='icon'>😊</span><span class='label'>Hasya (Joy)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"sad\")'><span class='icon'>😢</span><span class='label'>Karuna (Sad)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"angry\")'><span class='icon'>😠</span><span class='label'>Raudra (Anger)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"hero\")'><span class='icon'>😎</span><span class='label'>Veera (Heroism)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"fear\")'><span class='icon'>😨</span><span class='label'>Bhayanaka (Fear)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"disgust\")'><span class='icon'>🤢</span><span class='label'>Bibhatsa (Disgust)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"wonder\")'><span class='icon'>😲</span><span class='label'>Adbhuta (Wonder)</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"peace\")'><span class='icon'>🕊️</span><span class='label'>Shantha (Peace)</span></button>";
     html += "</div>";
     
     html += "<div class='section-title'>OLED Active Engine States</div>";
