@@ -20,9 +20,9 @@ WS_URL = "ws://localhost:8005/ws"
 # Target exclusively Deep Research and Scraper Grading Tests
 RESEARCH_DEBUG_TESTS = [
     {
-        "name": "Science Perspective Research",
-        "prompt": "Do deep research on why quantum computing is difficult to scale?",
-        "expected_keywords": ["quantum", "scale", "qubit", "SAY:"]
+        "name": "SGE AI Overview Research",
+        "prompt": "Do deep research to explain what is ai",
+        "expected_keywords": ["artificial", "intelligence", "SAY:"]
     },
     {
         "name": "News Perspective Research",
