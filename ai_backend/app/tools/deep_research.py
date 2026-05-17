@@ -295,7 +295,8 @@ def deep_research(query: str) -> str:
                             "load_time_ms": load_time_ms,
                             "chars_scraped": len(content),
                             "status": f"SUCCESS (Grade: {grade}/100)",
-                            "seo_metadata": metadata
+                            "seo_metadata": metadata,
+                            "scraped_content": content
                         })
                         print(f"[BROWSER] Successfully scraped high quality page (Grade: {grade}) in {load_time_ms}ms")
                     else:
@@ -320,7 +321,8 @@ def deep_research(query: str) -> str:
                             "load_time_ms": load_time_ms,
                             "chars_scraped": len(fallback_text),
                             "status": f"FALLBACK_AEO (Browser Grade: {grade}/100)",
-                            "seo_metadata": metadata
+                            "seo_metadata": metadata,
+                            "scraped_content": fallback_text
                         })
                     page.close()
                 except Exception as ex:
@@ -338,7 +340,8 @@ def deep_research(query: str) -> str:
                         "screenshot": None,
                         "load_time_ms": round((time.time() - start_time) * 1000, 2),
                         "chars_scraped": len(fallback_text),
-                        "status": f"FALLBACK_ERROR: {str(ex)}"
+                        "status": f"FALLBACK_ERROR: {str(ex)}",
+                        "scraped_content": fallback_text
                     })
             browser.close()
     except Exception as e:
@@ -391,7 +394,8 @@ def deep_research(query: str) -> str:
                                 "load_time_ms": load_time_ms,
                                 "chars_scraped": len(content),
                                 "status": f"SUCCESS (Grade: {grade}/100)",
-                                "seo_metadata": metadata
+                                "seo_metadata": metadata,
+                                "scraped_content": content
                             })
                         else:
                             fallback_text = url_snippets.get(url, "Alternative rich content snippet.")
@@ -412,7 +416,8 @@ def deep_research(query: str) -> str:
                                 "load_time_ms": load_time_ms,
                                 "chars_scraped": len(fallback_text),
                                 "status": f"FALLBACK_AEO (Browser Grade: {grade}/100)",
-                                "seo_metadata": metadata
+                                "seo_metadata": metadata,
+                                "scraped_content": fallback_text
                             })
                         page.close()
                     except Exception as ex:
@@ -429,7 +434,8 @@ def deep_research(query: str) -> str:
                             "screenshot": None,
                             "load_time_ms": round((time.time() - start_time) * 1000, 2),
                             "chars_scraped": len(fallback_text),
-                            "status": f"FALLBACK_ERROR: {str(ex)}"
+                            "status": f"FALLBACK_ERROR: {str(ex)}",
+                            "scraped_content": fallback_text
                         })
                 browser.close()
         except Exception as fallback_err:

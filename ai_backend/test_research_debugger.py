@@ -156,6 +156,7 @@ class ResearchDebuggerTester:
                     "screenshot_saved_path": scr_path,
                     "screenshot_file_exists": scr_exists,
                     "seo_aeo_metadata_harvested": page.get("seo_metadata", {}),
+                    "scraped_full_text": page.get("scraped_content", ""),
                     "manually_cross_verify_note": "Ensure to check the corresponding vertical screenshot to verify lazy elements fully loaded."
                 })
 
