@@ -59,6 +59,12 @@ void DisplayController::drawStraightMouth() {
     _display.drawLine(48, 50, 80, 50, WHITE);
 }
 
+void DisplayController::drawHeart(int x, int y) {
+    _display.fillCircle(x - 3, y - 2, 3, WHITE);
+    _display.fillCircle(x + 3, y - 2, 3, WHITE);
+    _display.fillTriangle(x - 6, y, x + 6, y, x, y + 8, WHITE);
+}
+
 void DisplayController::randomBlink() {
     clearFace();
     drawClosedEyes();
@@ -98,6 +104,14 @@ void DisplayController::heroFace() {
     _display.drawLine(28, 14, 50, 24, WHITE);
     _display.drawLine(78, 24, 100, 14, WHITE);
     drawNormalEyes(40, 88);
+    drawSmile();
+    showFace();
+}
+
+void DisplayController::loveFace() {
+    clearFace();
+    drawHeart(40, 26);
+    drawHeart(88, 26);
     drawSmile();
     showFace();
 }

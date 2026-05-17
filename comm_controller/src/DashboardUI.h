@@ -66,11 +66,28 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "<button class='btn btn-action' style='background:linear-gradient(45deg,#f093fb,#f5576c)' onclick='cmd(\"test\")'><span class='icon'>🩺</span><span class='label'>Self-Test</span></button>";
     html += "</div></div>";
 
-    html += "<div class='card'><div class='section-title'>Expressions</div><div class='grid-3'>";
+    html += "<div class='card'>";
+    html += "<div class='section-title'>OLED Facial Expressions</div>";
+    html += "<div class='grid-3' style='margin-bottom:15px'>";
     html += "<button class='btn btn-mood' onclick='expr(\"happy\")'><span class='icon'>😊</span><span class='label'>Happy</span></button>";
+    html += "<button class='btn btn-mood' onclick='expr(\"sad\")'><span class='icon'>😢</span><span class='label'>Sad</span></button>";
     html += "<button class='btn btn-mood' onclick='expr(\"angry\")'><span class='icon'>😠</span><span class='label'>Angry</span></button>";
     html += "<button class='btn btn-mood' onclick='expr(\"hero\")'><span class='icon'>😎</span><span class='label'>Hero</span></button>";
-    html += "</div></div>";
+    html += "<button class='btn btn-mood' onclick='expr(\"love\")'><span class='icon'>😍</span><span class='label'>Love</span></button>";
+    html += "</div>";
+    
+    html += "<div class='section-title'>OLED Active Engine States</div>";
+    html += "<div class='grid-3' style='margin-bottom:15px'>";
+    html += "<button class='btn btn-mood' style='background:linear-gradient(45deg,#3a7bd5,#3a6073)' onclick='expr(\"idle\")'><span class='icon'>💤</span><span class='label'>Idle</span></button>";
+    html += "<button class='btn btn-mood' style='background:linear-gradient(45deg,#3a7bd5,#3a6073)' onclick='expr(\"listening\")'><span class='icon'>👂</span><span class='label'>Listening</span></button>";
+    html += "<button class='btn btn-mood' style='background:linear-gradient(45deg,#3a7bd5,#3a6073)' onclick='expr(\"speaking\")'><span class='icon'>🗣️</span><span class='label'>Speaking</span></button>";
+    html += "</div>";
+
+    html += "<div class='section-title'>OLED Diagnostics HUD</div>";
+    html += "<div class='grid-3'>";
+    html += "<button class='btn btn-mood' style='background:linear-gradient(45deg,#f12711,#f5af19);aspect-ratio:auto;height:45px;max-width:100%;grid-column:span 3;width:100%' onclick='expr(\"debug\")'><span class='label'>📊 RENDER SYSTEM DIAGNOSTICS HUD</span></button>";
+    html += "</div>";
+    html += "</div>";
 
     html += "<div class='card'><div class='section-title'>Intercom (Robot Voice)</div>";
     html += "<button id='micBtn' class='btn btn-stop' style='width:100%;aspect-ratio:auto;height:60px;flex-direction:row;gap:10px'>";

@@ -29,6 +29,7 @@ public:
     void angryFace();
     void peaceFace();
     void heroFace();
+    void loveFace();
     void sleepMode();
     void warningFace();
     void showProgress(String label, int percent);
@@ -70,6 +71,7 @@ private:
     void drawSmile();
     void drawSadMouth();
     void drawStraightMouth();
+    void drawHeart(int x, int y);
     
     // Animations
     void randomBlink();

@@ -71,10 +71,12 @@ void Interaction::handleMoodChange(int& currentMood, String cmd) {
     #if USE_OLED_DISPLAY
     if (!_display) return;
     String mood = cmd.substring(5);
+    mood.toLowerCase(); // Ensure robust case-insensitive matching for WebSocket/HTTP commands!
     if (mood == "happy") { currentMood = 0; _display->SetState(FaceState::Idle); _display->happyFace(); }
     else if (mood == "sad") { currentMood = 1; _display->SetState(FaceState::Idle); _display->sadFace(); }
     else if (mood == "angry") { currentMood = 2; _display->SetState(FaceState::Idle); _display->angryFace(); }
     else if (mood == "hero") { currentMood = 3; _display->SetState(FaceState::Idle); _display->heroFace(); }
+    else if (mood == "love") { currentMood = 5; _display->SetState(FaceState::Idle); _display->loveFace(); }
     else if (mood == "idle") { _display->SetState(FaceState::Idle); }
     else if (mood == "listening") { _display->SetState(FaceState::Listening); }
     else if (mood == "speaking") { _display->SetState(FaceState::Speaking); }
