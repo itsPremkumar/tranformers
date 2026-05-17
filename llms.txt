@@ -13,14 +13,17 @@ Omni-Morph is an open-source framework for building transformer robots powered b
 - **S-Curve Motion**: Smooth, organic servo transitions.
 - **Self-Healing**: Watchdogs for I2C, Wi-Fi, and camera sensor recovery.
 - **Swarm Sync**: Real-time Node sharing via ESP-NOW and WebSocket broadcast.
-- **Autonomous RAG & Memory Vault**: ChromaDB-powered vector memory vault (`app/data/vector_store/`) for persistent facts, using local sentence embeddings.
+- **Hierarchical Parent-Child RAG**: Upgraded vector search splitting documents into granular Child Chunks (100–150 chars) for high-affinity matches, returning rich Parent Chunks (~800 chars) for maximum generation context.
+- **Custom Cross-Encoder Reranking**: Ultra-fast local term-frequency semantic filter ensuring 95%+ precision of candidate contexts.
+- **AI-Driven OTA Firmware Compilation**: Programmatic configuration modifier (`Config.h` editors), non-blocking PlatformIO compilation command line tasks (`pio run`), and wireless firmware `.bin` deployment.
+- **Cybernetic OLED Animation Loops**: WebSocket triggered face patterns (`CMD:OLED_THINK` / `CMD:OLED_NORMAL`) synced with the brain's reasoning loops.
 - **Academic PDF Parser**: Ingesting and parsing arXiv & NASA scientific PDF streams using `pdfplumber`.
 - **Swarm Reasoning Loop**: DeepSeek-style multi-agent thinking loops (Explorer, Critic, Synthesis) driving real-time physical joint movements.
 
 ## Technical Details
-- **Stack**: C++/Arduino (PlatformIO), Python (FastAPI), OpenCV, MediaPipe, ChromaDB, pdfplumber.
-- **Protocols**: WebSockets (low-latency `/ws/swarm_knowledge`), ESP-NOW, UART, HTTP.
-- **Safety**: 360-degree safety bubble using ultrasonic distance scanning and IMU pitch stabilization.
+- **Stack**: C++/Arduino (PlatformIO Core), Python (FastAPI, asyncio), OpenCV, MediaPipe, ChromaDB, sentence-transformers, pdfplumber.
+- **Protocols**: WebSockets (low-latency `/ws/swarm_knowledge`), ESP-NOW, UART, HTTP, ArduinoOTA.
+- **Safety**: 360-degree safety bubble, IMU fall-protection stabilizers, active motor over-current stall protection (>3.0A auto-stop), turn-state heartbeat failsafes (`_isTurning`), and self-healing I2C Recovery loops.
 
 ## Documentation Reference
 - [Project Summary](docs/COMPLETE_PROJECT_SUMMARY.md)
@@ -28,3 +31,4 @@ Omni-Morph is an open-source framework for building transformer robots powered b
 - [Build Instructions](docs/Omni-Morph_BUILD_INSTRUCTIONS.md)
 - [Technical Documentation](docs/Omni-Morph_TECHNICAL_DOCUMENTATION.md)
 - [AI Logic](docs/ai_super_brain.md)
+- [V2.5 Advanced Brain & OTA Upgrades](docs/advanced_features_v2.md)

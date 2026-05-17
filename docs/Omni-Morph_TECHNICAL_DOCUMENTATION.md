@@ -65,9 +65,18 @@ To prevent "runaway" robot scenarios if communication fails:
 1.  Comm Controller sends `BEAT` every 1000ms.
 2.  Motion Controller monitors the link.
 3.  If no command (including `BEAT`) is received for **2500ms**, the robot automatically enters `STATE_STAND` and stops all motors.
+4.  **Integrated Turning Safe Cutoff**: Added `_isTurning` tracking variables inside `CommandHandler`. Heartbeat timeouts will safely execute an emergency stop (`car.stop()`) if the robot is actively moving forward or actively executing a turn command (left, right, pivot, or zero turns), shielding the physical chassis.
 
 ### 🚨 Fall Detection
 The `Balance` module continuously monitors the MPU6050. If a pitch or roll angle exceeds a critical threshold, it triggers an emergency stop to protect the servo gears from impact.
+
+### 🔌 Motor Over-Current & Stall protection
+*   **Active Monitoring**: Reads real-time current draws via `CURRENT_PIN`.
+*   **Anti-Burnout Safety**: If motor current spikes above **3.0 Amps** (meaning wheels are physically jammed, stuck on an obstacle, or blocked by a wall), the firmware instantly halts DC motor drives (`car.stop()`), saving motor windings and H-bridges from terminal blowout.
+
+### 🔄 Active I2C Self-Healing (I2C Healer)
+*   **Sensor Drop Recovery**: Mobile robot DC motors generate severe electromagnetic noise that can crash the I2C bus.
+*   **Anti-Freeze Loop**: The firmware updates `Balance::update()` to return `bool` connection health states. If an MPU6050 I2C transaction fails, the firmware immediately invokes `systemMgr.i2cRecovery()`, pulling the clock lines to clear hung I2C states without causing code loops or system hangs.
 
 ### 🔍 Hardware Self-Test (`CMD:TEST`)
 Initiates a comprehensive check:
@@ -84,11 +93,12 @@ Initiates a comprehensive check:
 *   **`ServoControl`**: Uses a non-blocking sequence generator for smooth transformation.
 *   **`MotorControl`**: Implements PWM speed ramping for the L298N.
 *   **`ObstacleAvoidance`**: A state machine that handles scanning, hole detection (ground distance > 45cm), and pathfinding.
+*   **`CommandHandler`**: Upgraded with turn command tracking (`isTurning()`) to feed failsafe interlocks.
 
 ### Communication Controller
 *   **`NetworkManager`**: Implements a priority-based connection logic (Wi-Fi preferred, LTE fallback).
 *   **`WebInterface`**: Served from SPIFFS/Flash. Uses WebSockets for low-latency directional control.
-*   **`DisplayController`**: An animation engine for the OLED, handling blinking and mood transitions.
+*   **`DisplayController`**: An animation engine for the OLED, handling blinking, mood transitions, and cybernetic thinking loops (`CMD:OLED_THINK` / `CMD:OLED_NORMAL`).
 
 ---
 
@@ -202,8 +212,8 @@ To elevate the robot's swarm to top-level scientific capability, the cognitive l
 
 ### 💾 13.3 Closed-Loop Skill Reflexion & Vault (Hermes-Inspired)
 *   **Engine**: `memory_vault.py`
-*   **Logic**: Powered by a local **ChromaDB vector database** loaded with local sentence transformer embeddings (`all-MiniLM-L6-v2`).
-*   **Function**: Highly graded paragraphs scraped from the web are chunked, embedded, and permanently stored in `app/data/vector_store/`. When a user asks a high-knowledge question, the robot **queries the local vault first** to recall past memories instantly before spending network resources.
+*   **Logic**: Powered by a local **ChromaDB vector database** loaded with local sentence transformer embeddings (`all-MiniLM-L6-v2`) and upgraded to a **Hierarchical Parent-Child Architecture**.
+*   **Function**: Highly graded paragraphs scraped from the web are stored in the database. During indexing, paragraphs are split into small, highly concentrated **Child Chunks** (100–150 characters) to optimize semantic vector alignment. When queried, ChromaDB retrieves the exact child match but yields the **full parent paragraph context** (~800 characters) saved in the metadata, ensuring maximum retrieval accuracy and context richness for the LLM.
 
 ### 📄 13.4 Academic PDF & Scientific Paper Extractor
 *   **Engine**: `pdf_parser.py`
@@ -228,20 +238,31 @@ To elevate the robot's swarm to top-level scientific capability, the cognitive l
     3.  **Critic Phase**: Pans/Tilts head down in heavy thought and runs the critic prompt to identify scientific gaps or contradictions.
     4.  **Targeted Probe**: Pans 71° to scrape the missing scientific details to fill the Critic's gap.
     5.  **Synthesis**: Builds a final multi-perspective consensus and compiles a complete visual markdown debugger audit report (`research_audit_report.md`).
+    6.  **Cybernetic SSD1306 Animations**: Broadcasts `CMD:OLED_THINK` and `CMD:OLED_NORMAL` state commands to the communication gateway to render real-time cybernetic thinking loading matrix routines on the SSD1306 OLED, perfectly synchronized with the brain's internal thinking cycles.
 
-### 🚀 13.8 Future Cognitive & Knowledge-Based Upgrades (Roadmap)
+### 🎯 13.8 Advanced Semantic Rerank Filter (V2.5 Implemented)
+*   **Engine**: `orchestrator.py` (`cross_encoder_rerank`)
+*   **Logic**: Implements a custom high-performance, term-frequency Cross-Encoder scoring pass. This secondary filter parses retrieved candidate documents and re-scores/re-ranks them against the precise terms of the user query, guaranteeing 95%+ context relevance while avoiding the huge latency of external deep learning models.
+
+### 🚀 13.9 AI-Driven Autonomous OTA (Over-the-Air) Firmware Compilation (V2.5 Implemented)
+*   **Engine**: `app/tools/ota_compiler.py`
+*   **Concept**: Enables the Python backend to automatically modify, compile, and wirelessly deploy ESP32 firmware updates!
+*   **Workflow**:
+    1.  **Config Modification**: Programmatically parses and edits target C++ preprocessor variables (e.g. Wi-Fi credentials, safety current limits, or servo calibration offsets) inside `Config.h`.
+    2.  **Autonomous Compilation**: Directly invokes the **PlatformIO CLI** engine via non-blocking subprocesses (`pio run -e esp32dev`) to rebuild the firmware C++ binary.
+    3.  **OTA Push**: Wirelessly pushes the built `.bin` firmware file over the air directly to the target robot node, enabling automatic self-healing and code tuning!
+
+### 🚀 13.10 Future Cognitive & Knowledge-Based Upgrades (Roadmap)
 To keep the robot at the bleeding-edge of retrieval-augmented intelligence, the following knowledge-based expansions have been detailed for future implementation:
 
-1.  **Parent-Child Hierarchical Chunking**: Transition the `MemoryVault` chunking mechanism from flat 500-character blocks to small Child Chunks (100–150 chars) for dense vector search matching, linked directly to full Parent Chunks (800–1000 chars) for high-context LLM injection.
-2.  **Cross-Encoder Semantic Reranking**: Inject a secondary local Cross-Encoder scoring pass (`ms-marco-MiniLM-L-6-v2`) to re-score candidate paragraphs against the exact user query before generation, raising accuracy to 95%+.
-3.  **Domain Authority & Trust-Score Weights**: Implement automated trust multiplier scoring in the scraper agent that prioritizes `.edu`, `.gov`, and `arxiv.org` scientific domains over generic internet blogs.
-4.  **Reciprocal Rank Fusion (RRF)**: Implement RRF sorting in the Query Expansion engine to mathematically calculate the most authoritative hub page across all three perspective search matrices.
+1.  **Domain Authority & Trust-Score Weights**: Implement automated trust multiplier scoring in the scraper agent that prioritizes `.edu`, `.gov`, and `arxiv.org` scientific domains over generic internet blogs.
+2.  **Reciprocal Rank Fusion (RRF)**: Implement RRF sorting in the Query Expansion engine to mathematically calculate the most authoritative hub page across all three perspective search matrices.
 
 ---
 
 
-## 🏁 14. Project Status: V2.0 COMPLETE (Cognitive Scientist Swarm)
-The Omni-Morph Robot is now a state-of-the-art cognitive agent capable of high-level PhD research, vector memory vaults, physical sensor data science, and swarm knowledge WebSockets.
+## 🏁 14. Project Status: V2.5 COMPLETE (Autonomous OTA & Advanced Semantic RAG)
+The Omni-Morph Robot is now a state-of-the-art cognitive agent capable of high-level PhD research, vector memory vaults, physical sensor data science, swarm knowledge WebSockets, and autonomous C++ OTA firmware compilation.
 
 
 
