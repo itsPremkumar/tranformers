@@ -174,6 +174,11 @@ void loop() {
             vault.end();
             web.broadcast("MEM_VAL:" + key + "=" + val);
         } else {
+            if (cmd == "CMD:TRANSFORM" || cmd == "CMD:CRAWLER") {
+                #if USE_OLED_DISPLAY
+                displayCtrl.SetState(FaceState::Transforming);
+                #endif
+            }
             connect.reliableSendCommand(cmd); 
         }
         web.clearCommand();

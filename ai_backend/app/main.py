@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.routes.robot import router as robot_router
 from app.routes.websockets import router as websockets_router
-from app.services import check_ollama, proactive_loop, proactive_voice_loop, VOICE_ENABLED
+from app.services import check_ollama, proactive_loop, proactive_voice_loop, VOICE_ENABLED, swarm_scheduler_loop
 
 # Force UTF-8 encoding for Windows consoles
 if sys.platform == "win32":
@@ -21,7 +21,16 @@ app.include_router(websockets_router)
 @app.on_event("startup")
 async def startup():
     check_ollama()
+    
+    # Log System Boot event
+    try:
+        from app.services.diagnostic_logger import log_diagnostic_event
+        log_diagnostic_event("System", "FastAPI Swarm Backend Booted successfully.", "success")
+    except Exception:
+        pass
+        
     asyncio.create_task(proactive_loop())
+    asyncio.create_task(swarm_scheduler_loop())
     if VOICE_ENABLED:
         asyncio.create_task(proactive_voice_loop())
 

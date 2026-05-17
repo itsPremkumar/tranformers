@@ -302,6 +302,9 @@ void DisplayController::updateRandom() {
 
 void DisplayController::SetState(FaceState state) {
     _state = state;
+    if (state == FaceState::Transforming) {
+        _transformStartTime = millis();
+    }
 }
 
 void DisplayController::IdleBehavior(int eyeHeight) {
@@ -445,6 +448,14 @@ void DisplayController::SpeakingBehavior(int eyeHeight) {
 
 void DisplayController::updateFaceEngine() {
     unsigned long now = millis();
+
+    // Auto-timeout for transformation mode
+    if (_state == FaceState::Transforming) {
+        if (now - _transformStartTime >= 6000) {
+            _state = FaceState::Idle;
+        }
+    }
+
     int eyeHeight = 14; // Base eye radius for 128x64 face
 
     // 1. Organic 3-Phase Blink Machine from new engine
@@ -481,6 +492,9 @@ void DisplayController::updateFaceEngine() {
             break;
         case FaceState::DebugHUD:
             drawDebugHUD();
+            break;
+        case FaceState::Transforming:
+            TransformingBehavior();
             break;
     }
 }
@@ -567,6 +581,83 @@ void DisplayController::drawDebugHUD() {
     _display.print("Min RAM:  ");
     _display.print(ESP.getMinFreeHeap() / 1024);
     _display.print(" KB");
+
+    showFace();
+}
+
+void DisplayController::TransformingBehavior() {
+    clearFace();
+
+    // 1. Draw status bar at the top
+    drawTopStatusBar(_wifiPercent, _batteryPercent, _isMuted);
+
+    // 2. High-tech Outer Caution Borders
+    _display.drawRect(0, 12, 128, 52, WHITE);
+    
+    // Dashed inner warning border
+    for (int x = 2; x < 126; x += 4) {
+        _display.drawFastHLine(x, 14, 2, WHITE);
+        _display.drawFastHLine(x, 61, 2, WHITE);
+    }
+    for (int y = 14; y < 61; y += 4) {
+        _display.drawFastVLine(2, y, 2, WHITE);
+        _display.drawFastVLine(125, y, 2, WHITE);
+    }
+
+    // 3. Central Rotating Radar Scope / Target Crosshair
+    int cx = 64;
+    int cy = 37;
+    int radius = 15;
+    
+    // Draw radar circles
+    _display.drawCircle(cx, cy, radius, WHITE);
+    _display.drawCircle(cx, cy, radius - 4, WHITE);
+    _display.drawPixel(cx, cy, WHITE); // Center dot
+
+    // Calculate rotation angle in radians (based on millis)
+    float angle = (millis() / 150.0);
+    int lineLen = 20;
+
+    // Draw 4 rotating crosshair lines
+    for (int i = 0; i < 4; i++) {
+        float a = angle + i * 1.57079632679f; // i * PI/2
+        int xStart = cx + cos(a) * (radius - 2);
+        int yStart = cy + sin(a) * (radius - 2);
+        int xEnd = cx + cos(a) * lineLen;
+        int yEnd = cy + sin(a) * lineLen;
+        _display.drawLine(xStart, yStart, xEnd, yEnd, WHITE);
+    }
+
+    // 4. Dynamic Sweeping Calibration Scanline
+    int sweepRange = 40; // scanning height from y=16 to y=56
+    int sweepY = 16 + abs((int)(millis() / 20) % (sweepRange * 2) - sweepRange);
+    _display.drawFastHLine(4, sweepY, 120, WHITE);
+    if (sweepY > 16) _display.drawFastHLine(8, sweepY - 1, 112, WHITE);
+    if (sweepY < 56) _display.drawFastHLine(8, sweepY + 1, 112, WHITE);
+
+    // 5. Flashing Critical Warning UI Banners
+    _display.setTextSize(1);
+    _display.setTextColor(WHITE);
+
+    // Flashing caution flags
+    if ((millis() / 250) % 2 == 0) {
+        _display.setCursor(6, 18);
+        _display.print("WARN");
+        _display.setCursor(100, 18);
+        _display.print("SYS");
+        
+        _display.setCursor(6, 50);
+        _display.print("LOCK");
+        _display.setCursor(100, 50);
+        _display.print("MODE");
+    }
+
+    // Centered label (e.g. CRITICAL TRANS)
+    _display.fillRect(20, 16, 88, 9, WHITE);
+    _display.setTextColor(BLACK);
+    _display.setCursor(22, 17);
+    _display.print("TRANSFORMING");
+    _display.setTextColor(WHITE); // Reset
 
     showFace();
 }

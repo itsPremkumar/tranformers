@@ -17,7 +17,7 @@ from scripts.download_models import download_vosk_model
 
 class VoiceAssistant:
     def __init__(self, wake_word="omni"):
-        self.wake_word = wake_word.lower()
+        self.wake_words = [wake_word.lower(), "jarvis", "optimus"]
         self.sample_rate = 16000
         
         print("[VOICE] Initializing Vosk Wake-Word Model...")
@@ -41,7 +41,7 @@ class VoiceAssistant:
 
     async def listen_for_wake_word(self):
         """Continuously listens for the wake word using the local microphone."""
-        print(f"[VOICE] Listening for wake word: '{self.wake_word}'...")
+        print(f"[VOICE] Listening for wake words: {self.wake_words}...")
         
         with sd.RawInputStream(samplerate=self.sample_rate, blocksize=8000, device=None,
                                dtype='int16', channels=1, callback=self.audio_callback):
@@ -50,14 +50,16 @@ class VoiceAssistant:
                 if self.recognizer.AcceptWaveform(data):
                     result = json.loads(self.recognizer.Result())
                     text = result.get("text", "").lower()
-                    if self.wake_word in text:
-                        print(f"\n[VOICE] Wake word '{self.wake_word}' DETECTED!")
+                    detected_word = next((w for w in self.wake_words if w in text), None)
+                    if detected_word:
+                        print(f"\n[VOICE] Wake word '{detected_word}' DETECTED!")
                         return True
                 else:
                     partial = json.loads(self.recognizer.PartialResult())
                     partial_text = partial.get("partial", "").lower()
-                    if self.wake_word in partial_text:
-                        print(f"\n[VOICE] Wake word '{self.wake_word}' DETECTED (partial)!")
+                    detected_word = next((w for w in self.wake_words if w in partial_text), None)
+                    if detected_word:
+                        print(f"\n[VOICE] Wake word '{detected_word}' DETECTED (partial)!")
                         # Clear queue before returning to avoid processing old data
                         with self.audio_queue.mutex:
                             self.audio_queue.queue.clear()

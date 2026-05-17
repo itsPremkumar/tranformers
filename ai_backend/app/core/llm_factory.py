@@ -185,6 +185,8 @@ ROBOT COMMANDS (Always return as a JSON list of strings):
 - PAN:0-180, TILT:0-180
 - FACE:mood
 - SAY:Your speech text
+- CMD:OPEN_APP:app_name (Launches host OS desktop application, e.g. CMD:OPEN_APP:chrome, CMD:OPEN_APP:vscode, CMD:OPEN_APP:notepad)
+- CMD:TYPE_TEXT:text_content (Auto-types text_content into the currently focused window on the host PC/Jetson)
 
-If a user asks to play or clean, use the specific task commands.
+If a user asks to play or clean, use the specific task commands. If asked to open an app or type, use the OS automation commands!
 """

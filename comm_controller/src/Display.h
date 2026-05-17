@@ -6,7 +6,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-enum class FaceState { Idle, Listening, Speaking, DebugHUD };
+enum class FaceState { Idle, Listening, Speaking, DebugHUD, Transforming };
 
 class DisplayController {
 public:
@@ -20,6 +20,7 @@ public:
     
     // FaceState Management
     void SetState(FaceState state);
+    FaceState GetState() const { return _state; }
     void updateFaceEngine();
     void updateSystemStatus(int wifi, int battery, bool muted);
     
@@ -59,6 +60,7 @@ private:
     int _idleOffsetY = 0;
     unsigned long _lastBlinkUpdate = 0;
     unsigned long _lastSpeakUpdate = 0;
+    unsigned long _transformStartTime = 0;
     int _speakMouthTarget = 4;
     int _speakMouthCurrent = 4;
 
@@ -66,6 +68,7 @@ private:
     void IdleBehavior(int eyeHeight);
     void ListeningBehavior(int eyeHeight);
     void SpeakingBehavior(int eyeHeight);
+    void TransformingBehavior();
     void drawDebugHUD();
     
     // Drawing helpers

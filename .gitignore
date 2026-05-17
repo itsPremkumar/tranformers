@@ -61,3 +61,10 @@ ai_backend/last_capture.jpg
 ai_backend/app/data/vector_store/
 ai_backend/temp_research_paper.pdf
 
+# Persistent Swarm Database, Logs, and Timelines
+ai_backend/robot_brain.db
+ai_backend/app/data/diagnostics.txt
+ai_backend/app/data/diagnostics.xlsx
+ai_backend/app/data/scheduler.json
+
+

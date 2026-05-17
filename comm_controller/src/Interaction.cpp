@@ -52,7 +52,9 @@ void Interaction::update(int currentMood) {
         _display->updateSystemStatus(wifiPercent, 92, false);
 
         int amp = _audio->getRecentAmplitude();
-        if (amp > 500) {
+        if (_display->GetState() == FaceState::Transforming) {
+            _display->updateFaceEngine();
+        } else if (amp > 500) {
             #if USE_AUDIO_VISUALIZER
             _display->drawVisualizerFace(_audio->getLowEnergy(), _audio->getMidEnergy(), _audio->getHighEnergy());
             #else
@@ -85,6 +87,8 @@ void Interaction::handleMoodChange(int& currentMood, String cmd) {
     else if (mood == "listening") { _display->SetState(FaceState::Listening); }
     else if (mood == "speaking") { _display->SetState(FaceState::Speaking); }
     else if (mood == "debug") { _display->SetState(FaceState::DebugHUD); }
+    else if (mood == "transform") { _display->SetState(FaceState::Transforming); }
+    else if (mood == "crawler") { _display->SetState(FaceState::Transforming); }
     else if (mood.length() > 0 && isDigit(mood[0])) {
         currentMood = mood.toInt();
         _display->SetState(FaceState::Idle);

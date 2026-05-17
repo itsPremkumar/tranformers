@@ -8,6 +8,7 @@ from app.tools.reactive_vision import reactive_vision
 from app.tools.odometry import visual_odometry
 from app.tools.solar import analyze_brightness
 from app.services.navigation import approach_target
+from app.services.vector_memory import vector_memory
 
 llm = LLMFactory(manager)
 
@@ -15,6 +16,26 @@ async def process_ask_robot(prompt: str):
     """The main AI brain logic. Handles vision, search, LLM reasoning, command execution, and TTS."""
     print(f"\n[DEBUG] --- NEW REQUEST ---")
     print(f"[DEBUG] User Prompt: {prompt}")
+    
+    # Log incoming command to Diagnostics Excel sheet
+    try:
+        from app.services.diagnostic_logger import log_diagnostic_event
+        log_diagnostic_event("Dialogue Inbound", f"User Prompt: '{prompt}'", "success")
+    except Exception:
+        pass
+        
+    # 1. Long-Term Vector Memory Recall
+    memories = vector_memory.search_memory(prompt, k=2)
+    memory_context = ""
+    if memories:
+        memory_context = "\n[SYSTEM MEMORY INJECTION: You recall the following relevant past occurrences/dialogues]:\n"
+        for m in memories:
+            if m.get("similarity", 0.0) > 0.45:
+                memory_context += f"- {m['text']}\n"
+    
+    enhanced_prompt = prompt
+    if memory_context:
+        enhanced_prompt = f"{memory_context}\nUser Current Input: {prompt}"
     
     # Get the active robot's name and mode for memory retrieval
     robot_name = "Unknown"
@@ -79,7 +100,7 @@ async def process_ask_robot(prompt: str):
         hybrid_commands.append(f"SAY:Playing '{query}' on YouTube.")
 
     print(f"[DEBUG] Requesting LLM Response...")
-    json_response = await llm.get_response(prompt, robot_name, image, hw_status=hw_status, internet_context=internet_results)
+    json_response = await llm.get_response(enhanced_prompt, robot_name, image, hw_status=hw_status, internet_context=internet_results)
     
     try:
         commands = json.loads(json_response)
@@ -93,6 +114,65 @@ async def process_ask_robot(prompt: str):
             for cmd in commands:
                 if not isinstance(cmd, str):
                     continue
+                
+                # Intercept server-side OS automation commands
+                if cmd.startswith("CMD:OPEN_APP:") or cmd.startswith("CMD:TYPE_TEXT:"):
+                    if cmd.startswith("CMD:OPEN_APP:"):
+                        app_name = cmd[13:]
+                        from app.tools.os_automation import OSAutomationTools
+                        result_msg = await asyncio.to_thread(OSAutomationTools.start_application, app_name)
+                        print(f"[OS AUTOMATION] {result_msg}")
+                    elif cmd.startswith("CMD:TYPE_TEXT:"):
+                        text_to_type = cmd[14:]
+                        from app.tools.os_automation import OSAutomationTools
+                        result_msg = await asyncio.to_thread(OSAutomationTools.type_text, text_to_type)
+                        print(f"[OS AUTOMATION] {result_msg}")
+                    continue
+                
+                # Intercept dynamic serial hardware dispatch sweeps
+                if cmd.startswith("CMD:SERIAL_SEND:"):
+                    from app.services.serial_recovery import serial_dispatcher
+                    result_msg = await asyncio.to_thread(serial_dispatcher.send_command, cmd)
+                    print(f"[SERIAL ROUTER] {result_msg}")
+                    continue
+
+                # Intercept SQL-backed dynamic Task & TODO commands
+                if cmd.startswith("CMD:ADD_TASK:") or cmd.startswith("CMD:LIST_TASKS") or cmd.startswith("CMD:UPDATE_TASK:"):
+                    from app.core.memory import memory_manager
+                    if cmd.startswith("CMD:ADD_TASK:"):
+                        payload = cmd[13:].split(",")
+                        desc = payload[0].strip()
+                        due = payload[1].strip() if len(payload) > 1 else ""
+                        pri = payload[2].strip() if len(payload) > 2 else "medium"
+                        result_msg = memory_manager.add_todo_task(robot_name, desc, due, pri)
+                        print(f"[TASK MANAGER] {result_msg}")
+                        # Log event inside diagnostics logger
+                        try:
+                            from app.services.diagnostic_logger import log_diagnostic_event
+                            log_diagnostic_event("Task Tracker", f"Added Task: '{desc}'", "success")
+                        except Exception: pass
+                    elif cmd.startswith("CMD:LIST_TASKS"):
+                        status = "all"
+                        if ":" in cmd:
+                            status = cmd[15:].strip()
+                        tasks = memory_manager.get_todo_tasks(robot_name, status)
+                        print(f"[TASK MANAGER] Retrieved tasks: {tasks}")
+                    elif cmd.startswith("CMD:UPDATE_TASK:"):
+                        payload = cmd[16:].split(",")
+                        try:
+                            t_id = int(payload[0].strip())
+                            n_status = payload[1].strip()
+                            result_msg = memory_manager.update_todo_status(robot_name, t_id, n_status)
+                            print(f"[TASK MANAGER] {result_msg}")
+                            # Log event inside diagnostics logger
+                            try:
+                                from app.services.diagnostic_logger import log_diagnostic_event
+                                log_diagnostic_event("Task Tracker", f"Updated Task {t_id} to status: '{n_status}'", "success")
+                            except Exception: pass
+                        except ValueError:
+                            print("[TASK MANAGER ERROR] Invalid Task ID parameter.")
+                    continue
+
                 await manager.send_command(cmd)
                 
                 # Update mode tracking
@@ -176,7 +256,27 @@ async def process_ask_robot(prompt: str):
                         # Send binary audio data
                         await manager.send_command(pcm_data)
         
+        # Asynchronously store successful dialogue turn in Vector Memory
+        speech_commands = [c for c in commands if isinstance(c, str) and c.startswith("SAY:")]
+        robot_response_text = " ".join([c[4:] for c in speech_commands]) if speech_commands else ""
+        if robot_response_text:
+            memory_text = f"User said: {prompt} | You responded: {robot_response_text}"
+            asyncio.create_task(asyncio.to_thread(vector_memory.add_memory, memory_text, {"robot_name": robot_name, "mode": robot_mode}))
+
+        # Log processed commands to Diagnostics Excel sheet
+        try:
+            from app.services.diagnostic_logger import log_diagnostic_event
+            log_diagnostic_event("Dialogue Outbound", f"Commands Executed: {commands}", "success")
+        except Exception:
+            pass
+
         return {"status": "success", "commands": commands}
     except Exception as e:
         print(f"Error: {e}")
+        # Log failure to Diagnostics Excel sheet
+        try:
+            from app.services.diagnostic_logger import log_diagnostic_event
+            log_diagnostic_event("System Error", f"Failed to execute prompt: {str(e)}", "error")
+        except Exception:
+            pass
         return {"status": "error", "message": str(e)}
