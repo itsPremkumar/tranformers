@@ -10,6 +10,7 @@ public:
     AudioSystem(int bckPin = 26, int wsPin = 25, int dataInPin = 33, int dataOutPin = 22);
     void begin();
     void playTestTone();
+    void playChime(int type);
     bool processAudio();
     void playRawPCM(uint8_t* data, size_t len);
     void speak(String text);

@@ -118,6 +118,40 @@ void AudioSystem::playTestTone() {
     free(testData);
 }
 
+void AudioSystem::playChime(int type) {
+    Serial.printf("[AUDIO] Playing native chime type %d...\n", type);
+    int sampleRate = 16000;
+    float duration = 0.3; // 300 ms duration
+    size_t samples = sampleRate * duration;
+    size_t bufLen = samples * sizeof(int16_t);
+    int16_t* buf = (int16_t*)malloc(bufLen);
+    if (buf == NULL) return;
+    
+    if (type == 0) { // Boot Chirp (Upward Frequency Sweep)
+        for (size_t i = 0; i < samples; i++) {
+            float freq = 440.0 + (880.0 - 440.0) * (float)i / samples;
+            buf[i] = 8000 * sin(2 * PI * freq * i / sampleRate);
+        }
+        playRawPCM((uint8_t*)buf, bufLen);
+    } else if (type == 1) { // Double Beep Success
+        size_t half = samples / 2;
+        for (size_t i = 0; i < half; i++) {
+            buf[i] = 10000 * sin(2 * PI * 880.0 * i / sampleRate);
+        }
+        for (size_t i = half; i < samples; i++) {
+            buf[i] = 10000 * sin(2 * PI * 1760.0 * i / sampleRate);
+        }
+        playRawPCM((uint8_t*)buf, bufLen);
+    } else if (type == 2) { // Warning/Error Low Buzzer
+        for (size_t i = 0; i < samples; i++) {
+            buf[i] = 12000 * sin(2 * PI * 180.0 * i / sampleRate);
+        }
+        playRawPCM((uint8_t*)buf, bufLen);
+    }
+    free(buf);
+}
+
+
 bool AudioSystem::isVoiceActive(int16_t* buffer, size_t samples) {
     long long sum = 0;
     for (size_t i = 0; i < samples; i++) {

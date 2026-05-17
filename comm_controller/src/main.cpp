@@ -122,6 +122,9 @@ void setup() {
     ArduinoOTA.begin();
 
     if (DEBUG_LEVEL >= 1) Serial.println("Comm Controller Modular Ready.");
+    #if USE_AUDIO_SYSTEM
+    audioSys.playChime(0);
+    #endif
 }
 
 void loop() {
