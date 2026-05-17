@@ -23,6 +23,8 @@ faster-whisper
 sounddevice
 webrtcvad
 requests
+playwright
+beautifulsoup4
 
 
 

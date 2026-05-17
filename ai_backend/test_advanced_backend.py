@@ -65,6 +65,11 @@ ADVANCED_TESTS = [
         "name": "Voice Wake-Word Logic",
         "prompt": "Omni, look at the camera and tell me what you see.",
         "expected_keywords": ["image", "shows", "view", "camera", "see"] # Generic visual terms
+    },
+    {
+        "name": "Deep Research Web Agent",
+        "prompt": "Do deep research on what is an omni-morph robot?",
+        "expected_keywords": ["morph", "robot", "SAY:"]
     }
 ]
 

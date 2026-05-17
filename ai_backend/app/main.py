@@ -90,8 +90,15 @@ async def ask_robot(user_input: UserPrompt):
     
     # Smart Internet Trigger: Search the web if the prompt implies needing current info
     internet_results = None
+    deep_keywords = ["deep research", "browser research", "research deeply", "deep search", "learn about"]
     search_keywords = ["search", "google", "weather", "news", "who is", "what is the price", "latest"]
-    if any(k in user_input.prompt.lower() for k in search_keywords):
+    
+    if any(k in user_input.prompt.lower() for k in deep_keywords):
+        from app.tools.deep_research import deep_research
+        print(f"[DEBUG] Playwright Deep Research Triggered. Scrapping: {user_input.prompt}")
+        internet_results = deep_research(user_input.prompt)
+        print(f"[DEBUG] Deep Research Results Length: {len(internet_results) if internet_results else 0}")
+    elif any(k in user_input.prompt.lower() for k in search_keywords):
         from app.tools.internet import web_search
         print(f"[DEBUG] Internet Search Triggered. Searching for: {user_input.prompt}")
         internet_results = web_search(user_input.prompt)

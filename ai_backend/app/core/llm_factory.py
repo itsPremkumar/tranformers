@@ -9,6 +9,7 @@ import io
 from app.core.config import settings
 from app.tools.robot import move_robot, set_camera_gimbal, transform_robot
 from app.tools.internet import web_search, wiki_lookup, play_youtube
+from app.tools.deep_research import deep_research
 from app.core.memory import memory_manager
 
 class LLMFactory:
@@ -16,7 +17,7 @@ class LLMFactory:
         self.manager = manager
         
         # Tools registration for Gemini
-        self.tools = [move_robot, set_camera_gimbal, transform_robot, web_search, wiki_lookup, play_youtube]
+        self.tools = [move_robot, set_camera_gimbal, transform_robot, web_search, wiki_lookup, play_youtube, deep_research]
         
         # Initialize Clients (Omni-Ready)
         self.gemini_client = None
