@@ -75,6 +75,16 @@ ADVANCED_TESTS = [
         "name": "News Perspective Research",
         "prompt": "Do deep research on latest news about SpaceX Starship launches",
         "expected_keywords": ["SpaceX", "Starship", "launch", "SAY:"]
+    },
+    {
+        "name": "Swarm Reasoning Engine",
+        "prompt": "Activate swarm reasoning to analyze why solid-state batteries fail.",
+        "expected_keywords": ["SAY:Allocating Swarm Agents", "SAY:Critic Agent evaluating", "SAY:Gap identified", "SAY:Swarm consensus reached", "solid-state"]
+    },
+    {
+        "name": "Skill Persistence Recall",
+        "prompt": "Activate swarm reasoning to analyze why solid-state batteries fail.",
+        "expected_keywords": ["SAY:I have retrieved a persistent skill brief", "solid-state"]
     }
 ]
 

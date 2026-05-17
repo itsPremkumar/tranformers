@@ -80,6 +80,26 @@ async def ask_robot(user_input: UserPrompt):
     print(f"\n[DEBUG] --- NEW REQUEST ---")
     print(f"[DEBUG] User Prompt: {user_input.prompt}")
     
+    # Get the active robot's name and mode for memory retrieval
+    robot_name = "Unknown"
+    robot_mode = "Robot" # Default
+    if manager.active_connections:
+        ws = manager.active_connections[0]
+        profile = manager.get_profile(ws)
+        robot_name = profile.get("name", "Unknown")
+        robot_mode = profile.get("current_mode", "Robot")
+
+    print(f"[DEBUG] Robot: {robot_name}, Mode: {robot_mode}")
+
+    # 1. Swarm Reasoning Interceptor (Runs the multi-minute deep thinking loop)
+    swarm_keywords = ["think deeply", "thinking mode", "swarm reasoning", "analyze deeply", "contemplate"]
+    if any(k in user_input.prompt.lower() for k in swarm_keywords):
+        print(f"[DEBUG] SWARM REASONING ACTIVATED for: {user_input.prompt}")
+        from app.tools.deep_thinking import run_swarm_reasoning
+        # Run the full swarm logic and return directly, skipping the standard short-loop
+        commands = await run_swarm_reasoning(user_input.prompt, manager, llm, robot_name, None)
+        return {"status": "success", "commands": commands}
+
     image = None
     # Smart Vision Trigger: Capture frame if the prompt implies looking at something
     visual_keywords = ["see", "look", "watch", "camera", "describe", "identify", "detect", "in front of"]
@@ -103,17 +123,6 @@ async def ask_robot(user_input: UserPrompt):
         print(f"[DEBUG] Internet Search Triggered. Searching for: {user_input.prompt}")
         internet_results = web_search(user_input.prompt)
         print(f"[DEBUG] Internet Results Length: {len(internet_results) if internet_results else 0}")
-    
-    # Get the active robot's name and mode for memory retrieval
-    robot_name = "Unknown"
-    robot_mode = "Robot" # Default
-    if manager.active_connections:
-        ws = manager.active_connections[0]
-        profile = manager.get_profile(ws)
-        robot_name = profile.get("name", "Unknown")
-        robot_mode = profile.get("current_mode", "Robot")
-
-    print(f"[DEBUG] Robot: {robot_name}, Mode: {robot_mode}")
 
     # Collect Hardware Status
     hw_status = {
