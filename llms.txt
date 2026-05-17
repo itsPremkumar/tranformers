@@ -11,16 +11,20 @@ Omni-Morph is an open-source framework for building transformer robots powered b
 ## Key Capabilities
 - **Bimodal Transformation**: Humanoid <-> 4WD Car.
 - **S-Curve Motion**: Smooth, organic servo transitions.
-- **Self-Healing**: Watchdogs for I2C, Wi-Fi, and sensor recovery.
-- **Swarm Sync**: ESP-NOW based credential sharing.
+- **Self-Healing**: Watchdogs for I2C, Wi-Fi, and camera sensor recovery.
+- **Swarm Sync**: Real-time Node sharing via ESP-NOW and WebSocket broadcast.
+- **Autonomous RAG & Memory Vault**: ChromaDB-powered vector memory vault (`app/data/vector_store/`) for persistent facts, using local sentence embeddings.
+- **Academic PDF Parser**: Ingesting and parsing arXiv & NASA scientific PDF streams using `pdfplumber`.
+- **Swarm Reasoning Loop**: DeepSeek-style multi-agent thinking loops (Explorer, Critic, Synthesis) driving real-time physical joint movements.
 
 ## Technical Details
-- **Stack**: C++/Arduino (PlatformIO), Python (FastAPI), OpenCV, MediaPipe.
-- **Protocols**: WebSockets (low-latency), ESP-NOW, MQTT.
-- **Safety**: 360-degree head-scanning obstacle avoidance.
+- **Stack**: C++/Arduino (PlatformIO), Python (FastAPI), OpenCV, MediaPipe, ChromaDB, pdfplumber.
+- **Protocols**: WebSockets (low-latency `/ws/swarm_knowledge`), ESP-NOW, UART, HTTP.
+- **Safety**: 360-degree safety bubble using ultrasonic distance scanning and IMU pitch stabilization.
 
 ## Documentation Reference
 - [Project Summary](docs/COMPLETE_PROJECT_SUMMARY.md)
 - [Wiring Guide](docs/WIRING_GUIDE.md)
 - [Build Instructions](docs/Omni-Morph_BUILD_INSTRUCTIONS.md)
+- [Technical Documentation](docs/Omni-Morph_TECHNICAL_DOCUMENTATION.md)
 - [AI Logic](docs/ai_super_brain.md)
