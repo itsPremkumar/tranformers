@@ -157,11 +157,25 @@ void loop() {
     audioSys.update();
     #endif
 
-    // 1. Process Web Commands
+    // 1. Process Web & USB Serial Commands
     static unsigned long lastInteraction = millis();
+    String cmd = "";
+    bool hasCmd = false;
+
     if (web.hasNewCommand()) {
+        cmd = web.getLastCommand();
+        hasCmd = true;
+        web.clearCommand();
+    } else if (Serial.available()) {
+        cmd = Serial.readStringUntil('\n');
+        cmd.trim();
+        if (cmd.length() > 0) {
+            hasCmd = true;
+        }
+    }
+
+    if (hasCmd) {
         lastInteraction = millis(); // Reset idle timer
-        String cmd = web.getLastCommand();
         if (DEBUG_LEVEL >= 2) Serial.println("Action Received: " + cmd);
         
         if (cmd == "CMD:SCAN") {
@@ -208,7 +222,6 @@ void loop() {
             }
             connect.reliableSendCommand(cmd); 
         }
-        web.clearCommand();
     }
 
     // 2. Curiosity Engine: Trigger if idle for 2 minutes
