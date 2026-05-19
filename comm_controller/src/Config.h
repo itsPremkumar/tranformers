@@ -6,6 +6,8 @@
 // ==========================================
 #define WIFI_SSID "one"          // Local Wi-Fi Network Name
 #define WIFI_PASS "12345678"     // Local Wi-Fi Password
+#define AP_SSID "Remote-car"     // Personal Hotspot Name (AP Mode)
+#define AP_PASS "12345678"       // Personal Hotspot Password (AP Mode)
 #define SIM7600_APN "internet"   // 4G LTE APN for SIM Card
 
 // ==========================================

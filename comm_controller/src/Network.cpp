@@ -13,8 +13,29 @@ void Network::beginWiFi() {
     String savedSsid = _prefs.getString("ssid", _defaultSsid);
     String savedPass = _prefs.getString("pass", _defaultPass);
     
+    Serial.println("[WIFI] Starting AP_STA Mode...");
+    WiFi.mode(WIFI_AP_STA);
+    
+    // Start Access Point
+    bool result = WiFi.softAP(AP_SSID, AP_PASS);
+    if (result) {
+        Serial.println("[SUCCESS] Hotspot Started");
+        _isHotspotActive = true;
+    } else {
+        Serial.println("[ERROR] Hotspot Failed");
+    }
+    
+    IPAddress IP = WiFi.softAPIP();
+    Serial.println("---------------------------------");
+    Serial.print("SSID     : ");
+    Serial.println(AP_SSID);
+    Serial.print("Password : ");
+    Serial.println(AP_PASS);
+    Serial.print("AP IP    : ");
+    Serial.println(IP);
+    Serial.println("---------------------------------");
+
     Serial.println("[WIFI] Connecting to: " + savedSsid);
-    WiFi.mode(WIFI_STA);
     
     #if USE_WIFI_LR
     beginLongRange();
@@ -23,7 +44,7 @@ void Network::beginWiFi() {
     WiFi.begin(savedSsid.c_str(), savedPass.c_str());
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 30) { // 15 seconds
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) { // 10 seconds
         esp_task_wdt_reset();
         delay(500);
         Serial.print(".");
@@ -33,14 +54,16 @@ void Network::beginWiFi() {
 
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("[WIFI] Connected successfully");
-        Serial.println("[WIFI] IP: " + WiFi.localIP().toString());
+        Serial.println("[WIFI] STA IP: " + WiFi.localIP().toString());
         
         #if USE_MDNS
         setupMDNS();
         #endif
     } else {
-        Serial.println("[ERROR] WiFi connection failed. Starting Setup Portal...");
-        startConfigPortal();
+        Serial.println("[WIFI] Station Mode: Connection failed or timed out.");
+        Serial.println("[WIFI] Continuing in Access Point Mode only.");
+        WiFi.disconnect();
+        WiFi.mode(WIFI_AP);
     }
 }
 
@@ -70,6 +93,10 @@ void sniffer_callback(void* buf, wifi_promiscuous_pkt_type_t type) {
 }
 
 void Network::startSniffer() {
+    if (_isHotspotActive) {
+        Serial.println("[SNIFFER] Cannot start sniffer while AP Hotspot is active!");
+        return;
+    }
     Serial.println("[SNIFFER] Starting Network Audit Sniffer...");
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&sniffer_callback);
@@ -203,7 +230,7 @@ void Network::processDns() {
 void Network::startRobotHotspot() {
     Serial.println("[NET] Creating Robot Gateway (Internal Hotspot)...");
     WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP("Omni-Gateway", "robot4glink"); // Secure internal password
+    WiFi.softAP(AP_SSID, AP_PASS); // Keep direct Remote-car AP configuration
     _isHotspotActive = true;
     Serial.print("[NET] Gateway IP: ");
     Serial.println(WiFi.softAPIP());

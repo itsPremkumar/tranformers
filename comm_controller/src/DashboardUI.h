@@ -35,7 +35,13 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "  <img src='" + streamUrl + "' onerror=\"this.src='https://via.placeholder.com/400x300?text=Camera+Offline'\" />";
     html += "</div>";
 
-    html += "<div class='card'><div class='status-bar'><span>IP: " + WiFi.localIP().toString() + "</span><span id='status'>READY</span></div></div>";
+    html += "<div class='card'><div class='status-bar'><span>AP IP: " + WiFi.softAPIP().toString() + "</span>";
+    if (WiFi.status() == WL_CONNECTED) {
+        html += "<span>STA IP: " + WiFi.localIP().toString() + "</span>";
+    } else {
+        html += "<span>STA IP: Not Connected</span>";
+    }
+    html += "<span id='status'>READY</span></div></div>";
     
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
     html += "<span>Movement Control</span>";

@@ -6,9 +6,7 @@ Connectivity::Connectivity(Network& net, WebInterface& web, SurroundControl& sur
 
 void Connectivity::begin() {
     _net.beginWiFi();
-    if (_net.isWiFiConnected()) {
-        _web.begin();
-    }
+    _web.begin();
     _ble.begin();
     _lastAiHeartbeat = millis();
 }
@@ -51,12 +49,12 @@ void Connectivity::update() {
             char pass[64];
         };
         WiFiSync sync;
-        strncpy(sync.ssid, "Omni-Gateway", 32);
-        strncpy(sync.pass, "robot4glink", 64);
+        strncpy(sync.ssid, AP_SSID, 32);
+        strncpy(sync.pass, AP_PASS, 64);
         
         uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
         esp_now_send(broadcastAddress, (uint8_t *) &sync, sizeof(WiFiSync));
-        Serial.println("[SYNC] Slaves moved to 4G Internal Hotspot.");
+        Serial.println("[SYNC] Slaves moved to Remote-car Hotspot.");
         hotspotSynced = true;
     }
 }

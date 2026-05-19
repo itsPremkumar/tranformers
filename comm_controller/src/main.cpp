@@ -224,14 +224,22 @@ void loop() {
         }
     }
 
-    // 2. Curiosity Engine: Trigger if idle for 2 minutes
+    // 2. Display connected clients to SoftAP every 5 seconds
+    static unsigned long lastClientPrint = 0;
+    if (millis() - lastClientPrint > 5000) {
+        lastClientPrint = millis();
+        Serial.print("[INFO] Connected Clients: ");
+        Serial.println(WiFi.softAPgetStationNum());
+    }
+
+    // 3. Curiosity Engine: Trigger if idle for 2 minutes
     if (millis() - lastInteraction > 120000) {
         lastInteraction = millis(); // Reset to avoid spamming
         Serial.println("[CURIOSITY] Idle detected. Requesting AI observation...");
         web.sendToAi("CMD:IDLE_OBSERVE");
     }
 
-    // 3. Process Telemetry from Motion Controller
+    // 4. Process Telemetry from Motion Controller
     while (Serial2.available()) {
         String telemetry = Serial2.readStringUntil('\n');
         telemetry.trim();

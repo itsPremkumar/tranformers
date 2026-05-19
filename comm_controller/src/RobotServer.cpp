@@ -281,7 +281,8 @@ void WebInterface::handleSay() {
 
 void WebInterface::handleStatus() {
     // We'll show the network type in the response
-    String json = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"rssi\":" + String(WiFi.RSSI()) + ",\"net\":\"" + (WiFi.status() == WL_CONNECTED ? "WiFi" : "4G") + "\"}";
+    String ipStr = (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+    String json = "{\"ip\":\"" + ipStr + "\",\"rssi\":" + String(WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : 0) + ",\"net\":\"" + (WiFi.status() == WL_CONNECTED ? "WiFi" : "AP") + "\"}";
     _server.send(200, "application/json", json);
 }
 
