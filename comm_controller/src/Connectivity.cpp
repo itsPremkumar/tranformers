@@ -19,9 +19,9 @@ void Connectivity::update() {
 
     // Toggle sniffer based on nearby users or commands
     #if USE_NET_SNIFFER
-    if (!_ble.isUserNearby() && !_net.isSnifferActive()) {
+    if (!_net.isHotspotActive() && !_ble.isUserNearby() && !_net.isSnifferActive()) {
         _net.startSniffer();
-    } else if (_ble.isUserNearby() && _net.isSnifferActive()) {
+    } else if ((_net.isHotspotActive() || _ble.isUserNearby()) && _net.isSnifferActive()) {
         _net.stopSniffer();
     }
     #endif
