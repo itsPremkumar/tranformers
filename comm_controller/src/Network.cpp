@@ -16,25 +16,6 @@ void Network::beginWiFi() {
     Serial.println("[WIFI] Starting AP_STA Mode...");
     WiFi.mode(WIFI_AP_STA);
     
-    // Start Access Point
-    bool result = WiFi.softAP(AP_SSID, AP_PASS);
-    if (result) {
-        Serial.println("[SUCCESS] Hotspot Started");
-        _isHotspotActive = true;
-    } else {
-        Serial.println("[ERROR] Hotspot Failed");
-    }
-    
-    IPAddress IP = WiFi.softAPIP();
-    Serial.println("---------------------------------");
-    Serial.print("SSID     : ");
-    Serial.println(AP_SSID);
-    Serial.print("Password : ");
-    Serial.println(AP_PASS);
-    Serial.print("AP IP    : ");
-    Serial.println(IP);
-    Serial.println("---------------------------------");
-
     Serial.println("[WIFI] Connecting to: " + savedSsid);
     
     #if USE_WIFI_LR
@@ -56,6 +37,16 @@ void Network::beginWiFi() {
         Serial.println("[WIFI] Connected successfully");
         Serial.println("[WIFI] STA IP: " + WiFi.localIP().toString());
         
+        // Start Access Point after connection is established
+        // so it inherits the correct channel of the router.
+        bool result = WiFi.softAP(AP_SSID, AP_PASS);
+        if (result) {
+            Serial.println("[SUCCESS] Hotspot Started");
+            _isHotspotActive = true;
+        } else {
+            Serial.println("[ERROR] Hotspot Failed");
+        }
+        
         #if USE_MDNS
         setupMDNS();
         #endif
@@ -64,6 +55,31 @@ void Network::beginWiFi() {
         Serial.println("[WIFI] Continuing in Access Point Mode only.");
         WiFi.disconnect();
         WiFi.mode(WIFI_AP);
+        
+        // Start Access Point in standalone mode
+        bool result = WiFi.softAP(AP_SSID, AP_PASS);
+        if (result) {
+            Serial.println("[SUCCESS] Hotspot Started (AP Mode)");
+            _isHotspotActive = true;
+        } else {
+            Serial.println("[ERROR] Hotspot Failed");
+        }
+    }
+    
+    if (_isHotspotActive) {
+        // Force standard protocols on AP interface so phones can see it
+        esp_wifi_set_protocol(WIFI_IF_AP, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
+        
+        IPAddress IP = WiFi.softAPIP();
+        Serial.println("---------------------------------");
+        Serial.print("SSID     : ");
+        Serial.println(AP_SSID);
+        Serial.print("Password : ");
+        Serial.println(AP_PASS);
+        Serial.print("AP IP    : ");
+        Serial.println(IP);
+        Serial.printf("AP Channel: %d\n", WiFi.channel());
+        Serial.println("---------------------------------");
     }
 }
 

@@ -15,10 +15,14 @@ void SurroundControl::begin() {
 }
 
 void SurroundControl::update() {
-    if (millis() - _lastScanTime > 30000) { // Every 30 seconds for discovery
+    if (millis() - _lastScanTime > 60000) { // Every 60 seconds for discovery
         discoverRobotParts();
         scanNetwork();
-        startBleScan(2);
+        // BLE scan can conflict with WiFi AP, so guard it
+        if (_pBLEScan != nullptr) {
+            _pBLEScan->clearResults();
+            _pBLEScan->start(2, false);
+        }
         _lastScanTime = millis();
     }
 }
@@ -55,6 +59,11 @@ void SurroundControl::scanNetwork() {
 
 // --- WiFi SNIFFING (Promiscuous Mode) ---
 void SurroundControl::startSniffing() {
+    // Guard: Don't enable promiscuous mode if AP is active (it kills AP beacons)
+    if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+        Serial.println("[SURROUND] Cannot enter stealth mode while AP is active!");
+        return;
+    }
     Serial.println("[SURROUND] Entering STEALTH MODE (WiFi Sniffing)...");
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_promiscuous_rx_cb(&SurroundControl::onWiFiPacket);

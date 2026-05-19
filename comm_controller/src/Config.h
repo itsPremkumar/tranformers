@@ -20,7 +20,7 @@
 #define USE_AI_BRAIN     true    // Connect to the Python AI Backend
 #define USE_BLUETOOTH_AUDIO false // Enable Bluetooth Speaker functionality
 #define USE_EXTERNAL_BT_SPEAKER false // Connect to external BT speakers
-#define USE_WIFI_LR          true    // Enable Long Range WiFi (up to 1km)
+#define USE_WIFI_LR          false   // DISABLED: LR uses proprietary PHY that hides AP from phones
 #define USE_BLE_PROXIMITY    false   // Enable BLE beacon for phone detection
 #define USE_MDNS             true    // Enable omni.local access
 #define USE_NET_SNIFFER      true    // Enable WiFi packet sniffing for security audit
