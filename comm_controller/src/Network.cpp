@@ -2,6 +2,7 @@
 #include <ESPmDNS.h>
 #include <esp_wifi.h>
 #include "Config.h"
+#include <esp_task_wdt.h>
 
 Network::Network(const char* ssid, const char* password, int rxPin, int txPin) 
     : _defaultSsid(ssid), _defaultPass(password), _rxPin(rxPin), _txPin(txPin), _sim7600(2), _portalServer(80) {
@@ -23,6 +24,7 @@ void Network::beginWiFi() {
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 30) { // 15 seconds
+        esp_task_wdt_reset();
         delay(500);
         Serial.print(".");
         attempts++;

@@ -10,7 +10,7 @@ class BluetoothAudio {
 public:
     BluetoothAudio();
     void begin(int bckPin, int wsPin, int dataOutPin);
-    void beginSource(const char* targetName = "");
+    void beginSource(const char* targetName = "Omni-Speaker");
     void setSharedBuffer(RingbufHandle_t buf);
     void end();
     bool isConnected();

@@ -289,6 +289,11 @@ void AudioSystem::performFFT(int16_t* samples, size_t count) {
 
 void AudioSystem::i2sFeederTask(void *pvParameters) {
     AudioSystem *self = (AudioSystem *)pvParameters;
+    if (self->_audioBuffer == NULL) {
+        Serial.println("[AUDIO ERROR] Feeder Task aborted: Ring buffer is NULL!");
+        vTaskDelete(NULL);
+        return;
+    }
     size_t item_size;
     
     while (true) {

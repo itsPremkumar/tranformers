@@ -37,9 +37,10 @@ void BluetoothAudio::begin(int bckPin, int wsPin, int dataOutPin) {
 
 void BluetoothAudio::beginSource(const char* targetName) {
     #if USE_EXTERNAL_BT_SPEAKER
-    Serial.println("[BT-SOURCE] Starting Bluetooth A2DP Source...");
+    const char* target = (targetName && strlen(targetName) > 0) ? targetName : "Omni-Speaker";
+    Serial.printf("[BT-SOURCE] Starting Bluetooth A2DP Source targeting: %s\n", target);
     
-    _a2dpSource.start_raw(targetName, get_data_callback);
+    _a2dpSource.start_raw(target, get_data_callback);
     _isStarted = true;
     _isSource = true;
     Serial.println("[BT-SOURCE] Scanning for External Speakers...");

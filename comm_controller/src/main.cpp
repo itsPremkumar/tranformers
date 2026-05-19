@@ -45,7 +45,11 @@ WebInterface web(NULL, &surroundCtrl, &network, WEB_PORT);
 
 // --- Module Instances ---
 Connectivity connect(network, web, surroundCtrl, bleManager);
+#if USE_BLUETOOTH_AUDIO
 Interaction interact(&audioSys, &displayCtrl, &btAudio, web);
+#else
+Interaction interact(&audioSys, &displayCtrl, NULL, web);
+#endif
 SwarmIntelligence swarmAI(swarm, &displayCtrl, web);
 
 int currentMood = 0;
@@ -60,8 +64,21 @@ void checkMemory() {
     }
 }
 
+#include <nvs_flash.h>
+
 void setup() {
     Serial.begin(SERIAL_BAUD);
+    
+    // Explicit NVS initialization and self-healing to prevent wifi_init out-of-memory error (ret=101)
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        nvs_flash_erase();
+        err = nvs_flash_init();
+    }
+    if (err != ESP_OK) {
+        Serial.printf("[NVS ERROR] Failed to initialize NVS: %d\n", err);
+    }
+
     Serial2.begin(SERIAL_BAUD, SERIAL_8N1, MOTION_LINK_RX, MOTION_LINK_TX);
     
     esp_task_wdt_init(WDT_TIMEOUT, true);
@@ -71,8 +88,8 @@ void setup() {
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN); 
     #endif
 
-    interact.begin();
     connect.begin();
+    interact.begin();
     swarmAI.begin();
     McpEngine::getInstance().begin();
 

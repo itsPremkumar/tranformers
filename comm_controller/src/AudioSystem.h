@@ -52,7 +52,7 @@ private:
     const int CLAP_THRESHOLD = 15000; 
     
     volatile int _currentAmplitude = 0;
-    static const int RING_BUFFER_SIZE = 32 * 1024; 
+    static const int RING_BUFFER_SIZE = 8 * 1024; 
 };
 
 #endif
