@@ -88,13 +88,18 @@ void RobotSystem::checkBatterySafety() {
         
         if (voltage < 6.4 && voltage > 1.0) {
             Serial2.println("CMD:BATTERY_CRITICAL");
-            Serial.println("[HEAL] CRITICAL BATTERY! Entering Deep Sleep...");
+            Serial.println("[HEAL] CRITICAL BATTERY!");
+            #if CURRENT_HARDWARE_PROFILE != PROFILE_CAR_ONLY
+            Serial.println("[HEAL] Entering Deep Sleep...");
             _car.stop();
             #if USE_SERVO_DRIVER
             _servos.standPosition();
             #endif
             delay(2000);
             esp_deep_sleep_start();
+            #else
+            Serial.println("[HEAL] Deep Sleep skipped for Car Profile.");
+            #endif
         } else if (voltage < 6.8) {
             Serial2.println("CMD:BATTERY_LOW");
         }

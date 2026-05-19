@@ -28,12 +28,14 @@ public:
     float getAccelX() const { return _accX; }
     float getTerrainRoughness() const { return _roughness; }
     void resetYaw() { _yaw = 0; }
+    bool isOnline() const { return _online; }
     
     bool isStanding() const;
     FallDirection checkFall();
 
 private:
     MPU6050 _mpu;
+    bool _online = false;
     
     int16_t _ax, _ay, _az;
     int16_t _gx, _gy, _gz;

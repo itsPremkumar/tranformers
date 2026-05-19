@@ -120,7 +120,7 @@ void loop() {
     
     // 1. Update Sensors & Core Systems
     #if USE_MPU6050
-    if (!balance.update() && USE_I2C_HEALER) {
+    if (balance.isOnline() && !balance.update() && USE_I2C_HEALER) {
         systemMgr.i2cRecovery();
     }
     #endif

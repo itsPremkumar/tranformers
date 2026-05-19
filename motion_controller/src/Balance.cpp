@@ -7,10 +7,13 @@ Balance::Balance() : _roll(0), _pitch(0), _yaw(0), _roughness(0), _lastUpdate(0)
 bool Balance::begin() {
     _mpu.initialize();
     _lastUpdate = millis();
-    return _mpu.testConnection();
+    _online = _mpu.testConnection();
+    return _online;
 }
 
 bool Balance::update() {
+    if (!_online) return false;
+    
     _mpu.getMotion6(&_ax, &_ay, &_az, &_gx, &_gy, &_gz);
     
     uint32_t now = millis();
@@ -52,10 +55,13 @@ bool Balance::update() {
 }
 
 bool Balance::isStanding() const {
+    if (!_online) return true;
     return _az > (_gravity * 0.8);
 }
 
 FallDirection Balance::checkFall() {
+    if (!_online) return NO_FALL;
+    
     if (isStanding()) {
         return NO_FALL;
     }
