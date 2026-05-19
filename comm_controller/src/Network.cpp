@@ -5,7 +5,7 @@
 #include <esp_task_wdt.h>
 
 Network::Network(const char* ssid, const char* password, int rxPin, int txPin) 
-    : _defaultSsid(ssid), _defaultPass(password), _rxPin(rxPin), _txPin(txPin), _sim7600(2), _portalServer(80) {
+    : _defaultSsid(ssid), _defaultPass(password), _rxPin(rxPin), _txPin(txPin), _sim7600(2), _portalServer(8080) {
 }
 
 void Network::beginWiFi() {
@@ -204,8 +204,13 @@ bool Network::isSIMConnected() {
 }
 
 void Network::update() {
-    checkConnection();
-    processDns();
+    // Only run checkConnection on a timer, not every loop iteration
+    static unsigned long lastUpdate = 0;
+    if (millis() - lastUpdate > 15000) {
+        checkConnection();
+        lastUpdate = millis();
+    }
+    if (_isHoneypotActive || _isConfigPortalActive) processDns();
     if (_isConfigPortalActive) _portalServer.handleClient();
 }
 

@@ -89,9 +89,13 @@ void Connectivity::checkConnectionHealer() {
         _lastAiHeartbeat = millis();
     }
     
-    if (_net.isWiFiConnected() && (millis() - _lastAiHeartbeat > 45000)) {
-        Serial.println("[HEAL] Connection Zombie detected. Re-initializing Network...");
-        _net.beginWiFi();
+    // Only heal if WiFi is connected AND AI brain is enabled AND we haven't received
+    // any commands in a very long time. Don't restart WiFi - just reconnect AI.
+    #if USE_AI_BRAIN
+    if (_net.isWiFiConnected() && (millis() - _lastAiHeartbeat > 120000)) {
+        Serial.println("[HEAL] AI connection stale. Requesting reconnect...");
+        _web.sendToAi("CMD:HEARTBEAT");
         _lastAiHeartbeat = millis();
     }
+    #endif
 }

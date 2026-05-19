@@ -6,6 +6,7 @@ WebInterface::WebInterface(AudioSystem* audio, SurroundControl* surround, Networ
     : _audio(audio), _surround(surround), _net(net), _server(port), _hasNewCommand(false) {}
 
 void WebInterface::begin() {
+    Serial.println("[SERVER] Registering HTTP routes...");
     _server.on("/", [this]() { handleRoot(); });
     _server.on("/forward", [this]() { handleForward(); });
     _server.on("/backward", [this]() { handleBackward(); });
@@ -31,12 +32,19 @@ void WebInterface::begin() {
     _server.on("/honeypot", [this]() { handleHoneypot(); });
     _server.on("/flash", [this]() { handleFlash(); });
     
+    _server.onNotFound([this]() {
+        Serial.println("[SERVER] 404 Not Found: " + _server.uri());
+        _server.send(404, "text/plain", "Not Found: " + _server.uri());
+    });
+    
     _server.begin();
+    Serial.println("[SERVER] HTTP server started on port 80");
 
     _webSocket.begin();
     _webSocket.onEvent([this](uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
         onWebSocketEvent(num, type, payload, length);
     });
+    Serial.println("[SERVER] WebSocket server started on port 81");
 
     #if USE_AI_BRAIN
     reconnectAiBrain();
@@ -190,7 +198,10 @@ void WebInterface::clearCommand() {
 }
 
 void WebInterface::handleRoot() {
-    _server.send(200, "text/html", getDashboardHTML(_surround));
+    Serial.println("[SERVER] Dashboard requested by client");
+    String html = getDashboardHTML(_surround);
+    Serial.printf("[SERVER] Sending dashboard HTML (%d bytes)\n", html.length());
+    _server.send(200, "text/html", html);
 }
 
 

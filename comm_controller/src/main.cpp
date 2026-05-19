@@ -136,9 +136,15 @@ void setup() {
 
     ArduinoOTA.begin();
 
-    ArduinoOTA.begin();
-
-    if (DEBUG_LEVEL >= 1) Serial.println("Comm Controller Modular Ready.");
+    if (DEBUG_LEVEL >= 1) {
+        Serial.println("Comm Controller Modular Ready.");
+        Serial.println("========== SERVER INFO ==========");
+        Serial.print("AP IP    : "); Serial.println(WiFi.softAPIP());
+        Serial.print("STA IP   : "); Serial.println(WiFi.localIP());
+        Serial.print("HTTP Port: 80");
+        Serial.println();
+        Serial.println("=================================");
+    }
     #if USE_AUDIO_SYSTEM
     audioSys.playChime(0);
     #endif
