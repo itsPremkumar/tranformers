@@ -58,6 +58,22 @@ The robot requires three distinct power rails to handle varying current demands:
 
 ---
 
+## 🔋 5. Power Source & Charging
+
+*   **Battery Pack**: 11.1V / 12V 18650 Li-ion Battery Pack (3S pre-assembled configuration). Recommended for stable power delivery without individual cell wiring complications.
+*   **Charger Adapter**: 12.6V Li-ion Charger Adapter (matching the max charge voltage of the 3S Li-ion battery pack).
+
+---
+
+## 🔌 6. Prototyping & Connections
+
+To ensure robust signal and power distribution during prototyping, use the following jumper wires:
+*   **Male-to-Male (M-M)**: 20cm Dupont Jumper Wires (1 Pack) for connections between boards and breadboards/shields.
+*   **Male-to-Female (M-F)**: 20cm Dupont Jumper Wires (1 Pack) for sensor-to-microcontroller signal routing.
+*   **Female-to-Female (F-F)**: 20cm Dupont Jumper Wires (1 Pack) for inter-module logic communication (I2C, UART).
+
+---
+
 ## ⚠️ Wiring Checklist
 
 1.  **Cross Serial Links**: Comm TX (4) ➡️ Motion RX (4) AND Motion TX (15) ➡️ Comm RX (15).

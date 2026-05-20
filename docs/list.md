@@ -331,21 +331,35 @@ ESP32-CAM flash can also be used
 
 ---
 
-18650 Li-ion Battery × 6–8
+11.1V / 12V 18650 Li-ion Battery Pack × 1
 
 Use:
 
-Main robot power source
+Main robot power source (3S pre-assembled configuration)
 
 
 Why:
 
-Portable power for full robot system
+Stable 11.1V/12V supply, avoids complications of wiring individual cells
 
 
 ---
 
-18650 Battery Holder × 1
+12.6V Li-ion Charger Adapter × 1
+
+Use:
+
+Recharging the battery pack safely
+
+
+Why:
+
+Standard matching voltage charger for 3S (12.6V max charge voltage)
+
+
+---
+
+18650 Battery Holder × 1 (Optional, if using individual cells instead of pack)
 
 Use:
 
@@ -525,14 +539,29 @@ Joint fixing
 9. Wiring + Connection
 
 
----
-
-Jumper Wires
+Male-to-Male Jumper Wires (20cm Dupont Jumper Wires) × 1 Pack
 
 Use:
 
-Signal connections
+Signal connections between boards and breadboards/shields
 
+
+---
+
+Male-to-Female Jumper Wires (20cm Dupont Jumper Wires) × 1 Pack
+
+Use:
+
+Sensor to microcontroller signal routing
+
+
+---
+
+Female-to-Female Jumper Wires (20cm Dupont Jumper Wires) × 1 Pack
+
+Use:
+
+Inter-module logic communication (I2C, UART)
 
 
 ---
