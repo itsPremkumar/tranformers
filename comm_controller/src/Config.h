@@ -21,7 +21,7 @@
 #define USE_BLUETOOTH_AUDIO false // Enable Bluetooth Speaker functionality
 #define USE_EXTERNAL_BT_SPEAKER false // Connect to external BT speakers
 #define USE_WIFI_LR          false   // DISABLED: LR uses proprietary PHY that hides AP from phones
-#define USE_BLE_PROXIMITY    false   // Enable BLE beacon for phone detection
+#define USE_BLE_PROXIMITY    true   // Enable BLE beacon for phone detection
 #define USE_MDNS             true    // Enable omni.local access
 #define USE_NET_SNIFFER      true    // Enable WiFi packet sniffing for security audit
 #define USE_AUDIO_VISUALIZER true    // Enable OLED eyes dancing to music/voice
@@ -66,7 +66,7 @@
 // 🛡️ STABILITY & DEBUGGING
 // ==========================================
 #define DEBUG_LEVEL 2            // 0: Silent, 1: Errors, 2: Full Info
-#define MIN_FREE_MEMORY 20000    // Minimum bytes of RAM before auto-cleanup
+#define MIN_FREE_MEMORY 10000    // Minimum bytes of RAM before auto-cleanup
 #define I2C_TIMEOUT_MS  100      // Timeout for I2C recovery logic
 
 // ==========================================

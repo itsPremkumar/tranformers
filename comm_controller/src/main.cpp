@@ -65,10 +65,13 @@ unsigned long lastDisplayUpdate = 0;
 float currentYaw = 0;
 
 void checkMemory() {
-    size_t freeHeap = ESP.getFreeHeap();
-    if (freeHeap < MIN_FREE_MEMORY) {
-        Serial.printf("[WARN] Low Memory: %u bytes. Cleaning up...\n", freeHeap);
-        // Clear caches or disconnect non-essential clients if needed
+    static unsigned long lastCheck = 0;
+    if (millis() - lastCheck > 5000) {
+        lastCheck = millis();
+        size_t freeHeap = ESP.getFreeHeap();
+        if (freeHeap < MIN_FREE_MEMORY) {
+            Serial.printf("[WARN] Low Memory: %u bytes. Cleaning up...\n", freeHeap);
+        }
     }
 }
 

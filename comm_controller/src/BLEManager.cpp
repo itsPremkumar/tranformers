@@ -1,4 +1,5 @@
 #include "BLEManager.h"
+#include "esp_bt.h"
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
@@ -18,6 +19,12 @@ BLEManager::BLEManager() {}
 
 void BLEManager::begin() {
     #if USE_BLE_PROXIMITY
+    Serial.println("[BLE] Releasing Classic BT memory to reclaim RAM...");
+    esp_err_t err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
+    if (err != ESP_OK) {
+        Serial.printf("[BLE] Error releasing Classic BT memory: %d\n", err);
+    }
+
     Serial.println("[BLE] Starting BLE Proximity Server...");
     BLEDevice::init(BT_DEVICE_NAME);
     
