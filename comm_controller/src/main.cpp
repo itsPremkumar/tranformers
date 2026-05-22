@@ -69,6 +69,14 @@ void checkMemory() {
     if (millis() - lastCheck > 5000) {
         lastCheck = millis();
         size_t freeHeap = ESP.getFreeHeap();
+        
+        // Advanced System & Wi-Fi Debugger
+        Serial.printf("[DEBUG-SYS] Free Heap: %u bytes | WiFi Mode: %d | AP Stations: %d | STA RSSI: %d\n", 
+                      freeHeap, 
+                      (int)WiFi.getMode(), 
+                      WiFi.softAPgetStationNum(), 
+                      (WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0);
+
         if (freeHeap < MIN_FREE_MEMORY) {
             Serial.printf("[WARN] Low Memory: %u bytes. Cleaning up...\n", freeHeap);
         }
