@@ -25,7 +25,7 @@ void DisplayController::begin() {
     Wire.setClock(400000); // Set I2C frequency to 400kHz for buttery-smooth high-fps animations!
     _display.clearDisplay();
     _display.display();
-    randomSeed(analogRead(0));
+    randomSeed(esp_random());
 }
 
 void DisplayController::clearFace() {

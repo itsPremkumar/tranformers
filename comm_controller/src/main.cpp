@@ -45,10 +45,18 @@ WebInterface web(NULL, &surroundCtrl, &network, WEB_PORT);
 
 // --- Module Instances ---
 Connectivity connect(network, web, surroundCtrl, bleManager);
-#if USE_BLUETOOTH_AUDIO
-Interaction interact(&audioSys, &displayCtrl, &btAudio, web);
+#if USE_AUDIO_SYSTEM
+  #if USE_BLUETOOTH_AUDIO
+  Interaction interact(&audioSys, &displayCtrl, &btAudio, web);
+  #else
+  Interaction interact(&audioSys, &displayCtrl, NULL, web);
+  #endif
 #else
-Interaction interact(&audioSys, &displayCtrl, NULL, web);
+  #if USE_BLUETOOTH_AUDIO
+  Interaction interact(NULL, &displayCtrl, &btAudio, web);
+  #else
+  Interaction interact(NULL, &displayCtrl, NULL, web);
+  #endif
 #endif
 SwarmIntelligence swarmAI(swarm, &displayCtrl, web);
 

@@ -134,8 +134,17 @@ void loop() {
     #endif
 
     // 2. Command Processing & Heartbeat Failsafe
+    String cmd = "";
+    bool hasCmd = false;
     if (Serial2.available()) {
-        String cmd = Serial2.readStringUntil('\n');
+        cmd = Serial2.readStringUntil('\n');
+        hasCmd = true;
+    } else if (Serial.available()) {
+        cmd = Serial.readStringUntil('\n');
+        hasCmd = true;
+    }
+
+    if (hasCmd) {
         cmd.trim();
         if (cmd.length() > 0) {
             lastHeartbeatTime = millis(); // Refresh safety timer

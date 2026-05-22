@@ -76,7 +76,7 @@ void AudioSystem::begin() {
     xTaskCreate(this->i2sFeederTask, "i2s_feeder", 4096, this, 5, &_feederTaskHandle);
     
     // 4. Setup MP3 Streamer (Jarvis Voice)
-    mp3 = new Audio();
+    mp3 = new Audio(1);
     mp3->setPinout(_bckPin, _wsPin, _dataOutPin);
     mp3->setVolume(21); // 0...21
     
