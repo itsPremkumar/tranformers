@@ -29,8 +29,13 @@ try:
             printable = "".join(c for c in decoded if 32 <= ord(c) < 127 or c in '\r\n\t')
             if printable:
                 print(f"[SERIAL OUT] {printable}", flush=True)
+    
+    # Release reset lines so the ESP32 runs freely after we disconnect
+    ser.dtr = False
+    ser.rts = False
+    time.sleep(0.1)
     ser.close()
-    print("Listening complete.", flush=True)
+    print("Listening complete. ESP32 released.", flush=True)
 except Exception as e:
     print(f"Error: {e}", flush=True)
     sys.exit(1)
