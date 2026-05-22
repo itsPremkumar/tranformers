@@ -42,7 +42,14 @@ void BLEManager::begin() {
     pService->start();
 
     _pAdvertising = BLEDevice::getAdvertising();
-    _pAdvertising->addServiceUUID(SERVICE_UUID);
+    
+    // Explicitly configure advertising payload to include the Name and Service UUID
+    BLEAdvertisementData advData;
+    advData.setFlags(0x06); // General Discoverable, BR/EDR Not Supported
+    advData.setName(BT_DEVICE_NAME);
+    advData.setCompleteServices(BLEUUID(SERVICE_UUID));
+    _pAdvertising->setAdvertisementData(advData);
+
     _pAdvertising->setScanResponse(true);
     _pAdvertising->setMinPreferred(0x06);  
     _pAdvertising->setMinPreferred(0x12);

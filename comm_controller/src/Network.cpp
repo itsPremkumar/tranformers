@@ -52,14 +52,13 @@ void Network::beginWiFi() {
         #endif
     } else {
         Serial.println("[WIFI] Station Mode: Connection failed or timed out.");
-        Serial.println("[WIFI] Continuing in Access Point Mode only.");
+        Serial.println("[WIFI] Continuing with Access Point active.");
         WiFi.disconnect();
-        WiFi.mode(WIFI_AP);
         
-        // Start Access Point in standalone mode
+        // Start Access Point
         bool result = WiFi.softAP(AP_SSID, AP_PASS);
         if (result) {
-            Serial.println("[SUCCESS] Hotspot Started (AP Mode)");
+            Serial.println("[SUCCESS] Hotspot Started");
             _isHotspotActive = true;
         } else {
             Serial.println("[ERROR] Hotspot Failed");

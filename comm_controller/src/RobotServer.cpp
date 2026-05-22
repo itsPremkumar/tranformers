@@ -80,12 +80,14 @@ void WebInterface::handleClient() {
     _server.handleClient();
     _webSocket.loop();
     #if USE_AI_BRAIN
-    _aiClient.loop();
-    
-    // Auto-reconnect/switch logic
-    if (!_aiClient.isConnected() && (millis() - _lastAiRetry > 8000)) {
-        _aiConnectAttempts++;
-        reconnectAiBrain();
+    if (WiFi.status() == WL_CONNECTED) {
+        _aiClient.loop();
+        
+        // Auto-reconnect/switch logic
+        if (!_aiClient.isConnected() && (millis() - _lastAiRetry > 8000)) {
+            _aiConnectAttempts++;
+            reconnectAiBrain();
+        }
     }
     #endif
 }
