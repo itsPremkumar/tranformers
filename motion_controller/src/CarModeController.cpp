@@ -30,12 +30,26 @@ void CarModeController::update() {
 
     // 4. Dynamic Collision Avoidance Safety (Manual Control Safeguard)
     #if USE_ULTRASONIC
-    if (_car.getTargetLeftSpeed() > 0 && _car.getTargetRightSpeed() > 0) {
-        if (_obstacle.readFrontDistance() < 15) {
+    if (_car.getTargetLeftSpeed() > 0 || _car.getTargetRightSpeed() > 0) {
+        int frontDist = _obstacle.readFrontDistance();
+        
+        if (frontDist <= MIN_STOP_DISTANCE) {
             Serial.println("[CAR-SAFETY] Obstacle detected dynamically! Emergency halting manual drive.");
+            _car.setSpeedScale(0.0f);
             _car.emergencyBrake();
             _car.stop();
+        } else if (frontDist < SAFE_DISTANCE_CM) {
+            // Proportional speed scaling:
+            // At SAFE_DISTANCE_CM (38cm) -> scale factor is 1.0 (100% speed)
+            // At MIN_STOP_DISTANCE (15cm) -> scale factor is 0.0 (0% speed, then emergency brake)
+            float factor = (float)(frontDist - MIN_STOP_DISTANCE) / (SAFE_DISTANCE_CM - MIN_STOP_DISTANCE);
+            factor = constrain(factor, 0.0f, 1.0f);
+            _car.setSpeedScale(factor);
+        } else {
+            _car.setSpeedScale(1.0f);
         }
+    } else {
+        _car.setSpeedScale(1.0f);
     }
     #endif
 }

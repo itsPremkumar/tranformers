@@ -10,6 +10,7 @@ MotorControl::MotorControl(uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4, u
     _enb = enb;
     _speed = SPEED_NORMAL;
     _accelLimit = ACCEL_LIMIT;
+    _speedScale = 1.0f;
 }
 
 void MotorControl::begin() {
@@ -54,6 +55,7 @@ void MotorControl::stop() {
     _currentRight = 0;
     _filteredLeft = 0;
     _filteredRight = 0;
+    _speedScale = 1.0f;
     
     #if USE_ACKERMANN_STEERING
     digitalWrite(_in1, LOW);
@@ -78,6 +80,7 @@ void MotorControl::emergencyBrake() {
     _currentRight = 0;
     _filteredLeft = 0;
     _filteredRight = 0;
+    _speedScale = 1.0f;
     
     #if USE_ACKERMANN_STEERING
     digitalWrite(_in1, HIGH);
@@ -129,6 +132,9 @@ void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
     int throttle = (leftSpeed + rightSpeed) / 2;
     int diff = rightSpeed - leftSpeed;
 
+    // Apply proportional speed scaling
+    throttle = (int)(throttle * _speedScale);
+
     // 2. Calculate Steering Angle
     int steerAngle = STEER_ANGLE_CENTER;
     if (diff != 0) {
@@ -148,6 +154,8 @@ void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
     // apply a small forward throttle so the vehicle can turn dynamically.
     if (throttle == 0 && diff != 0) {
         throttle = abs(diff) / 2;
+        // Make sure safety scale is still applied to fallback throttle
+        throttle = (int)(throttle * _speedScale);
     }
 
     // 3. Write target angle to steering servo
@@ -164,8 +172,12 @@ void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
     ledcWrite(_enaChannel, constrain(abs(throttle), 0, 255));
     
     #else
+    // Apply proportional speed scaling to differential drive
+    int scaledLeft = (int)(leftSpeed * _speedScale);
+    int scaledRight = (int)(rightSpeed * _speedScale);
+
     // Left Motor Direction
-    if (leftSpeed >= 0) {
+    if (scaledLeft >= 0) {
         digitalWrite(_in1, HIGH);
         digitalWrite(_in2, LOW);
     } else {
@@ -174,7 +186,7 @@ void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
     }
     
     // Right Motor Direction
-    if (rightSpeed >= 0) {
+    if (scaledRight >= 0) {
         digitalWrite(_in3, HIGH);
         digitalWrite(_in4, LOW);
     } else {
@@ -182,8 +194,8 @@ void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
         digitalWrite(_in4, HIGH);
     }
     
-    ledcWrite(_enaChannel, constrain(abs(leftSpeed), 0, 255));
-    ledcWrite(_enbChannel, constrain(abs(rightSpeed), 0, 255));
+    ledcWrite(_enaChannel, constrain(abs(scaledLeft), 0, 255));
+    ledcWrite(_enbChannel, constrain(abs(scaledRight), 0, 255));
     #endif
 }
 

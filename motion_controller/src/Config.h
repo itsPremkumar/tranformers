@@ -71,6 +71,7 @@
 
 // Advanced Obstacle Avoidance Thresholds
 #define SAFE_DISTANCE_CM    38
+#define MIN_STOP_DISTANCE   15
 #define CAUTION_DISTANCE_CM 55
 #define BLOCK_DISTANCE_CM   26
 #define MAX_DISTANCE_CM     250

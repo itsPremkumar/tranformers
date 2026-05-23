@@ -42,6 +42,7 @@ public:
     void stop();
     void emergencyBrake();
     void setAccelerationLimit(int limit) { _accelLimit = limit; }
+    void setSpeedScale(float scale) { _speedScale = constrain(scale, 0.0f, 1.0f); }
 
     // --- High-level Directional Presets ---
     void moveForward(int correction = 0);
@@ -76,6 +77,7 @@ private:
     float _filteredLeft = 0;
     float _filteredRight = 0;
     int _accelLimit;
+    float _speedScale = 1.0f;
     
     unsigned long _lastUpdateTime = 0;
     
