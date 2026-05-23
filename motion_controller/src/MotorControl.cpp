@@ -13,6 +13,16 @@ MotorControl::MotorControl(uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4, u
 }
 
 void MotorControl::begin() {
+    #if USE_ACKERMANN_STEERING
+    pinMode(_in1, OUTPUT);
+    pinMode(_in2, OUTPUT);
+    
+    ledcSetup(_enaChannel, _freq, _resolution);
+    ledcAttachPin(_ena, _enaChannel);
+    
+    _steerServo.attach(STEER_SERVO_PIN);
+    _steerServo.write(STEER_ANGLE_CENTER);
+    #else
     pinMode(_in1, OUTPUT);
     pinMode(_in2, OUTPUT);
     pinMode(_in3, OUTPUT);
@@ -23,6 +33,7 @@ void MotorControl::begin() {
     
     ledcAttachPin(_ena, _enaChannel);
     ledcAttachPin(_enb, _enbChannel);
+    #endif
     
     stop();
 }
@@ -44,6 +55,12 @@ void MotorControl::stop() {
     _filteredLeft = 0;
     _filteredRight = 0;
     
+    #if USE_ACKERMANN_STEERING
+    digitalWrite(_in1, LOW);
+    digitalWrite(_in2, LOW);
+    ledcWrite(_enaChannel, 0);
+    _steerServo.write(STEER_ANGLE_CENTER);
+    #else
     digitalWrite(_in1, LOW);
     digitalWrite(_in2, LOW);
     digitalWrite(_in3, LOW);
@@ -51,6 +68,7 @@ void MotorControl::stop() {
     
     ledcWrite(_enaChannel, 0);
     ledcWrite(_enbChannel, 0);
+    #endif
 }
 
 void MotorControl::emergencyBrake() {
@@ -61,6 +79,12 @@ void MotorControl::emergencyBrake() {
     _filteredLeft = 0;
     _filteredRight = 0;
     
+    #if USE_ACKERMANN_STEERING
+    digitalWrite(_in1, HIGH);
+    digitalWrite(_in2, HIGH);
+    ledcWrite(_enaChannel, 255);
+    _steerServo.write(STEER_ANGLE_CENTER);
+    #else
     digitalWrite(_in1, HIGH);
     digitalWrite(_in2, HIGH);
     digitalWrite(_in3, HIGH);
@@ -68,6 +92,7 @@ void MotorControl::emergencyBrake() {
     
     ledcWrite(_enaChannel, 255);
     ledcWrite(_enbChannel, 255);
+    #endif
 }
 
 void MotorControl::update() {
@@ -99,6 +124,46 @@ void MotorControl::update() {
 }
 
 void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
+    #if USE_ACKERMANN_STEERING
+    // 1. Calculate Throttle (Average of left and right speed targets)
+    int throttle = (leftSpeed + rightSpeed) / 2;
+    int diff = rightSpeed - leftSpeed;
+
+    // 2. Calculate Steering Angle
+    int steerAngle = STEER_ANGLE_CENTER;
+    if (diff != 0) {
+        // Map differential speed difference to steering servo range.
+        // Max differential difference is [-510, 510].
+        // If diff > 0 (left speed < right speed), turn left (STEER_ANGLE_MAX_LEFT).
+        // If diff < 0 (left speed > right speed), turn right (STEER_ANGLE_MAX_RIGHT).
+        steerAngle = map(diff, -510, 510, STEER_ANGLE_MAX_RIGHT, STEER_ANGLE_MAX_LEFT);
+    }
+    
+    // Constrain steering angle to the physical bounds defined in Config.h
+    int minAngle = min(STEER_ANGLE_MAX_LEFT, STEER_ANGLE_MAX_RIGHT);
+    int maxAngle = max(STEER_ANGLE_MAX_LEFT, STEER_ANGLE_MAX_RIGHT);
+    steerAngle = constrain(steerAngle, minAngle, maxAngle);
+    
+    // Safety fallback: if throttle is zero but a turn is requested,
+    // apply a small forward throttle so the vehicle can turn dynamically.
+    if (throttle == 0 && diff != 0) {
+        throttle = abs(diff) / 2;
+    }
+
+    // 3. Write target angle to steering servo
+    _steerServo.write(steerAngle);
+
+    // 4. Drive Throttle Motor (using Motor A pins IN1/IN2)
+    if (throttle >= 0) {
+        digitalWrite(_in1, HIGH);
+        digitalWrite(_in2, LOW);
+    } else {
+        digitalWrite(_in1, LOW);
+        digitalWrite(_in2, HIGH);
+    }
+    ledcWrite(_enaChannel, constrain(abs(throttle), 0, 255));
+    
+    #else
     // Left Motor Direction
     if (leftSpeed >= 0) {
         digitalWrite(_in1, HIGH);
@@ -119,6 +184,7 @@ void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
     
     ledcWrite(_enaChannel, constrain(abs(leftSpeed), 0, 255));
     ledcWrite(_enbChannel, constrain(abs(rightSpeed), 0, 255));
+    #endif
 }
 
 void MotorControl::moveForward(int correction) {

@@ -2,6 +2,8 @@
 #define MOTOR_CONTROL_H
 
 #include <Arduino.h>
+#include "Config.h"
+#include <ESP32Servo.h>
 
 /**
  * @class MotorControl
@@ -82,6 +84,8 @@ private:
     const int _resolution = 8;
     const int _enaChannel = 0;
     const int _enbChannel = 1;
+    
+    Servo _steerServo;
     
     void applyHardwareSpeeds(int leftSpeed, int rightSpeed);
 };

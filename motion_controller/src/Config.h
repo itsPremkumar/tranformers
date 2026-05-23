@@ -21,6 +21,16 @@
 #define USE_I2C_HEALER   true    // Auto-recovery for I2C bus locks
 
 // ==========================================
+// 🏎️ ACKERMANN STEERING CONFIGURATION
+// ==========================================
+#define USE_ACKERMANN_STEERING true    // Set to true to use Servo + Motor instead of Differential
+#define STEER_SERVO_PIN        2       // GPIO pin for steering servo
+#define STEER_ANGLE_CENTER     90      // Centered position of steering servo (degrees)
+#define STEER_ANGLE_MAX_LEFT   55      // Max left turn limit of steering servo (degrees)
+#define STEER_ANGLE_MAX_RIGHT  125     // Max right turn limit of steering servo (degrees)
+
+
+// ==========================================
 // 🏗️ HARDWARE PROFILES
 // ==========================================
 #define PROFILE_CAR_ONLY    0   // Permanent 4-wheel robot
