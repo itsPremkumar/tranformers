@@ -47,7 +47,19 @@ void CommandHandler::processCommand(String cmd) {
         return;
     }
 
-    // Speed Preset Selection Commands
+    // Speed Preset Selection & Variable Speed Slider Commands
+    if (cmd.startsWith("CMD:SPEED=")) {
+        int val = cmd.substring(10).toInt();
+        _car.setSpeed(constrain(val, 0, 255));
+        Serial.println("[SYSTEM] Speed updated to: " + String(_car.getSpeed()));
+        return;
+    }
+    if (cmd.startsWith("CMD:ACCEL=")) {
+        int val = cmd.substring(10).toInt();
+        _car.setAccelerationLimit(constrain(val, 1, 50));
+        Serial.println("[SYSTEM] Acceleration Limit updated to: " + String(_car.getAccelerationLimit()));
+        return;
+    }
     if (cmd == "CMD:SPEED_SLOW") {
         _car.setSpeed(SPEED_SLOW);
         Serial.println("[SYSTEM] Speed set to SLOW");
@@ -165,10 +177,12 @@ void CommandHandler::processCommand(String cmd) {
         #if USE_ULTRASONIC
         _currentState = STATE_AVOID_ADVANCED;
         #endif
-    } else if (cmd.startsWith("PAN:")) {
-        _head.setPan(cmd.substring(4).toInt());
-    } else if (cmd.startsWith("TILT:")) {
-        _head.setTilt(cmd.substring(5).toInt());
+    } else if (cmd.startsWith("PAN:") || cmd.startsWith("CMD:PAN:")) {
+        int idx = cmd.indexOf(':');
+        _head.setPan(cmd.substring(idx + 1).toInt());
+    } else if (cmd.startsWith("TILT:") || cmd.startsWith("CMD:TILT:")) {
+        int idx = cmd.indexOf(':');
+        _head.setTilt(cmd.substring(idx + 1).toInt());
     } else if (cmd == "CMD:SUN_SEEK") {
         _currentState = STATE_SUN_SEEK;
         _isMovingForward = true;

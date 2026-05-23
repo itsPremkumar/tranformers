@@ -7,6 +7,7 @@
 #include "CommandHandler.h"
 #include "ObstacleAvoidance.h"
 #include "Balance.h"
+#include "HeadControl.h"
 
 /**
  * @class DiagnosticServer
@@ -14,7 +15,7 @@
  */
 class DiagnosticServer {
 public:
-    DiagnosticServer(MotorControl& car, CommandHandler& cmdHandler, ObstacleAvoidance& obstacle, Balance& balance);
+    DiagnosticServer(MotorControl& car, CommandHandler& cmdHandler, ObstacleAvoidance& obstacle, Balance& balance, HeadControl& head);
     void begin();
     void update();
 
@@ -24,6 +25,7 @@ private:
     CommandHandler& _cmdHandler;
     ObstacleAvoidance& _obstacle;
     Balance& _balance;
+    HeadControl& _head;
 
     void handleRoot();
     void handleCommand();

@@ -116,6 +116,31 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
             outline: none;
             margin-bottom: 10px;
         }
+        /* Slider styling */
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #21262d;
+            outline: none;
+            margin: 8px 0;
+            transition: background 0.15s ease;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary);
+            transition: transform 0.1s ease;
+        }
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
         .hud-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -169,9 +194,42 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
             mode = val;
             sendCmd('MODE_' + val);
         }
-        
-        function updateSpeed(val) {
-            sendCmd('SPEED_' + val);
+
+        // Slider controls with throttling
+        let speedThrottleTimer = null;
+        function changeSpeed(val) {
+            document.getElementById('lbl-speed').innerText = val + ' PWM';
+            clearTimeout(speedThrottleTimer);
+            speedThrottleTimer = setTimeout(() => {
+                sendCmd('SPEED=' + val);
+            }, 50);
+        }
+
+        let accelThrottleTimer = null;
+        function changeAccel(val) {
+            document.getElementById('lbl-accel').innerText = val;
+            clearTimeout(accelThrottleTimer);
+            accelThrottleTimer = setTimeout(() => {
+                sendCmd('ACCEL=' + val);
+            }, 50);
+        }
+
+        let panThrottleTimer = null;
+        function changePan(val) {
+            document.getElementById('lbl-pan').innerText = val + '°';
+            clearTimeout(panThrottleTimer);
+            panThrottleTimer = setTimeout(() => {
+                fetch('/cmd?val=PAN:' + val).catch(err => {});
+            }, 50);
+        }
+
+        let tiltThrottleTimer = null;
+        function changeTilt(val) {
+            document.getElementById('lbl-tilt').innerText = val + '°';
+            clearTimeout(tiltThrottleTimer);
+            tiltThrottleTimer = setTimeout(() => {
+                fetch('/cmd?val=TILT:' + val).catch(err => {});
+            }, 50);
         }
         
         function pollStatus() {
@@ -185,14 +243,24 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
                     document.getElementById('val-speed').innerText = data.speed + ' PWM';
                     document.getElementById('val-mode').innerText = data.mode;
                     
-                    // Sync selectors
+                    // Sync inputs
                     document.getElementById('mode-select').value = data.mode;
-                    if (data.speed <= 150) {
-                        document.getElementById('speed-select').value = 'SLOW';
-                    } else if (data.speed >= 210) {
-                        document.getElementById('speed-select').value = 'FAST';
-                    } else {
-                        document.getElementById('speed-select').value = 'NORMAL';
+                    
+                    if (document.activeElement !== document.getElementById('slider-speed')) {
+                        document.getElementById('slider-speed').value = data.speed;
+                        document.getElementById('lbl-speed').innerText = data.speed + ' PWM';
+                    }
+                    if (document.activeElement !== document.getElementById('slider-accel')) {
+                        document.getElementById('slider-accel').value = data.accel;
+                        document.getElementById('lbl-accel').innerText = data.accel;
+                    }
+                    if (document.activeElement !== document.getElementById('slider-pan')) {
+                        document.getElementById('slider-pan').value = data.pan;
+                        document.getElementById('lbl-pan').innerText = data.pan + '°';
+                    }
+                    if (document.activeElement !== document.getElementById('slider-tilt')) {
+                        document.getElementById('slider-tilt').value = data.tilt;
+                        document.getElementById('lbl-tilt').innerText = data.tilt + '°';
                     }
                 })
                 .catch(err => {});
@@ -207,22 +275,12 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
         
         <div class="card">
             <div class="section-title">Control Settings</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                <div>
-                    <div style="font-size: 0.65rem; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Safety Mode</div>
-                    <select id="mode-select" onchange="updateMode(this.value)" style="margin-bottom: 0;">
-                        <option value="MOMENTARY" selected>MOMENTARY</option>
-                        <option value="LATCHING">LATCHING</option>
-                    </select>
-                </div>
-                <div>
-                    <div style="font-size: 0.65rem; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Motor Speed</div>
-                    <select id="speed-select" onchange="updateSpeed(this.value)" style="margin-bottom: 0;">
-                        <option value="SLOW">SLOW (145)</option>
-                        <option value="NORMAL" selected>NORMAL (185)</option>
-                        <option value="FAST">FAST (220)</option>
-                    </select>
-                </div>
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 0.65rem; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Safety Mode</div>
+                <select id="mode-select" onchange="updateMode(this.value)" style="margin-bottom: 0;">
+                    <option value="MOMENTARY" selected>MOMENTARY</option>
+                    <option value="LATCHING">LATCHING</option>
+                </select>
             </div>
             
             <div class="d-pad">
@@ -237,6 +295,68 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
                 <button class="btn btn-pivot" onmousedown="handleStart('LEFT_PIVOT_BACK')" onmouseup="handleEnd()" onmouseleave="handleEnd()" title="Left Pivot Backward">▼◀</button>
                 <button class="btn" onmousedown="handleStart('BACKWARD')" onmouseup="handleEnd()" onmouseleave="handleEnd()" title="Backward">▼</button>
                 <button class="btn btn-pivot" onmousedown="handleStart('RIGHT_PIVOT_BACK')" onmouseup="handleEnd()" onmouseleave="handleEnd()" title="Right Pivot Backward">▼▶</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Subsystem Tuning & Servos</div>
+            
+            <!-- Motor Speed Slider -->
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span>⚡ Target Speed</span>
+                    <span id="lbl-speed" style="color: var(--primary); font-weight: bold;">185 PWM</span>
+                </div>
+                <input class="slider" type="range" id="slider-speed" min="0" max="255" value="185" oninput="changeSpeed(this.value)">
+                <div style="display: flex; justify-content: space-between; color: #475569; font-size: 0.65rem; margin-top: 4px;">
+                    <span>STOP (0)</span>
+                    <span>SLOW (145)</span>
+                    <span>FAST (220)</span>
+                    <span>MAX (255)</span>
+                </div>
+            </div>
+
+            <!-- Acceleration Limit Slider -->
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span>📈 Acceleration Limit</span>
+                    <span id="lbl-accel" style="color: var(--primary); font-weight: bold;">25</span>
+                </div>
+                <input class="slider" type="range" id="slider-accel" min="1" max="50" value="25" oninput="changeAccel(this.value)">
+                <div style="display: flex; justify-content: space-between; color: #475569; font-size: 0.65rem; margin-top: 4px;">
+                    <span>SNAPPY (50)</span>
+                    <span>BALANCED (25)</span>
+                    <span>SMOOTH (10)</span>
+                    <span>ULTRA-SMOOTH (1)</span>
+                </div>
+            </div>
+
+            <!-- Gimbal Pan Slider -->
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span>↔ Head Pan (Yaw)</span>
+                    <span id="lbl-pan" style="color: var(--primary); font-weight: bold;">90°</span>
+                </div>
+                <input class="slider" type="range" id="slider-pan" min="0" max="180" value="90" oninput="changePan(this.value)">
+                <div style="display: flex; justify-content: space-between; color: #475569; font-size: 0.65rem; margin-top: 4px;">
+                    <span>0° (LEFT)</span>
+                    <span>90° (CENTER)</span>
+                    <span>180° (RIGHT)</span>
+                </div>
+            </div>
+
+            <!-- Gimbal Tilt Slider -->
+            <div style="margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span>↕ Head Tilt (Pitch)</span>
+                    <span id="lbl-tilt" style="color: var(--primary); font-weight: bold;">90°</span>
+                </div>
+                <input class="slider" type="range" id="slider-tilt" min="0" max="180" value="90" oninput="changeTilt(this.value)">
+                <div style="display: flex; justify-content: space-between; color: #475569; font-size: 0.65rem; margin-top: 4px;">
+                    <span>0° (DOWN)</span>
+                    <span>90° (CENTER)</span>
+                    <span>180° (UP)</span>
+                </div>
             </div>
         </div>
 
@@ -286,8 +406,8 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-DiagnosticServer::DiagnosticServer(MotorControl& car, CommandHandler& cmdHandler, ObstacleAvoidance& obstacle, Balance& balance) 
-    : _server(80), _car(car), _cmdHandler(cmdHandler), _obstacle(obstacle), _balance(balance) {}
+DiagnosticServer::DiagnosticServer(MotorControl& car, CommandHandler& cmdHandler, ObstacleAvoidance& obstacle, Balance& balance, HeadControl& head) 
+    : _server(80), _car(car), _cmdHandler(cmdHandler), _obstacle(obstacle), _balance(balance), _head(head) {}
 
 void DiagnosticServer::begin() {
     // Start Dedicated Diagnostics SoftAP
@@ -319,7 +439,7 @@ void DiagnosticServer::handleCommand() {
     if (_server.hasArg("val")) {
         String cmd = _server.arg("val");
         // Re-construct cmd format if not already matching the protocol
-        if (!cmd.startsWith("CMD:")) {
+        if (!cmd.startsWith("CMD:") && !cmd.startsWith("PAN:") && !cmd.startsWith("TILT:")) {
             cmd = "CMD:" + cmd;
         }
         Serial.println("[DIAG-SERVER] Handled Command: " + cmd);
@@ -341,6 +461,9 @@ void DiagnosticServer::handleStatus() {
     json += "\"pitch\":" + String(_balance.getPitch(), 1) + ",";
     json += "\"amps\":" + String(amps, 2) + ",";
     json += "\"speed\":" + String(_car.getSpeed()) + ",";
+    json += "\"accel\":" + String(_car.getAccelerationLimit()) + ",";
+    json += "\"pan\":" + String(_head.getPan()) + ",";
+    json += "\"tilt\":" + String(_head.getTilt()) + ",";
     json += "\"mode\":\"" + String(_cmdHandler.isMomentary() ? "MOMENTARY" : "LATCHING") + "\"";
     json += "}";
     _server.send(200, "application/json", json);

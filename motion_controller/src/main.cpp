@@ -44,7 +44,7 @@ CommandHandler cmdHandler(car, balance, obstacle, servos, nav, systemMgr, head,
                          carMode, bipedMode, crawlerMode, transformMgr);
 
 #include "DiagnosticServer.h"
-DiagnosticServer diagServer(car, cmdHandler, obstacle, balance);
+DiagnosticServer diagServer(car, cmdHandler, obstacle, balance, head);
 
 struct WiFiSync {
     char ssid[32];

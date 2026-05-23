@@ -55,6 +55,7 @@ public:
 
     // --- Telemetry & Diagnostics ---
     int getSpeed() const { return _speed; }
+    int getAccelerationLimit() const { return _accelLimit; }
     int getTargetLeftSpeed() const { return _targetLeft; }
     int getTargetRightSpeed() const { return _targetRight; }
     float getCurrentLeftSpeed() const { return _currentLeft; }
