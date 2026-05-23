@@ -37,8 +37,8 @@ public:
     // --- Direct Velocity Targets ---
     void setTargetSpeeds(int left, int right);
     void setSpeed(int speed);
-    void stop();
     void emergencyBrake();
+    void setAccelerationLimit(int limit) { _accelLimit = limit; }
 
     // --- High-level Directional Presets ---
     void moveForward(int correction = 0);
@@ -71,6 +71,7 @@ private:
     float _currentRight = 0;
     float _filteredLeft = 0;
     float _filteredRight = 0;
+    int _accelLimit = ACCEL_LIMIT;
     
     unsigned long _lastUpdateTime = 0;
     

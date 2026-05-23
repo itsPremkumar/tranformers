@@ -11,6 +11,8 @@ CommandHandler::CommandHandler(MotorControl& car, Balance& balance, ObstacleAvoi
     : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos), _nav(nav), _system(system), _head(head),
       _carMode(carMode), _bipedMode(bipedMode), _crawlerMode(crawlerMode), _transform(transform) {
     _lastHeartbeatReceived = millis();
+    _isMomentary = true;
+    _car.setAccelerationLimit(25); // Snappy acceleration by default for momentary mode
 
     // Set Initial Hardware State based on Profile
     #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
@@ -30,6 +32,20 @@ void CommandHandler::processCommand(String cmd) {
     
     if (cmd == "BEAT") return; 
     if (cmd == "CMD:TEST") { _system.runSelfTest(); return; }
+
+    // Configuration Commands for Control Modes
+    if (cmd == "CMD:MODE_MOMENTARY") {
+        _isMomentary = true;
+        _car.setAccelerationLimit(25); // Snappy response for momentary taps
+        Serial.println("[SYSTEM] Mode changed to MOMENTARY");
+        return;
+    }
+    if (cmd == "CMD:MODE_LATCHING") {
+        _isMomentary = false;
+        _car.setAccelerationLimit(10); // Smooth ramping for continuous cruise
+        Serial.println("[SYSTEM] Mode changed to LATCHING");
+        return;
+    }
 
     // Shape-Shifting & Mode Selection Commands
     if (cmd == "CMD:TRANSFORM") {
@@ -57,7 +73,11 @@ void CommandHandler::processCommand(String cmd) {
     }
 
     if (cmd == "CMD:STOP") {
-        _car.emergencyBrake();
+        if (_isMomentary) {
+            _car.emergencyBrake(); // Lock wheels instantly in momentary mode
+        } else {
+            _car.stop(); // Glide to a stop in latching mode to protect gears
+        }
         _nav.stopNavigation();
         _servos.stopAction(); 
         _transform.stopTransition();

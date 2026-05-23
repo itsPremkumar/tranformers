@@ -79,13 +79,13 @@ void MotorControl::update() {
     float rightDiff = _targetRight - _currentRight;
 
     if (abs(leftDiff) > 1.0f) {
-        _currentLeft += constrain(leftDiff, (float)-ACCEL_LIMIT, (float)ACCEL_LIMIT);
+        _currentLeft += constrain(leftDiff, (float)-_accelLimit, (float)_accelLimit);
     } else {
         _currentLeft = _targetLeft;
     }
 
     if (abs(rightDiff) > 1.0f) {
-        _currentRight += constrain(rightDiff, (float)-ACCEL_LIMIT, (float)ACCEL_LIMIT);
+        _currentRight += constrain(rightDiff, (float)-_accelLimit, (float)_accelLimit);
     } else {
         _currentRight = _targetRight;
     }

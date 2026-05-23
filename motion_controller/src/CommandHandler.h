@@ -65,6 +65,7 @@ private:
     bool _isMovingForward = false;
     bool _isTurning = false;
     bool _isAidingGyro = false;
+    bool _isMomentary = true;
     float _targetYaw = 0;
     unsigned long _lastHeartbeatReceived = 0;
 };
