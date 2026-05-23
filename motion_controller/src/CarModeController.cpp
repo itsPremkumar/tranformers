@@ -44,29 +44,32 @@ bool CarModeController::handleCommand(const String& cmd) {
     if (cmd == "CMD:FORWARD") {
         #if USE_ULTRASONIC
         if (_obstacle.readFrontDistance() > 20) {
-            _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
+            _nav.setTargetSpeeds(_car.getSpeed(), _car.getSpeed());
         } else {
             Serial.println("[CAR] Obstacle blocked forward movement!");
             _car.stop();
         }
         #else
-        _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
+        _nav.setTargetSpeeds(_car.getSpeed(), _car.getSpeed());
         #endif
         return true;
     } 
     
     if (cmd == "CMD:BACKWARD") {
-        _nav.setTargetSpeeds(-SPEED_NORMAL, -SPEED_NORMAL);
+        _nav.setTargetSpeeds(-_car.getSpeed(), -_car.getSpeed());
         return true;
     } 
     
     if (cmd == "CMD:LEFT") {
-        _nav.setTargetSpeeds(-SPEED_TURN, SPEED_TURN);
+        // Turns use the active speed constrained for rotational ease
+        int turnSpeed = constrain(_car.getSpeed(), 0, 185);
+        _nav.setTargetSpeeds(-turnSpeed, turnSpeed);
         return true;
     } 
     
     if (cmd == "CMD:RIGHT") {
-        _nav.setTargetSpeeds(SPEED_TURN, -SPEED_TURN);
+        int turnSpeed = constrain(_car.getSpeed(), 0, 185);
+        _nav.setTargetSpeeds(turnSpeed, -turnSpeed);
         return true;
     } 
     
