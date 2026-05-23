@@ -108,9 +108,10 @@ void Navigation::checkStuckStatus(float amps) {
 }
 
 int Navigation::adaptiveForwardSpeed(int distance) {
-    if (distance > 85) return SPEED_NAV_TARGET;
-    if (distance > SAFE_DISTANCE_CM) return SPEED_NORMAL;
-    return SPEED_SLOW;
+    int maxSpeed = _car.getSpeed();
+    if (distance > 85) return maxSpeed;
+    if (distance > SAFE_DISTANCE_CM) return (maxSpeed * 3) / 4; // 75% of slider speed
+    return (maxSpeed * 1) / 2; // 50% of slider speed
 }
 
 void Navigation::triggerEscape() {
