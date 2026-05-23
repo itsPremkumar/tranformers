@@ -43,6 +43,9 @@ CrawlerModeController crawlerMode(car, servos);
 CommandHandler cmdHandler(car, balance, obstacle, servos, nav, systemMgr, head,
                          carMode, bipedMode, crawlerMode, transformMgr);
 
+#include "DiagnosticServer.h"
+DiagnosticServer diagServer(car, cmdHandler, obstacle, balance);
+
 struct WiFiSync {
     char ssid[32];
     char pass[64];
@@ -104,6 +107,7 @@ void setup() {
     carMode.begin();
     bipedMode.begin();
     crawlerMode.begin();
+    diagServer.begin();
     
     #if USE_SERVO_DRIVER
     servos.begin();
@@ -151,6 +155,7 @@ void loop() {
     systemMgr.updateTelemetry();
     systemMgr.checkBatterySafety();
     cmdHandler.updateState();
+    diagServer.update();
 
     // 2. Command Processing & Heartbeat Failsafe
     String cmd = "";

@@ -9,6 +9,7 @@ MotorControl::MotorControl(uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4, u
     _ena = ena;
     _enb = enb;
     _speed = SPEED_NORMAL;
+    _accelLimit = ACCEL_LIMIT;
 }
 
 void MotorControl::begin() {

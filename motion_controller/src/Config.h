@@ -3,6 +3,8 @@
 
 #define WIFI_SSID "one"          // Local Wi-Fi Network Name
 #define WIFI_PASS "12345678"
+#define DIAG_SSID "Omni-Motion-Test"  // Standalone diagnostic SSID
+#define DIAG_PASS "12345678"          // Standalone diagnostic Password
 #define USE_OTA   true           // Enable wireless updates
 
 // ==========================================
