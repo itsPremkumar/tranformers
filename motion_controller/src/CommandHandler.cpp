@@ -136,6 +136,14 @@ void CommandHandler::processCommand(String cmd) {
         return;
     }
 
+    if (cmd == "CMD:CALIBRATE_YAW") {
+        #if USE_MPU6050
+        _targetYaw = _balance.getYaw();
+        Serial.println("[SYSTEM] Gyro Yaw calibrated. New target: " + String(_targetYaw));
+        #endif
+        return;
+    }
+
     // Route command to the corresponding active controller first
     bool handled = false;
     if (_currentState == STATE_CAR || _currentState == STATE_AVOID || _currentState == STATE_AVOID_ADVANCED) {
@@ -145,7 +153,7 @@ void CommandHandler::processCommand(String cmd) {
             _isTurning = (cmd == "CMD:LEFT" || cmd == "CMD:RIGHT" || cmd.indexOf("PIVOT") >= 0 || cmd.indexOf("ZERO") >= 0);
             
             #if USE_MPU6050
-            if (cmd == "CMD:FORWARD") {
+            if (cmd == "CMD:FORWARD" || cmd == "CMD:BACKWARD") {
                 _targetYaw = _balance.getYaw();
                 _isAidingGyro = true;
             } else {
@@ -201,12 +209,23 @@ void CommandHandler::updateState() {
         #endif
     }
 
-    // 2. Gyro Assistance
-    if (_isMovingForward && _isAidingGyro) {
+    // 2. Gyro Assistance (Course Locking with shortest-path wrap-around correction)
+    if (_isAidingGyro) {
+        #if USE_MPU6050
         float currentYaw = _balance.getYaw();
         float yawError = currentYaw - _targetYaw;
+        
+        // Normalize error to shortest path (-180 to 180 degrees)
+        while (yawError > 180.0f) yawError -= 360.0f;
+        while (yawError < -180.0f) yawError += 360.0f;
+        
         int correction = yawError * 4;
-        _car.moveForward(correction);
+        if (_isMovingForward) {
+            _car.moveForward(correction);
+        } else {
+            _car.moveBackward(correction);
+        }
+        #endif
     }
 
     // 3. Fall Detection is handled by BipedModeController only when in Stand/Walk configuration

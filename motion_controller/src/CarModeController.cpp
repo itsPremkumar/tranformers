@@ -27,6 +27,17 @@ void CarModeController::update() {
         float amps = (vCurr - 1.65) / 0.1;
         _nav.checkStuckStatus(amps);
     }
+
+    // 4. Dynamic Collision Avoidance Safety (Manual Control Safeguard)
+    #if USE_ULTRASONIC
+    if (_car.getTargetLeftSpeed() > 0 && _car.getTargetRightSpeed() > 0) {
+        if (_obstacle.readFrontDistance() < 15) {
+            Serial.println("[CAR-SAFETY] Obstacle detected dynamically! Emergency halting manual drive.");
+            _car.emergencyBrake();
+            _car.stop();
+        }
+    }
+    #endif
 }
 
 bool CarModeController::handleCommand(const String& cmd) {
