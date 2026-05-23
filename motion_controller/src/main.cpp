@@ -180,7 +180,7 @@ void loop() {
     if (millis() - lastHeartbeatTime > HEARTBEAT_TIMEOUT_MS) {
         if (cmdHandler.isMovingForward() || cmdHandler.isTurning()) {
             Serial.println("[FAILSAFE] Comm Link Lost! Emergency Stop.");
-            car.stop();
+            car.emergencyBrake();
             cmdHandler.processCommand("CMD:STOP");
         }
     }
@@ -192,7 +192,7 @@ void loop() {
     float vCurr = (analogRead(CURRENT_PIN) / 4095.0) * 3.3;
     float amps = (vCurr - 1.65) / 0.1;
     if (amps > 3.0f) {
-        car.stop();
+        car.emergencyBrake();
         Serial2.println("STATUS: MOTOR STALL!");
     }
 

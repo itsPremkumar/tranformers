@@ -142,7 +142,7 @@ void CommandHandler::processCommand(String cmd) {
 void CommandHandler::updateState() {
     // 1. Heartbeat Timeout
     if (millis() - _lastHeartbeatReceived > HEARTBEAT_TIMEOUT_MS && _currentState != STATE_STAND) {
-        _car.stop();
+        _car.emergencyBrake();
         #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
         _currentState = STATE_CAR;
         #else
