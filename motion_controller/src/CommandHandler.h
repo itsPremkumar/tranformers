@@ -46,6 +46,7 @@ public:
     void setState(RobotState s) { _currentState = s; }
     bool isMovingForward() const { return _isMovingForward; }
     bool isTurning() const { return _isTurning; }
+    bool isMomentary() const { return _isMomentary; }
 
 private:
     MotorControl& _car;

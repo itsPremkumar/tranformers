@@ -59,6 +59,11 @@ bool CarModeController::handleCommand(const String& cmd) {
         return true;
     } 
     
+    if (cmd == "CMD:LEFT_PIVOT") {
+        _car.turnLeftPivot();
+        return true;
+    } 
+    
     if (cmd == "CMD:RIGHT_PIVOT") {
         _car.turnRightPivot();
         return true;

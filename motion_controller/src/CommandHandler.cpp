@@ -47,6 +47,23 @@ void CommandHandler::processCommand(String cmd) {
         return;
     }
 
+    // Speed Preset Selection Commands
+    if (cmd == "CMD:SPEED_SLOW") {
+        _car.setSpeed(SPEED_SLOW);
+        Serial.println("[SYSTEM] Speed set to SLOW");
+        return;
+    }
+    if (cmd == "CMD:SPEED_NORMAL") {
+        _car.setSpeed(SPEED_NORMAL);
+        Serial.println("[SYSTEM] Speed set to NORMAL");
+        return;
+    }
+    if (cmd == "CMD:SPEED_FAST") {
+        _car.setSpeed(SPEED_FAST);
+        Serial.println("[SYSTEM] Speed set to FAST");
+        return;
+    }
+
     // Shape-Shifting & Mode Selection Commands
     if (cmd == "CMD:TRANSFORM") {
         #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH

@@ -1,15 +1,9 @@
-#include "DiagnosticServer.h"
-#include <WiFi.h>
-#include "Config.h"
-
-// HTML page template for direct testing
-const char DIAG_HTML[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
-    <title>Omni-Morph Motion HW Diagnostic Console</title>
+    <title>Omni-Morph Motion HW Diagnostic Console (Simulated)</title>
     <style>
         :root {
             --primary: #00f2fe;
@@ -39,8 +33,24 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
             text-transform: uppercase;
             font-size: 1.3rem;
             letter-spacing: 2px;
-            margin-bottom: 25px;
+            margin-bottom: 5px;
             text-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+        }
+        .sim-badge {
+            background: #eab308;
+            color: #0f172a;
+            font-size: 0.65rem;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            text-align: center;
+        }
+        .header-wrapper {
+            text-align: center;
         }
         .card {
             background: var(--card);
@@ -146,11 +156,51 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
             color: #64748b;
             margin-top: 20px;
         }
+        .console-log {
+            background: #0d1117;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #34d399;
+            height: 80px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
     </style>
     <script>
         let mode = 'MOMENTARY';
+        let isLocal = window.location.protocol === 'file:';
         
+        // Mock State Variables for Offline Simulation
+        let simDist = 120;
+        let simAmp = 0.2;
+        let simYaw = 0.0;
+        let simPitch = 0.0;
+        let simSpeed = 185;
+        let activeDirection = 'STOP';
+
+        function logConsole(msg) {
+            const consoleBox = document.getElementById('console-box');
+            if (consoleBox) {
+                const time = new Date().toLocaleTimeString();
+                consoleBox.innerHTML += `[${time}] ${msg}<br>`;
+                consoleBox.scrollTop = consoleBox.scrollHeight;
+            }
+        }
+
         function sendCmd(cmd) {
+            logConsole(`CMD SENT: CMD:${cmd}`);
+            if (isLocal) {
+                activeDirection = cmd;
+                if (cmd === 'STOP') {
+                    simAmp = 0.2;
+                } else if (['FORWARD', 'BACKWARD', 'LEFT', 'RIGHT', 'LEFT_PIVOT', 'RIGHT_PIVOT', 'LEFT_PIVOT_BACK', 'RIGHT_PIVOT_BACK'].includes(cmd)) {
+                    simAmp = 1.4 + Math.random() * 0.4;
+                }
+                return;
+            }
             fetch('/cmd?val=' + cmd)
                 .catch(err => console.error("Send failed:", err));
         }
@@ -171,10 +221,58 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
         }
         
         function updateSpeed(val) {
+            if (isLocal) {
+                simSpeed = val === 'SLOW' ? 145 : (val === 'FAST' ? 220 : 185);
+                logConsole(`SIM SPEED UPDATED: ${val} (${simSpeed} PWM)`);
+                return;
+            }
             sendCmd('SPEED_' + val);
         }
         
         function pollStatus() {
+            if (isLocal) {
+                // Run offline simulation calculations (random walk & direction responses)
+                if (activeDirection === 'FORWARD') {
+                    simDist = Math.max(10, simDist - 5);
+                    simPitch = Math.min(15, simPitch + 1);
+                } else if (activeDirection === 'BACKWARD') {
+                    simDist = Math.min(250, simDist + 4);
+                    simPitch = Math.max(-15, simPitch - 1);
+                } else if (activeDirection === 'LEFT') {
+                    simYaw = (simYaw - 6 + 360) % 360;
+                } else if (activeDirection === 'RIGHT') {
+                    simYaw = (simYaw + 6) % 360;
+                } else if (activeDirection === 'LEFT_PIVOT') {
+                    simYaw = (simYaw - 3 + 360) % 360;
+                    simDist = Math.max(10, simDist - 2);
+                } else if (activeDirection === 'RIGHT_PIVOT') {
+                    simYaw = (simYaw + 3) % 360;
+                    simDist = Math.max(10, simDist - 2);
+                } else if (activeDirection === 'LEFT_PIVOT_BACK') {
+                    simYaw = (simYaw - 3 + 360) % 360;
+                    simDist = Math.min(250, simDist + 2);
+                } else if (activeDirection === 'RIGHT_PIVOT_BACK') {
+                    simYaw = (simYaw + 3) % 360;
+                    simDist = Math.min(250, simDist + 2);
+                } else { // STOP
+                    simPitch = simPitch * 0.8; // Level out
+                }
+                
+                // Add minor noise jitters
+                simAmp = Math.max(0.1, simAmp + (Math.random() - 0.5) * 0.05);
+                simDist = Math.max(2, Math.min(400, simDist + (Math.random() - 0.5) * 0.5));
+                simYaw = (simYaw + (Math.random() - 0.5) * 0.2 + 360) % 360;
+
+                // Update UI elements
+                document.getElementById('val-dist').innerText = Math.round(simDist) + ' cm';
+                document.getElementById('val-amp').innerText = simAmp.toFixed(2) + ' A';
+                document.getElementById('val-yaw').innerText = simYaw.toFixed(1) + '°';
+                document.getElementById('val-pitch').innerText = simPitch.toFixed(1) + '°';
+                document.getElementById('val-speed').innerText = simSpeed + ' PWM';
+                document.getElementById('val-mode').innerText = mode;
+                return;
+            }
+
             fetch('/status')
                 .then(r => r.json())
                 .then(data => {
@@ -185,7 +283,7 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
                     document.getElementById('val-speed').innerText = data.speed + ' PWM';
                     document.getElementById('val-mode').innerText = data.mode;
                     
-                    // Sync selectors
+                    // Sync inputs
                     document.getElementById('mode-select').value = data.mode;
                     if (data.speed <= 150) {
                         document.getElementById('speed-select').value = 'SLOW';
@@ -198,12 +296,23 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
                 .catch(err => {});
         }
         
-        setInterval(pollStatus, 300);
+        window.onload = function() {
+            if (isLocal) {
+                document.getElementById('sim-indicator').style.display = 'inline-block';
+                logConsole("Simulation Active. Running local offline loops.");
+            } else {
+                document.getElementById('sim-indicator').style.display = 'none';
+            }
+            setInterval(pollStatus, 200);
+        };
     </script>
 </head>
 <body>
     <div class="container">
-        <h1>Motion HW Diagnostics</h1>
+        <div class="header-wrapper">
+            <h1>Motion HW Diagnostics</h1>
+            <span id="sim-indicator" class="sim-badge">Simulation Mode</span>
+        </div>
         
         <div class="card">
             <div class="section-title">Control Settings</div>
@@ -277,6 +386,11 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
                 <button class="btn btn-utility" onclick="sendCmd('TEST')">🩺 Self-Test</button>
             </div>
         </div>
+
+        <div class="card">
+            <div class="section-title">Console Terminal Out</div>
+            <div id="console-box" class="console-log"></div>
+        </div>
         
         <div class="footer">
             Direct Web Panel hosted on Motion Control ESP32
@@ -284,64 +398,3 @@ const char DIAG_HTML[] PROGMEM = R"rawliteral(
     </div>
 </body>
 </html>
-)rawliteral";
-
-DiagnosticServer::DiagnosticServer(MotorControl& car, CommandHandler& cmdHandler, ObstacleAvoidance& obstacle, Balance& balance) 
-    : _server(80), _car(car), _cmdHandler(cmdHandler), _obstacle(obstacle), _balance(balance) {}
-
-void DiagnosticServer::begin() {
-    // Start Dedicated Diagnostics SoftAP
-    WiFi.softAP(DIAG_SSID, DIAG_PASS);
-    Serial.println("[DIAG-AP] Test Suite Hotspot Started.");
-    Serial.print("[DIAG-AP] Connect to SSID: ");
-    Serial.print(DIAG_SSID);
-    Serial.print(" | IP: ");
-    Serial.println(WiFi.softAPIP());
-
-    // Setup HTTP server endpoints
-    _server.on("/", std::bind(&DiagnosticServer::handleRoot, this));
-    _server.on("/cmd", std::bind(&DiagnosticServer::handleCommand, this));
-    _server.on("/status", std::bind(&DiagnosticServer::handleStatus, this));
-    
-    _server.begin();
-    Serial.println("[DIAG-SERVER] Web server started on port 80.");
-}
-
-void DiagnosticServer::update() {
-    _server.handleClient();
-}
-
-void DiagnosticServer::handleRoot() {
-    _server.send_P(200, "text/html", DIAG_HTML);
-}
-
-void DiagnosticServer::handleCommand() {
-    if (_server.hasArg("val")) {
-        String cmd = _server.arg("val");
-        // Re-construct cmd format if not already matching the protocol
-        if (!cmd.startsWith("CMD:")) {
-            cmd = "CMD:" + cmd;
-        }
-        Serial.println("[DIAG-SERVER] Handled Command: " + cmd);
-        _cmdHandler.processCommand(cmd);
-        _server.send(200, "text/plain", "OK");
-    } else {
-        _server.send(400, "text/plain", "Bad Request");
-    }
-}
-
-void DiagnosticServer::handleStatus() {
-    float vCurr = (analogRead(CURRENT_PIN) / 4095.0) * 3.3;
-    float amps = (vCurr - 1.65) / 0.1;
-    if (amps < 0.0f) amps = 0.0f;
-
-    String json = "{";
-    json += "\"dist\":" + String(_obstacle.readFrontDistance()) + ",";
-    json += "\"yaw\":" + String(_balance.getYaw(), 1) + ",";
-    json += "\"pitch\":" + String(_balance.getPitch(), 1) + ",";
-    json += "\"amps\":" + String(amps, 2) + ",";
-    json += "\"speed\":" + String(_car.getSpeed()) + ",";
-    json += "\"mode\":\"" + String(_cmdHandler.isMomentary() ? "MOMENTARY" : "LATCHING") + "\"";
-    json += "}";
-    _server.send(200, "application/json", json);
-}
