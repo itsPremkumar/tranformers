@@ -52,6 +52,23 @@ void MotorControl::stop() {
     ledcWrite(_enbChannel, 0);
 }
 
+void MotorControl::emergencyBrake() {
+    _targetLeft = 0;
+    _targetRight = 0;
+    _currentLeft = 0;
+    _currentRight = 0;
+    _filteredLeft = 0;
+    _filteredRight = 0;
+    
+    digitalWrite(_in1, HIGH);
+    digitalWrite(_in2, HIGH);
+    digitalWrite(_in3, HIGH);
+    digitalWrite(_in4, HIGH);
+    
+    ledcWrite(_enaChannel, 255);
+    ledcWrite(_enbChannel, 255);
+}
+
 void MotorControl::update() {
     unsigned long now = millis();
     if (now - _lastUpdateTime < 10) return; // Update at ~100Hz

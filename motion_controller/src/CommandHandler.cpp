@@ -57,7 +57,7 @@ void CommandHandler::processCommand(String cmd) {
     }
 
     if (cmd == "CMD:STOP") {
-        _car.stop();
+        _car.emergencyBrake();
         _nav.stopNavigation();
         _servos.stopAction(); 
         _transform.stopTransition();

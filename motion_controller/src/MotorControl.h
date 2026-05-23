@@ -38,6 +38,7 @@ public:
     void setTargetSpeeds(int left, int right);
     void setSpeed(int speed);
     void stop();
+    void emergencyBrake();
 
     // --- High-level Directional Presets ---
     void moveForward(int correction = 0);
