@@ -9,6 +9,13 @@
 #include "ServoControl.h"
 #include "Navigation.h"
 #include "RobotSystem.h"
+#include "HeadControl.h"
+
+// Forward declarations of mode-specific controllers
+class CarModeController;
+class BipedModeController;
+class CrawlerModeController;
+class TransformManager;
 
 enum RobotState {
     STATE_STAND,
@@ -21,15 +28,22 @@ enum RobotState {
     STATE_SUN_SEEK
 };
 
+/**
+ * @class CommandHandler
+ * @brief Parses commands and routes them to the correct active operational mode controller.
+ */
 class CommandHandler {
 public:
     CommandHandler(MotorControl& car, Balance& balance, ObstacleAvoidance& obstacle, 
-                  ServoControl& servos, Navigation& nav, RobotSystem& system);
+                  ServoControl& servos, Navigation& nav, RobotSystem& system, HeadControl& head,
+                  CarModeController& carMode, BipedModeController& bipedMode,
+                  CrawlerModeController& crawlerMode, TransformManager& transform);
     
     void processCommand(String cmd);
     void updateState();
     
     RobotState getState() const { return _currentState; }
+    void setState(RobotState s) { _currentState = s; }
     bool isMovingForward() const { return _isMovingForward; }
     bool isTurning() const { return _isTurning; }
 
@@ -40,6 +54,12 @@ private:
     ServoControl& _servos;
     Navigation& _nav;
     RobotSystem& _system;
+    HeadControl& _head;
+    
+    CarModeController& _carMode;
+    BipedModeController& _bipedMode;
+    CrawlerModeController& _crawlerMode;
+    TransformManager& _transform;
     
     RobotState _currentState = STATE_STAND;
     bool _isMovingForward = false;
@@ -49,4 +69,4 @@ private:
     unsigned long _lastHeartbeatReceived = 0;
 };
 
-#endif
+#endif // COMMAND_HANDLER_H

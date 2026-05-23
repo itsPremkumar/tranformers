@@ -1,4 +1,5 @@
 #include "ServoControl.h"
+#include "Config.h"
 
 ServoControl::ServoControl(uint8_t addr) : _pwm(addr) {
     for (int i = 0; i < NUM_SERVOS; i++) {
@@ -47,7 +48,7 @@ void ServoControl::updateSleep() {
         }
     }
 
-    if (allIdle) {
+    if (allIdle && _currentAction == ACTION_NONE) {
         for (int i = 0; i < NUM_SERVOS; i++) {
             _pwm.setPWM(i, 0, 4096); // Fully OFF for PCA9685
         }
@@ -84,12 +85,17 @@ void ServoControl::update() {
     
     if (moving) _lastActivityTime = now;
     
+    // Execute active multi-step action non-blockingly
+    if (_currentAction != ACTION_NONE) {
+        processActionStep();
+    }
+    
     updateBreathing();
     updateSleep();
 }
 
 void ServoControl::updateBreathing() {
-    if (!_breathingEnabled || _isAsleep) return;
+    if (!_breathingEnabled || _isAsleep || _currentAction != ACTION_NONE) return;
     
     // Only breathe if we haven't moved manually for 2 seconds
     if (millis() - _lastActivityTime < 2000) return;
@@ -98,13 +104,9 @@ void ServoControl::updateBreathing() {
     angle += 0.03; // Speed of breathing
     if (angle > TWO_PI) angle = 0;
 
-    // Subtle sway for Head (Channel 14/15) and Hips (Channel 0/1)
-    float offset = sin(angle) * 2.5; // 2.5 degree sway
+    // Subtle sway for Hips (Channel 0/1)
+    float offset = sin(angle) * 2.5; 
     
-    // Apply offset to target to let update() handle the smooth transition
-    // Head Tilt (Subtle up/down)
-    _pwm.setPWM(15, 0, angleToPulse(90 + offset)); 
-    // Hips (Subtle side sway)
     _pwm.setPWM(0, 0, angleToPulse(90 + offset * 0.5));
     _pwm.setPWM(1, 0, angleToPulse(90 - offset * 0.5));
 }
@@ -116,145 +118,247 @@ void ServoControl::moveGroup(int channels[], int targets[], int count) {
 }
 
 void ServoControl::standPosition() {
+    stopAction();
     for (int i = 0; i < NUM_SERVOS; i++) {
         moveServoSmooth(i, 90, 5);
     }
 }
 
 void ServoControl::walkForward() {
-    // Step 1
-    moveServoSmooth(0, 70);  // left hip
-    moveServoSmooth(1, 110); // right hip
-    delay(200);
-
-    // Step 2
-    moveServoSmooth(2, 60);  // left knee
-    delay(200);
-
-    // Step 3
-    moveServoSmooth(2, 90);
-    moveServoSmooth(0, 90);
-    moveServoSmooth(1, 90);
-    delay(200);
-
-    // Step 4
-    moveServoSmooth(0, 110);
-    moveServoSmooth(1, 70);
-    delay(200);
-
-    // Step 5
-    moveServoSmooth(3, 60);  // right knee
-    delay(200);
-
-    // Step 6
-    moveServoSmooth(3, 90);
-    moveServoSmooth(0, 90);
-    moveServoSmooth(1, 90);
-    delay(200);
+    if (_currentAction != ACTION_WALK) {
+        _currentAction = ACTION_WALK;
+        _actionStep = 0;
+        _lastActionStepTime = 0; // Trigger step 0 immediately
+    }
 }
 
 void ServoControl::transformToCar() {
-    // Fold legs
-    moveServoSmooth(2, 30);
-    moveServoSmooth(3, 30);
-    delay(300);
-
-    // Fold arms
-    moveServoSmooth(4, 20);
-    moveServoSmooth(5, 160);
-    delay(300);
-
-    // Rotate body
-    moveServoSmooth(6, 150);
-    moveServoSmooth(7, 30);
-    delay(300);
-
-    // Final lock
-    moveServoSmooth(8, 0);
-    moveServoSmooth(9, 180);
+    if (_currentAction != ACTION_TRANSFORM_CAR) {
+        _currentAction = ACTION_TRANSFORM_CAR;
+        _actionStep = 0;
+        _lastActionStepTime = millis();
+        // Start folding legs immediately
+        moveServoSmooth(2, 30);
+        moveServoSmooth(3, 30);
+    }
 }
 
 void ServoControl::transformToCrawler() {
-    // Spread hips wide
-    moveServoSmooth(0, 160); // Left hip out
-    moveServoSmooth(1, 20);  // Right hip out
-    delay(300);
-
-    // Bend knees to lower the chassis
-    moveServoSmooth(2, 160); // Left knee
-    moveServoSmooth(3, 20);  // Right knee
-    delay(300);
-
-    // Spread arms for balance
-    moveServoSmooth(4, 150);
-    moveServoSmooth(5, 30);
-    delay(200);
+    if (_currentAction != ACTION_TRANSFORM_CRAWLER) {
+        _currentAction = ACTION_TRANSFORM_CRAWLER;
+        _actionStep = 0;
+        _lastActionStepTime = millis();
+        // Start spreading hips immediately
+        moveServoSmooth(0, 160);
+        moveServoSmooth(1, 20);
+    }
 }
 
 void ServoControl::pushMotion() {
-    // Start with arms in neutral
-    moveServoSmooth(4, 90);
-    moveServoSmooth(5, 90);
-    delay(200);
-
-    // Push forward (Shoulders/Arms)
-    moveServoSmooth(4, 30);
-    moveServoSmooth(5, 150);
-    delay(500); // Hold the push
-
-    // Return to neutral
-    moveServoSmooth(4, 90);
-    moveServoSmooth(5, 90);
+    if (_currentAction != ACTION_PUSH) {
+        _currentAction = ACTION_PUSH;
+        _actionStep = 0;
+        _lastActionStepTime = millis();
+        moveServoSmooth(4, 90);
+        moveServoSmooth(5, 90);
+    }
 }
 
 void ServoControl::kickMotion() {
-    // Lift leg (hip)
-    moveServoSmooth(0, 60); 
-    delay(200);
-
-    // Snap kick (knee)
-    moveServoSmooth(2, 160);
-    delay(300);
-
-    // Retract
-    moveServoSmooth(2, 90);
-    moveServoSmooth(0, 90);
+    if (_currentAction != ACTION_KICK) {
+        _currentAction = ACTION_KICK;
+        _actionStep = 0;
+        _lastActionStepTime = millis();
+        moveServoSmooth(0, 60); // Lift leg
+    }
 }
 
 void ServoControl::recoverFromFall(FallDirection dir) {
     if (dir == NO_FALL) return;
 
-    Serial.println("[RECOVERY] Executing self-righting sequence...");
+    Serial.println("[RECOVERY] Triggering non-blocking self-righting sequence...");
 
     if (dir == FALL_FORWARD) {
-        // Use arms to push back
+        _currentAction = ACTION_RECOVERY_FORWARD;
+        _actionStep = 0;
+        _lastActionStepTime = millis();
         moveServoSmooth(4, 160); // Right arm forward
         moveServoSmooth(5, 20);  // Left arm forward
-        delay(500);
-        moveServoSmooth(4, 40);  // Snap back to push
-        moveServoSmooth(5, 140); 
-        delay(300);
     } else if (dir == FALL_BACKWARD) {
-        // Use legs to push forward
+        _currentAction = ACTION_RECOVERY_BACKWARD;
+        _actionStep = 0;
+        _lastActionStepTime = millis();
         moveServoSmooth(0, 150); // Hips forward
         moveServoSmooth(1, 30);
-        delay(400);
-        moveServoSmooth(2, 160); // Knees snap
-        moveServoSmooth(3, 20);
-        delay(300);
     } else {
-        // General shake to try and get up
-        for(int i=0; i<3; i++) {
-            moveServoSmooth(4, 40);
-            moveServoSmooth(5, 140);
-            delay(100);
-            moveServoSmooth(4, 140);
-            moveServoSmooth(5, 40);
-            delay(100);
-        }
+        _currentAction = ACTION_RECOVERY_SHAKE;
+        _actionStep = 0;
+        _shakeIteration = 0;
+        _lastActionStepTime = millis();
+        moveServoSmooth(4, 40);
+        moveServoSmooth(5, 140);
     }
+}
 
-    // Return to stand
-    standPosition();
-    Serial.println("[RECOVERY] Sequence complete.");
+void ServoControl::stopAction() {
+    _currentAction = ACTION_NONE;
+    _actionStep = 0;
+    _shakeIteration = 0;
+}
+
+void ServoControl::processActionStep() {
+    unsigned long now = millis();
+    
+    switch (_currentAction) {
+        case ACTION_WALK: {
+            if (now - _lastActionStepTime < 200) return;
+            _lastActionStepTime = now;
+            
+            switch (_actionStep) {
+                case 0:
+                    moveServoSmooth(0, 70);  // left hip
+                    moveServoSmooth(1, 110); // right hip
+                    _actionStep++;
+                    break;
+                case 1:
+                    moveServoSmooth(2, 60);  // left knee
+                    _actionStep++;
+                    break;
+                case 2:
+                    moveServoSmooth(2, 90);
+                    moveServoSmooth(0, 90);
+                    moveServoSmooth(1, 90);
+                    _actionStep++;
+                    break;
+                case 3:
+                    moveServoSmooth(0, 110);
+                    moveServoSmooth(1, 70);
+                    _actionStep++;
+                    break;
+                case 4:
+                    moveServoSmooth(3, 60);  // right knee
+                    _actionStep++;
+                    break;
+                case 5:
+                    moveServoSmooth(3, 90);
+                    moveServoSmooth(0, 90);
+                    moveServoSmooth(1, 90);
+                    _actionStep = 0; // Repeat sequence
+                    break;
+            }
+            break;
+        }
+        case ACTION_TRANSFORM_CAR: {
+            if (_actionStep == 0 && now - _lastActionStepTime >= 300) {
+                moveServoSmooth(4, 20); // Fold arms
+                moveServoSmooth(5, 160);
+                _actionStep = 1;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 1 && now - _lastActionStepTime >= 300) {
+                moveServoSmooth(6, 150); // Rotate body
+                moveServoSmooth(7, 30);
+                _actionStep = 2;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 2 && now - _lastActionStepTime >= 300) {
+                moveServoSmooth(8, 0);   // Final lock
+                moveServoSmooth(9, 180);
+                _currentAction = ACTION_NONE; // Complete
+                Serial.println("[TRANSFORM] Car Transformation Done.");
+            }
+            break;
+        }
+        case ACTION_TRANSFORM_CRAWLER: {
+            if (_actionStep == 0 && now - _lastActionStepTime >= 300) {
+                moveServoSmooth(2, 160); // Bend knees to lower chassis
+                moveServoSmooth(3, 20);
+                _actionStep = 1;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 1 && now - _lastActionStepTime >= 300) {
+                moveServoSmooth(4, 150); // Spread arms for balance
+                moveServoSmooth(5, 30);
+                _actionStep = 2;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 2 && now - _lastActionStepTime >= 200) {
+                _currentAction = ACTION_NONE; // Complete
+                Serial.println("[TRANSFORM] Crawler Transformation Done.");
+            }
+            break;
+        }
+        case ACTION_PUSH: {
+            if (_actionStep == 0 && now - _lastActionStepTime >= 200) {
+                moveServoSmooth(4, 30); // Push forward (Shoulders/Arms)
+                moveServoSmooth(5, 150);
+                _actionStep = 1;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 1 && now - _lastActionStepTime >= 500) {
+                moveServoSmooth(4, 90); // Return to neutral
+                moveServoSmooth(5, 90);
+                _currentAction = ACTION_NONE; // Complete
+            }
+            break;
+        }
+        case ACTION_KICK: {
+            if (_actionStep == 0 && now - _lastActionStepTime >= 200) {
+                moveServoSmooth(2, 160); // Snap kick (knee)
+                _actionStep = 1;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 1 && now - _lastActionStepTime >= 300) {
+                moveServoSmooth(2, 90);  // Retract
+                moveServoSmooth(0, 90);
+                _currentAction = ACTION_NONE; // Complete
+            }
+            break;
+        }
+        case ACTION_RECOVERY_FORWARD: {
+            if (_actionStep == 0 && now - _lastActionStepTime >= 500) {
+                moveServoSmooth(4, 40);  // Snap back to push
+                moveServoSmooth(5, 140); 
+                _actionStep = 1;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 1 && now - _lastActionStepTime >= 300) {
+                _currentAction = ACTION_NONE;
+                standPosition();
+                Serial.println("[RECOVERY] Forward sequence complete.");
+            }
+            break;
+        }
+        case ACTION_RECOVERY_BACKWARD: {
+            if (_actionStep == 0 && now - _lastActionStepTime >= 400) {
+                moveServoSmooth(2, 160); // Knees snap
+                moveServoSmooth(3, 20);
+                _actionStep = 1;
+                _lastActionStepTime = now;
+            } else if (_actionStep == 1 && now - _lastActionStepTime >= 300) {
+                _currentAction = ACTION_NONE;
+                standPosition();
+                Serial.println("[RECOVERY] Backward sequence complete.");
+            }
+            break;
+        }
+        case ACTION_RECOVERY_SHAKE: {
+            if (now - _lastActionStepTime < 100) return;
+            _lastActionStepTime = now;
+
+            if (_actionStep == 0) {
+                moveServoSmooth(4, 140);
+                moveServoSmooth(5, 40);
+                _actionStep = 1;
+            } else {
+                moveServoSmooth(4, 40);
+                moveServoSmooth(5, 140);
+                _actionStep = 0;
+                _shakeIteration++;
+                
+                if (_shakeIteration >= 3) {
+                    _currentAction = ACTION_NONE;
+                    standPosition();
+                    Serial.println("[RECOVERY] Shake sequence complete.");
+                }
+            }
+            break;
+        }
+        default:
+            _currentAction = ACTION_NONE;
+            break;
+    }
 }

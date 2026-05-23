@@ -1,8 +1,15 @@
 #include "CommandHandler.h"
+#include "CarModeController.h"
+#include "BipedModeController.h"
+#include "CrawlerModeController.h"
+#include "TransformManager.h"
 
 CommandHandler::CommandHandler(MotorControl& car, Balance& balance, ObstacleAvoidance& obstacle, 
-                              ServoControl& servos, Navigation& nav, RobotSystem& system)
-    : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos), _nav(nav), _system(system) {
+                               ServoControl& servos, Navigation& nav, RobotSystem& system, HeadControl& head,
+                               CarModeController& carMode, BipedModeController& bipedMode,
+                               CrawlerModeController& crawlerMode, TransformManager& transform)
+    : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos), _nav(nav), _system(system), _head(head),
+      _carMode(carMode), _bipedMode(bipedMode), _crawlerMode(crawlerMode), _transform(transform) {
     _lastHeartbeatReceived = millis();
 
     // Set Initial Hardware State based on Profile
@@ -13,7 +20,7 @@ CommandHandler::CommandHandler(MotorControl& car, Balance& balance, ObstacleAvoi
     #elif CURRENT_HARDWARE_PROFILE == PROFILE_CRAWLER_ONLY
     _currentState = STATE_CRAWLER;
     #else
-    _currentState = STATE_STAND; // Full Transformer defaults to Stand
+    _currentState = STATE_STAND; 
     #endif
 }
 
@@ -24,6 +31,50 @@ void CommandHandler::processCommand(String cmd) {
     if (cmd == "BEAT") return; 
     if (cmd == "CMD:TEST") { _system.runSelfTest(); return; }
 
+    // Shape-Shifting & Mode Selection Commands
+    if (cmd == "CMD:TRANSFORM") {
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH
+        #if ENABLE_TRANSFORM
+        _transform.transformToCar(); 
+        _currentState = STATE_CAR;
+        _isMovingForward = false;
+        _isTurning = false;
+        #endif
+        #endif
+        return;
+    } 
+    
+    if (cmd == "CMD:CRAWLER") {
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH || CURRENT_HARDWARE_PROFILE == PROFILE_CRAWLER_ONLY
+        #if ENABLE_TRANSFORM
+        _transform.transformToCrawler(); 
+        _currentState = STATE_CRAWLER;
+        _isMovingForward = false;
+        _isTurning = false;
+        #endif
+        #endif
+        return;
+    }
+
+    if (cmd == "CMD:STOP") {
+        _car.stop();
+        _nav.stopNavigation();
+        _servos.stopAction(); 
+        _transform.stopTransition();
+        
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
+        _currentState = STATE_CAR;
+        #else
+        _currentState = STATE_STAND;
+        #endif
+        
+        _isMovingForward = false;
+        _isTurning = false;
+        _isAidingGyro = false;
+        return;
+    }
+
+    // Waypoint Navigation target setting
     if (cmd.startsWith("GOTO:")) {
         int commaIdx = cmd.indexOf(',');
         if (commaIdx > 0) {
@@ -36,124 +87,51 @@ void CommandHandler::processCommand(String cmd) {
         return;
     }
 
-    if (cmd == "CMD:FORWARD") {
-        #if USE_ULTRASONIC
-        if (_obstacle.readFrontDistance() > 20) {
-            _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
-            _currentState = STATE_CAR;
-            _isMovingForward = true;
-            _isTurning = false;
+    // Route command to the corresponding active controller first
+    bool handled = false;
+    if (_currentState == STATE_CAR || _currentState == STATE_AVOID || _currentState == STATE_AVOID_ADVANCED) {
+        handled = _carMode.handleCommand(cmd);
+        if (handled) {
+            _isMovingForward = (cmd == "CMD:FORWARD");
+            _isTurning = (cmd == "CMD:LEFT" || cmd == "CMD:RIGHT" || cmd.indexOf("PIVOT") >= 0 || cmd.indexOf("ZERO") >= 0);
+            
             #if USE_MPU6050
-            _targetYaw = _balance.getYaw();
-            _isAidingGyro = true;
+            if (cmd == "CMD:FORWARD") {
+                _targetYaw = _balance.getYaw();
+                _isAidingGyro = true;
+            } else {
+                _isAidingGyro = false;
+            }
             #endif
-        } else {
-            Serial.println("[SAFETY] Blocked Forward move!");
-            _nav.setTargetSpeeds(0, 0);
-            _isMovingForward = false;
-            _isTurning = false;
         }
-        #else
-        _nav.setTargetSpeeds(SPEED_FAST, SPEED_FAST);
-        _currentState = STATE_CAR;
-        _isMovingForward = true;
-        _isTurning = false;
-        #endif
-    } else if (cmd == "CMD:BACKWARD") {
-        _nav.setTargetSpeeds(-SPEED_NORMAL, -SPEED_NORMAL);
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = false;
-        _isAidingGyro = false;
-    } else if (cmd == "CMD:LEFT") {
-        _nav.setTargetSpeeds(-SPEED_TURN, SPEED_TURN);
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-        _isAidingGyro = false;
-    } else if (cmd == "CMD:RIGHT") {
-        _nav.setTargetSpeeds(SPEED_TURN, -SPEED_TURN);
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-        _isAidingGyro = false;
-    } else if (cmd == "CMD:RIGHT_PIVOT") {
-        _car.turnRightPivot();
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-    } else if (cmd == "CMD:LEFT_PIVOT_BACK") {
-        _car.turnLeftPivotBack();
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-    } else if (cmd == "CMD:RIGHT_PIVOT_BACK") {
-        _car.turnRightPivotBack();
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-    } else if (cmd == "CMD:LEFT_ZERO") {
-        _car.turnLeftZero();
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-    } else if (cmd == "CMD:RIGHT_ZERO") {
-        _car.turnRightZero();
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = true;
-    } else if (cmd == "CMD:STOP") {
-        _nav.setTargetSpeeds(0, 0);
-        #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
-        _currentState = STATE_CAR;
-        #else
-        _currentState = STATE_STAND;
-        #endif
-        _isMovingForward = false;
-        _isTurning = false;
-        _isAidingGyro = false;
-        _nav.stopNavigation();
-    } else if (cmd == "CMD:WALK") {
-        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH || CURRENT_HARDWARE_PROFILE == PROFILE_BIPED_ONLY
-        #if ENABLE_WALKING
-        _currentState = STATE_WALK;
-        _isMovingForward = true;
-        _isTurning = false;
-        #endif
-        #endif
-    } else if (cmd == "CMD:TRANSFORM") {
-        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH
-        #if ENABLE_TRANSFORM
-        _servos.transformToCar();
-        _currentState = STATE_CAR;
-        _isMovingForward = false;
-        _isTurning = false;
-        #endif
-        #endif
-    } else if (cmd == "CMD:PUSH") {
-        _servos.pushMotion();
-    } else if (cmd == "CMD:KICK") {
-        _servos.kickMotion();
-        #if USE_ULTRASONIC
-        _currentState = STATE_AVOID;
-        #endif
-    } else if (cmd == "CMD:CRAWLER") {
-        #if CURRENT_HARDWARE_PROFILE == PROFILE_OMNI_MORPH || CURRENT_HARDWARE_PROFILE == PROFILE_CRAWLER_ONLY
-        #if ENABLE_TRANSFORM
-        _servos.transformToCrawler();
-        _currentState = STATE_CRAWLER;
-        _isMovingForward = false;
-        _isTurning = false;
-        #endif
-        #endif
-    } else if (cmd == "CMD:AUTO_ADV") {
+    } else if (_currentState == STATE_WALK || _currentState == STATE_STAND) {
+        handled = _bipedMode.handleCommand(cmd);
+        if (handled) {
+            if (cmd == "CMD:WALK") {
+                _currentState = STATE_WALK;
+                _isMovingForward = true;
+                _isTurning = false;
+            }
+        }
+    } else if (_currentState == STATE_CRAWLER) {
+        handled = _crawlerMode.handleCommand(cmd);
+        if (handled) {
+            _isMovingForward = (cmd == "CMD:FORWARD");
+            _isTurning = (cmd == "CMD:LEFT" || cmd == "CMD:RIGHT");
+        }
+    }
+
+    if (handled) return;
+
+    // Fallbacks for general sensor control commands
+    if (cmd == "CMD:AUTO_ADV") {
         #if USE_ULTRASONIC
         _currentState = STATE_AVOID_ADVANCED;
         #endif
     } else if (cmd.startsWith("PAN:")) {
-        _obstacle.setPan(cmd.substring(4).toInt());
+        _head.setPan(cmd.substring(4).toInt());
     } else if (cmd.startsWith("TILT:")) {
-        _obstacle.setTilt(cmd.substring(5).toInt());
+        _head.setTilt(cmd.substring(5).toInt());
     } else if (cmd == "CMD:SUN_SEEK") {
         _currentState = STATE_SUN_SEEK;
         _isMovingForward = true;
@@ -165,7 +143,6 @@ void CommandHandler::updateState() {
     // 1. Heartbeat Timeout
     if (millis() - _lastHeartbeatReceived > HEARTBEAT_TIMEOUT_MS && _currentState != STATE_STAND) {
         _car.stop();
-        _nav.setTargetSpeeds(0, 0);
         #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
         _currentState = STATE_CAR;
         #else
@@ -178,19 +155,8 @@ void CommandHandler::updateState() {
         float currentYaw = _balance.getYaw();
         float yawError = currentYaw - _targetYaw;
         int correction = yawError * 4;
-        _car.moveForward(correction); // This bypasses smoothing, maybe should adjust targets instead?
-                                      // But for now keeping original logic.
+        _car.moveForward(correction);
     }
 
-    // 3. Fall Detection
-    #if USE_MPU6050
-    FallDirection fall = _balance.checkFall();
-    if (fall != NO_FALL && _currentState != STATE_FALLEN) {
-        Serial.println("[IMU] Fall detected!");
-        _currentState = STATE_FALLEN;
-        _car.stop();
-        _nav.setTargetSpeeds(0, 0);
-        // We'll need a way to pass fall direction to recoverFromFall in loop
-    }
-    #endif
+    // 3. Fall Detection is handled by BipedModeController only when in Stand/Walk configuration
 }

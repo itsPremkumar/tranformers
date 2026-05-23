@@ -1,7 +1,7 @@
 #include "RobotSystem.h"
 
-RobotSystem::RobotSystem(MotorControl& car, Balance& balance, ObstacleAvoidance& obstacle, ServoControl& servos) 
-    : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos) {}
+RobotSystem::RobotSystem(MotorControl& car, Balance& balance, ObstacleAvoidance& obstacle, ServoControl& servos, HeadControl& head) 
+    : _car(car), _balance(balance), _obstacle(obstacle), _servos(servos), _head(head) {}
 
 void RobotSystem::i2cRecovery() {
     Serial.println("[HEAL] I2C Bus Lock detected. Clearing bus...");
@@ -32,16 +32,16 @@ void RobotSystem::runSelfTest() {
 
     // 2. Ultrasonic Check
     #if USE_ULTRASONIC
-    int dist = _obstacle.readFrontDistance();
+    int dist = _obstacle.readFrontDistanceBlocking();
     if (dist > 0 && dist < 400) Serial.println("[PASS] Ultrasonic Sensor: " + String(dist) + "cm");
     else Serial.println("[FAIL] Ultrasonic Sensor Reading Invalid!");
     #endif
 
     // 3. Servo Sweep
     Serial.println("[TEST] Sweeping Head Servos...");
-    _obstacle.setPan(45); delay(300);
-    _obstacle.setPan(135); delay(300);
-    _obstacle.setPan(90);
+    _head.setPan(45); delay(400);
+    _head.setPan(135); delay(400);
+    _head.reset();
     Serial.println("[PASS] Servo Sweep Complete.");
 
     // 4. Motor & IMU Movement Test
@@ -49,7 +49,8 @@ void RobotSystem::runSelfTest() {
     #if USE_MPU6050
     float startAccX = _balance.getPitch(); 
     #endif
-    _car.moveForward();
+    _car.setTargetSpeeds(SPEED_NORMAL, SPEED_NORMAL);
+    _car.update();
     delay(400);
     _car.stop();
     #if USE_MPU6050

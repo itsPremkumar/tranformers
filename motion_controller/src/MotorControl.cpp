@@ -1,4 +1,5 @@
 #include "MotorControl.h"
+#include "Config.h"
 
 MotorControl::MotorControl(uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4, uint8_t ena, uint8_t enb) {
     _in1 = in1;
@@ -7,7 +8,7 @@ MotorControl::MotorControl(uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4, u
     _in4 = in4;
     _ena = ena;
     _enb = enb;
-    _speed = 180;
+    _speed = SPEED_NORMAL;
 }
 
 void MotorControl::begin() {
@@ -29,16 +30,19 @@ void MotorControl::setSpeed(int speed) {
     _speed = constrain(speed, 0, 255);
 }
 
-void MotorControl::applySpeed() {
-    if (_speed == 0) {
-        stop();
-        return;
-    }
-    ledcWrite(_enaChannel, _speed);
-    ledcWrite(_enbChannel, _speed);
+void MotorControl::setTargetSpeeds(int left, int right) {
+    _targetLeft = left;
+    _targetRight = right;
 }
 
 void MotorControl::stop() {
+    _targetLeft = 0;
+    _targetRight = 0;
+    _currentLeft = 0;
+    _currentRight = 0;
+    _filteredLeft = 0;
+    _filteredRight = 0;
+    
     digitalWrite(_in1, LOW);
     digitalWrite(_in2, LOW);
     digitalWrite(_in3, LOW);
@@ -48,28 +52,67 @@ void MotorControl::stop() {
     ledcWrite(_enbChannel, 0);
 }
 
-void MotorControl::moveForward(int correction) {
-    digitalWrite(_in1, HIGH);
-    digitalWrite(_in2, LOW);
-    digitalWrite(_in3, HIGH);
-    digitalWrite(_in4, LOW);
+void MotorControl::update() {
+    unsigned long now = millis();
+    if (now - _lastUpdateTime < 10) return; // Update at ~100Hz
+    _lastUpdateTime = now;
+
+    // 1. Acceleration Ramping (The "Feel")
+    float leftDiff = _targetLeft - _currentLeft;
+    float rightDiff = _targetRight - _currentRight;
+
+    if (abs(leftDiff) > 1.0f) {
+        _currentLeft += constrain(leftDiff, (float)-ACCEL_LIMIT, (float)ACCEL_LIMIT);
+    } else {
+        _currentLeft = _targetLeft;
+    }
+
+    if (abs(rightDiff) > 1.0f) {
+        _currentRight += constrain(rightDiff, (float)-ACCEL_LIMIT, (float)ACCEL_LIMIT);
+    } else {
+        _currentRight = _targetRight;
+    }
+
+    // 2. Low-Pass Filter (The "Smoothness")
+    _filteredLeft = (_filteredLeft * (1.0f - SMOOTHING_ALPHA)) + (_currentLeft * SMOOTHING_ALPHA);
+    _filteredRight = (_filteredRight * (1.0f - SMOOTHING_ALPHA)) + (_currentRight * SMOOTHING_ALPHA);
+
+    applyHardwareSpeeds((int)_filteredLeft, (int)_filteredRight);
+}
+
+void MotorControl::applyHardwareSpeeds(int leftSpeed, int rightSpeed) {
+    // Left Motor Direction
+    if (leftSpeed >= 0) {
+        digitalWrite(_in1, HIGH);
+        digitalWrite(_in2, LOW);
+    } else {
+        digitalWrite(_in1, LOW);
+        digitalWrite(_in2, HIGH);
+    }
     
-    int speedA = constrain(_speed - correction, 0, 255);
-    int speedB = constrain(_speed + correction, 0, 255);
-    ledcWrite(_enaChannel, speedA);
-    ledcWrite(_enbChannel, speedB);
+    // Right Motor Direction
+    if (rightSpeed >= 0) {
+        digitalWrite(_in3, HIGH);
+        digitalWrite(_in4, LOW);
+    } else {
+        digitalWrite(_in3, LOW);
+        digitalWrite(_in4, HIGH);
+    }
+    
+    ledcWrite(_enaChannel, constrain(abs(leftSpeed), 0, 255));
+    ledcWrite(_enbChannel, constrain(abs(rightSpeed), 0, 255));
+}
+
+void MotorControl::moveForward(int correction) {
+    int speedL = constrain(_speed - correction, 0, 255);
+    int speedR = constrain(_speed + correction, 0, 255);
+    setTargetSpeeds(speedL, speedR);
 }
 
 void MotorControl::moveBackward(int correction) {
-    digitalWrite(_in1, LOW);
-    digitalWrite(_in2, HIGH);
-    digitalWrite(_in3, LOW);
-    digitalWrite(_in4, HIGH);
-    
-    int speedA = constrain(_speed - correction, 0, 255);
-    int speedB = constrain(_speed + correction, 0, 255);
-    ledcWrite(_enaChannel, speedA);
-    ledcWrite(_enbChannel, speedB);
+    int speedL = constrain(_speed - correction, 0, 255);
+    int speedR = constrain(_speed + correction, 0, 255);
+    setTargetSpeeds(-speedL, -speedR);
 }
 
 void MotorControl::turnRight() {
@@ -82,77 +125,30 @@ void MotorControl::turnLeft() {
 
 void MotorControl::turnRightZero() {
     // Left Forward, Right Backward
-    digitalWrite(_in1, LOW);
-    digitalWrite(_in2, HIGH);
-    digitalWrite(_in3, HIGH);
-    digitalWrite(_in4, LOW);
-    applySpeed();
+    setTargetSpeeds(_speed, -_speed);
 }
 
 void MotorControl::turnLeftZero() {
     // Left Backward, Right Forward
-    digitalWrite(_in1, HIGH);
-    digitalWrite(_in2, LOW);
-    digitalWrite(_in3, LOW);
-    digitalWrite(_in4, HIGH);
-    applySpeed();
+    setTargetSpeeds(-_speed, _speed);
 }
 
 void MotorControl::turnRightPivot() {
     // Left Forward, Right Stopped
-    digitalWrite(_in1, LOW);
-    digitalWrite(_in2, LOW);
-    digitalWrite(_in3, HIGH);
-    digitalWrite(_in4, LOW);
-    applySpeed();
+    setTargetSpeeds(_speed, 0);
 }
 
 void MotorControl::turnLeftPivot() {
     // Left Stopped, Right Forward
-    digitalWrite(_in1, HIGH);
-    digitalWrite(_in2, LOW);
-    digitalWrite(_in3, LOW);
-    digitalWrite(_in4, LOW);
-    applySpeed();
+    setTargetSpeeds(0, _speed);
 }
 
 void MotorControl::turnRightPivotBack() {
     // Left Backward, Right Stopped
-    digitalWrite(_in1, LOW);
-    digitalWrite(_in2, LOW);
-    digitalWrite(_in3, LOW);
-    digitalWrite(_in4, HIGH);
-    applySpeed();
+    setTargetSpeeds(-_speed, 0);
 }
 
 void MotorControl::turnLeftPivotBack() {
     // Left Stopped, Right Backward
-    digitalWrite(_in1, LOW);
-    digitalWrite(_in2, HIGH);
-    digitalWrite(_in3, LOW);
-    digitalWrite(_in4, LOW);
-    applySpeed();
-}
-
-void MotorControl::applySmoothSpeeds(int left, int right) {
-    // Left Motor Direction
-    if (left >= 0) {
-        digitalWrite(_in1, HIGH);
-        digitalWrite(_in2, LOW);
-    } else {
-        digitalWrite(_in1, LOW);
-        digitalWrite(_in2, HIGH);
-    }
-    
-    // Right Motor Direction
-    if (right >= 0) {
-        digitalWrite(_in3, HIGH);
-        digitalWrite(_in4, LOW);
-    } else {
-        digitalWrite(_in3, LOW);
-        digitalWrite(_in4, HIGH);
-    }
-    
-    ledcWrite(_enaChannel, constrain(abs(left), 0, 255));
-    ledcWrite(_enbChannel, constrain(abs(right), 0, 255));
+    setTargetSpeeds(0, -_speed);
 }

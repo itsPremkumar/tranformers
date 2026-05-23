@@ -1,28 +1,27 @@
 #include "ObstacleAvoidance.h"
 
-ObstacleAvoidance::ObstacleAvoidance(uint8_t trigPin, uint8_t echoPin, uint8_t panPin, uint8_t tiltPin) {
+ObstacleAvoidance::ObstacleAvoidance(uint8_t trigPin, uint8_t echoPin, HeadControl& head) 
+    : _head(head) {
     _trigPin = trigPin;
     _echoPin = echoPin;
-    _panPin = panPin;
-    _tiltPin = tiltPin;
 }
 
 void ObstacleAvoidance::begin() {
     pinMode(_trigPin, OUTPUT);
     pinMode(_echoPin, INPUT);
-    
-    _panServo.setPeriodHertz(50);
-    _tiltServo.setPeriodHertz(50);
-    
-    _panServo.attach(_panPin, 500, 2400);
-    _tiltServo.attach(_tiltPin, 500, 2400);
-    
-    _panServo.write(_panCenter);
-    _tiltServo.write(_tiltForward);
+    resetHead();
 }
 
 int ObstacleAvoidance::getDistance() {
-    return getDistanceOnce();
+    return _cachedFrontDistance;
+}
+
+int ObstacleAvoidance::readFrontDistance() {
+    return _cachedFrontDistance;
+}
+
+int ObstacleAvoidance::readGroundDistance() {
+    return _cachedGroundDistance;
 }
 
 int ObstacleAvoidance::getDistanceOnce() {
@@ -33,7 +32,8 @@ int ObstacleAvoidance::getDistanceOnce() {
     delayMicroseconds(10);
     digitalWrite(_trigPin, LOW);
     
-    unsigned long duration = pulseIn(_echoPin, HIGH, 30000); // 30ms timeout
+    // Decreased timeout to 12000us (~2 meters range) to avoid blocking the CPU
+    unsigned long duration = pulseIn(_echoPin, HIGH, 12000); 
     
     if (duration == 0) return 200; // no echo
     
@@ -42,7 +42,7 @@ int ObstacleAvoidance::getDistanceOnce() {
     return distance;
 }
 
-int ObstacleAvoidance::readAverageDistance(int samples) {
+int ObstacleAvoidance::readAverageDistanceBlocking(int samples) {
     long sum = 0;
     int validCount = 0;
     
@@ -50,70 +50,15 @@ int ObstacleAvoidance::readAverageDistance(int samples) {
         int d = getDistanceOnce();
         sum += d;
         validCount++;
-        delay(40);
+        // Reduced settling delay to 15ms to speed up blocking routines
+        delay(15);
     }
     
     if (validCount == 0) return 200;
     return sum / validCount;
 }
 
-int ObstacleAvoidance::readFrontDistance() {
-    _panServo.write(_panCenter);
-    _tiltServo.write(_tiltForward);
-    delay(250);
-    return readAverageDistance();
-}
-
-int ObstacleAvoidance::readGroundDistance() {
-    _panServo.write(_panCenter);
-    _tiltServo.write(_tiltDown);
-    delay(300);
-    return readAverageDistance();
-}
-
-int ObstacleAvoidance::scanLeft() {
-    _panServo.write(_panLeft);
-    _tiltServo.write(_tiltForward);
-    delay(350);
-    int d = readAverageDistance();
-    _panServo.write(_panCenter);
-    delay(150);
-    return d;
-}
-
-int ObstacleAvoidance::scanRight() {
-    _panServo.write(_panRight);
-    _tiltServo.write(_tiltForward);
-    delay(350);
-    int d = readAverageDistance();
-    _panServo.write(_panCenter);
-    delay(150);
-    return d;
-}
-
-// =====================================================
-// ADVANCED FEATURES
-// =====================================================
-
-void ObstacleAvoidance::smoothServoWrite(Servo &servo, int &currentPos, int targetPos) {
-    targetPos = constrain(targetPos, 0, 180);
-    if (currentPos == targetPos) return;
-
-    int step = (targetPos > currentPos) ? 1 : -1;
-    while (currentPos != targetPos) {
-        currentPos += step;
-        servo.write(currentPos);
-        delay(8); // SERVO_STEP_DELAY_MS
-    }
-}
-
-void ObstacleAvoidance::resetHead() {
-    smoothServoWrite(_panServo, _currentPan, _panCenter);
-    smoothServoWrite(_tiltServo, _currentTilt, _tiltDrive);
-    delay(35);
-}
-
-int ObstacleAvoidance::readDistanceMedian(int samples) {
+int ObstacleAvoidance::readDistanceMedianBlocking(int samples) {
     if (samples < 3) samples = 3;
     if (samples > 9) samples = 9;
 
@@ -125,12 +70,12 @@ int ObstacleAvoidance::readDistanceMedian(int samples) {
         if (d > 0 && d <= 250) {
             values[count++] = d;
         }
-        delay(10);
+        delay(8);
     }
 
     if (count == 0) return 250;
 
-    // Sort small array (bubble sort)
+    // Bubble sort
     for (int i = 0; i < count - 1; i++) {
         for (int j = 0; j < count - i - 1; j++) {
             if (values[j] > values[j + 1]) {
@@ -141,6 +86,168 @@ int ObstacleAvoidance::readDistanceMedian(int samples) {
         }
     }
     return values[count / 2];
+}
+
+int ObstacleAvoidance::readFrontDistanceBlocking() {
+    _head.setTarget(_panCenter, _tiltForward);
+    delay(200); // Wait for servo to physically move
+    _cachedFrontDistance = readAverageDistanceBlocking(3);
+    return _cachedFrontDistance;
+}
+
+int ObstacleAvoidance::readGroundDistanceBlocking() {
+    _head.setTarget(_panCenter, _tiltDown);
+    delay(220); // Wait for servo to physically move
+    _cachedGroundDistance = readAverageDistanceBlocking(3);
+    return _cachedGroundDistance;
+}
+
+int ObstacleAvoidance::scanLeftBlocking() {
+    _head.setTarget(_panLeft, _tiltForward);
+    delay(250);
+    int d = readAverageDistanceBlocking(3);
+    _head.setTarget(_panCenter, _tiltForward);
+    delay(120);
+    return d;
+}
+
+int ObstacleAvoidance::scanRightBlocking() {
+    _head.setTarget(_panRight, _tiltForward);
+    delay(250);
+    int d = readAverageDistanceBlocking(3);
+    _head.setTarget(_panCenter, _tiltForward);
+    delay(120);
+    return d;
+}
+
+void ObstacleAvoidance::resetHead() {
+    _head.reset();
+}
+
+void ObstacleAvoidance::startQuickScan() {
+    _scanState = SCAN_QUICK_ACTIVE;
+    _scanIndex = 0;
+    _bestScanResult.score = -999999;
+    
+    // Command head to first target
+    _head.setTarget(45, _tiltDrive);
+    _lastScanStepTime = millis();
+}
+
+void ObstacleAvoidance::startDeepScan() {
+    _scanState = SCAN_DEEP_ACTIVE;
+    _scanIndex = 0;
+    _bestScanResult.score = -999999;
+    
+    // Command head to first target of grid (21 items)
+    _head.setTarget(_panAngles[0], _tiltAngles[0]);
+    _lastScanStepTime = millis();
+}
+
+void ObstacleAvoidance::processQuickScanStep() {
+    if (_head.isMoving() || millis() - _lastScanStepTime < 40) return;
+
+    const int quickPans[] = {45, 90, 135};
+    int pan = quickPans[_scanIndex];
+    int d = readDistanceMedianBlocking(3);
+    updateMemory(pan, _tiltDrive, d);
+
+    int score = (d * 11) - (abs(pan - _panCenter) * 2) - getMemoryPenalty(pan, _tiltDrive);
+    if (d >= SAFE_DISTANCE_CM) score += 40;
+
+    if (score > _bestScanResult.score) {
+        _bestScanResult.pan = pan;
+        _bestScanResult.tilt = _tiltDrive;
+        _bestScanResult.distance = d;
+        _bestScanResult.score = score;
+    }
+
+    _scanIndex++;
+    if (_scanIndex >= 3) {
+        _latestScanResult = _bestScanResult;
+        _scanState = SCAN_IDLE;
+        _head.reset();
+    } else {
+        int nextPan = quickPans[_scanIndex];
+        _head.setTarget(nextPan, _tiltDrive);
+        _lastScanStepTime = millis();
+    }
+}
+
+void ObstacleAvoidance::processDeepScanStep() {
+    if (_head.isMoving() || millis() - _lastScanStepTime < 45) return;
+
+    int pi = _scanIndex / TILT_COUNT;
+    int ti = _scanIndex % TILT_COUNT;
+
+    int pan = _panAngles[pi];
+    int tilt = _tiltAngles[ti];
+
+    int d = readDistanceMedianBlocking(3); // Reduced samples to speed up DeepScan
+    updateMemory(pan, tilt, d);
+
+    int score = (d * 11) 
+                - (abs(pan - _panCenter) * 3) 
+                - (abs(tilt - _tiltDrive) * 2) 
+                - getMemoryPenalty(pan, tilt);
+
+    if (d >= SAFE_DISTANCE_CM) score += 40;
+    if (d >= CAUTION_DISTANCE_CM) score += 20;
+    if (d >= 120) score += 15;
+    if (tilt == _tiltDrive) score += 8;
+
+    if (score > _bestScanResult.score) {
+        _bestScanResult.pan = pan;
+        _bestScanResult.tilt = tilt;
+        _bestScanResult.distance = d;
+        _bestScanResult.score = score;
+    }
+
+    _scanIndex++;
+    if (_scanIndex >= (PAN_COUNT * TILT_COUNT)) {
+        _latestScanResult = _bestScanResult;
+        _scanState = SCAN_IDLE;
+        _head.reset();
+    } else {
+        int nextPi = _scanIndex / TILT_COUNT;
+        int nextTi = _scanIndex % TILT_COUNT;
+        _head.setTarget(_panAngles[nextPi], _tiltAngles[nextTi]);
+        _lastScanStepTime = millis();
+    }
+}
+
+void ObstacleAvoidance::update() {
+    decayMemoryIfNeeded();
+    
+    if (_scanState == SCAN_QUICK_ACTIVE) {
+        processQuickScanStep();
+    } else if (_scanState == SCAN_DEEP_ACTIVE) {
+        processDeepScanStep();
+    } else {
+        // IDLE: Periodic non-blocking refresh of front / ground distance
+        unsigned long now = millis();
+        if (!_head.isMoving() && now - _lastFrontMeasureTime > 80) {
+            _lastFrontMeasureTime = now;
+            int dist = getDistanceOnce();
+            if (_head.getPan() == _panCenter) {
+                if (_head.getTilt() == _tiltForward || _head.getTilt() == _tiltDrive) {
+                    _cachedFrontDistance = dist;
+                } else if (_head.getTilt() == _tiltDown) {
+                    _cachedGroundDistance = dist;
+                }
+            }
+        }
+    }
+}
+
+bool ObstacleAvoidance::detectCliffOrDrop() {
+    // Keep it simple and quick
+    int centerDist = _cachedFrontDistance;
+    int downDist = _cachedGroundDistance;
+    
+    if (centerDist != 250 && downDist >= 180 && centerDist < 120) return true;
+    if (centerDist != 250 && (downDist - centerDist) > 85) return true;
+    return false;
 }
 
 int ObstacleAvoidance::panIndex(int pan) {
@@ -165,7 +272,7 @@ void ObstacleAvoidance::updateMemory(int pan, int tilt, int distance) {
     _lastDistanceMap[pi][ti] = distance;
     _lastSeenMap[pi][ti] = millis();
 
-    if (distance < BLOCK_DISTANCE_CM) { // BLOCK_DISTANCE_CM
+    if (distance < BLOCK_DISTANCE_CM) {
         if (_blockedHistory[pi][ti] < 50) _blockedHistory[pi][ti]++;
     } else {
         if (_blockedHistory[pi][ti] > 0) _blockedHistory[pi][ti]--;
@@ -196,104 +303,14 @@ void ObstacleAvoidance::decayMemoryIfNeeded() {
     }
 }
 
-ScanResult ObstacleAvoidance::quickScan() {
-    ScanResult best;
-    best.pan = _panCenter;
-    best.tilt = _tiltDrive;
-    best.distance = 0;
-    best.score = -999999;
-
-    int quickPans[] = {45, 90, 135};
-    for (int i = 0; i < 3; i++) {
-        int pan = quickPans[i];
-        smoothServoWrite(_panServo, _currentPan, pan);
-        smoothServoWrite(_tiltServo, _currentTilt, _tiltDrive);
-        delay(35);
-
-        int d = readDistanceMedian(3);
-        updateMemory(pan, _tiltDrive, d);
-
-        int score = (d * 11) - (abs(pan - _panCenter) * 2) - getMemoryPenalty(pan, _tiltDrive);
-        if (d >= 38) score += 40; // SAFE_DISTANCE_CM
-
-        if (score > best.score) {
-            best.pan = pan;
-            best.tilt = _tiltDrive;
-            best.distance = d;
-            best.score = score;
-        }
-    }
-    return best;
-}
-
-ScanResult ObstacleAvoidance::deepScan() {
-    ScanResult best;
-    best.pan = _panCenter;
-    best.tilt = _tiltDrive;
-    best.distance = 0;
-    best.score = -999999;
-
-    for (int i = 0; i < PAN_COUNT; i++) {
-        for (int j = 0; j < TILT_COUNT; j++) {
-            int pan = _panAngles[i];
-            int tilt = _tiltAngles[j];
-
-            smoothServoWrite(_panServo, _currentPan, pan);
-            smoothServoWrite(_tiltServo, _currentTilt, tilt);
-            delay(35);
-
-            int d = readDistanceMedian(5);
-            updateMemory(pan, tilt, d);
-
-            int score = (d * 11) 
-                        - (abs(pan - _panCenter) * 3) 
-                        - (abs(tilt - _tiltDrive) * 2) 
-                        - getMemoryPenalty(pan, tilt);
-
-            if (d >= 38) score += 40;  // SAFE_DISTANCE_CM
-            if (d >= 55) score += 20;  // CAUTION_DISTANCE_CM
-            if (d >= 120) score += 15;
-            if (tilt == _tiltDrive) score += 8;
-
-            if (score > best.score) {
-                best.pan = pan;
-                best.tilt = tilt;
-                best.distance = d;
-                best.score = score;
-            }
-        }
-    }
-    return best;
-}
-
-bool ObstacleAvoidance::detectCliffOrDrop() {
-    smoothServoWrite(_panServo, _currentPan, _panCenter);
-    smoothServoWrite(_tiltServo, _currentTilt, _tiltForward);
-    delay(35);
-    int centerDist = readDistanceMedian(3);
-
-    smoothServoWrite(_panServo, _currentPan, _panCenter);
-    smoothServoWrite(_tiltServo, _currentTilt, _tiltDown);
-    delay(35);
-    int downDist = readDistanceMedian(3);
-
-    resetHead();
-
-    if (centerDist != 250 && downDist >= 180 && centerDist < 120) return true;
-    if (centerDist != 250 && (downDist - centerDist) > 85) return true;
-
-    return false;
-}
-
 bool ObstacleAvoidance::allDirectionsBlocked() {
     int blockedCount = 0;
     for (int i = 0; i < PAN_COUNT; i++) {
         for (int j = 0; j < TILT_COUNT; j++) {
-            if (_lastDistanceMap[i][j] > 0 && _lastDistanceMap[i][j] < 26) {
+            if (_lastDistanceMap[i][j] > 0 && _lastDistanceMap[i][j] < BLOCK_DISTANCE_CM) {
                 blockedCount++;
             }
         }
     }
     return (blockedCount >= ((PAN_COUNT * TILT_COUNT) * 2 / 3));
 }
-

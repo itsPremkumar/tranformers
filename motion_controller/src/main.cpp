@@ -8,9 +8,14 @@
 #include "MotorControl.h"
 #include "ServoControl.h"
 #include "Balance.h"
+#include "HeadControl.h"
 #include "ObstacleAvoidance.h"
 #include "RobotSystem.h"
 #include "Navigation.h"
+#include "TransformManager.h"
+#include "CarModeController.h"
+#include "BipedModeController.h"
+#include "CrawlerModeController.h"
 #include "CommandHandler.h"
 
 #define WDT_TIMEOUT_SECONDS 5
@@ -20,13 +25,23 @@ unsigned long lastHeartbeatTime = 0;
 MotorControl car(MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4, MOTOR_ENA, MOTOR_ENB);
 ServoControl servos;
 Balance balance;
-ObstacleAvoidance obstacle(TRIG_PIN, ECHO_PIN, PAN_SERVO_PIN, TILT_SERVO_PIN);
+HeadControl head(PAN_SERVO_PIN, TILT_SERVO_PIN);
+ObstacleAvoidance obstacle(TRIG_PIN, ECHO_PIN, head);
 Preferences prefs;
 
-// --- Module Instances ---
-RobotSystem systemMgr(car, balance, obstacle, servos);
-Navigation nav(car, balance, obstacle, servos);
-CommandHandler cmdHandler(car, balance, obstacle, servos, nav, systemMgr);
+// --- Decoupled Subsystem / Manager Instances ---
+RobotSystem systemMgr(car, balance, obstacle, servos, head);
+Navigation nav(car, balance, obstacle, servos, head);
+
+// --- Mode Controllers ---
+CarModeController carMode(car, obstacle, balance, nav);
+TransformManager transformMgr(servos);
+BipedModeController bipedMode(servos, balance, transformMgr);
+CrawlerModeController crawlerMode(car, servos);
+
+// --- High-Level Command Router ---
+CommandHandler cmdHandler(car, balance, obstacle, servos, nav, systemMgr, head,
+                         carMode, bipedMode, crawlerMode, transformMgr);
 
 struct WiFiSync {
     char ssid[32];
@@ -81,9 +96,15 @@ void setup() {
     ArduinoOTA.begin();
     #endif
 
-    // 2. Hardware Init
+    // 2. Hardware & Subsystems Init
     Wire.begin(); 
     car.begin();
+    head.begin();
+    transformMgr.begin();
+    carMode.begin();
+    bipedMode.begin();
+    crawlerMode.begin();
+    
     #if USE_SERVO_DRIVER
     servos.begin();
     servos.standPosition();
@@ -125,13 +146,11 @@ void loop() {
     }
     #endif
     
-    nav.updateSmoothMotors();
+    head.update();
+    obstacle.update();
     systemMgr.updateTelemetry();
     systemMgr.checkBatterySafety();
     cmdHandler.updateState();
-    #if USE_SERVO_SLEEP
-    servos.updateSleep();
-    #endif
 
     // 2. Command Processing & Heartbeat Failsafe
     String cmd = "";
@@ -168,106 +187,111 @@ void loop() {
     
     // 3. Autonomy & Safety
     nav.updateActiveScan(cmdHandler.isMovingForward());
-    nav.processNavigation(balance.getYaw());
     
-    // Stall protection & Stuck detection
+    // Stall protection
     float vCurr = (analogRead(CURRENT_PIN) / 4095.0) * 3.3;
     float amps = (vCurr - 1.65) / 0.1;
-    if (amps > 3.0) {
+    if (amps > 3.0f) {
         car.stop();
         Serial2.println("STATUS: MOTOR STALL!");
     }
-    nav.checkStuckStatus(amps);
 
-    // 4. State Machine Execution
+    // 4. Mode-Specific execution and updates
     RobotState currentState = cmdHandler.getState();
-    static bool lastTurnWasLeft = false;
+    
+    // Always update active shape transitions
+    transformMgr.update();
 
     #if USE_ULTRASONIC
-    // Tilt Compensation
-    if (currentState != STATE_FALLEN) {
+    // Tilt Compensation (Non-blocking)
+    if (currentState != STATE_FALLEN && !transformMgr.isTransitioning() && !obstacle.isScanBusy()) {
         float pitch = balance.getPitch();
         int tiltAdjustment = map(pitch, -45, 45, -30, 30);
-        obstacle.setTilt(90 + tiltAdjustment); 
+        head.setTilt(90 + tiltAdjustment); 
     }
     #endif
 
-    switch (currentState) {
-        case STATE_STAND: break;
-        case STATE_CAR: break;
-        case STATE_WALK:
-            #if ENABLE_WALKING
-            servos.walkForward();
-            #endif
-            break;
-        case STATE_AVOID: {
-            #if USE_ULTRASONIC
-            int frontDistance = obstacle.readFrontDistance();
-            int groundDistance = obstacle.readGroundDistance();
+    // Route execution to corresponding mode controller
+    if (transformMgr.isTransitioning()) {
+        car.stop(); // Prevent wheel spinning during transformations
+    } else {
+        switch (currentState) {
+            case STATE_STAND:
+            case STATE_WALK:
+                bipedMode.update();
+                break;
+                
+            case STATE_CAR:
+                carMode.update();
+                break;
+                
+            case STATE_AVOID: {
+                carMode.update();
+                #if USE_ULTRASONIC
+                int frontDistance = obstacle.readFrontDistance();
+                int groundDistance = obstacle.readGroundDistance();
+                
+                if (groundDistance > 45) { // Hole (safety fallback)
+                    car.stop(); delay(200);
+                    car.moveBackward(); delay(400);
+                    car.stop();
+                } else if (frontDistance < 25) { // Obstacle
+                    car.stop(); delay(200);
+                    car.moveBackward(); delay(400);
+                    car.stop();
+                    if (obstacle.scanLeftBlocking() > obstacle.scanRightBlocking()) car.turnLeft();
+                    else car.turnRight();
+                    delay(500);
+                    car.stop();
+                } else {
+                    car.moveForward();
+                }
+                #endif
+                break;
+            }
             
-            if (groundDistance > 45) { // Hole
-                car.stop(); delay(200);
-                car.moveBackward(); delay(400);
-                car.stop();
-            } else if (frontDistance < 25) { // Obstacle
-                car.stop(); delay(200);
-                car.moveBackward(); delay(400);
-                car.stop();
-                if (obstacle.scanLeft() > obstacle.scanRight()) car.turnLeft();
-                else car.turnRight();
-                delay(500);
-                car.stop();
-            } else {
-                car.moveForward();
+            case STATE_AVOID_ADVANCED: {
+                carMode.update();
+                #if USE_ULTRASONIC
+                if (nav.isEscaping()) {
+                    break;
+                }
+                int frontDistance = obstacle.readFrontDistance();
+                if (frontDistance > SAFE_DISTANCE_CM) { 
+                    car.setSpeed(nav.adaptiveForwardSpeed(frontDistance));
+                    car.moveForward();
+                } else {
+                    nav.triggerEscape();
+                }
+                #endif
+                break;
             }
-            #endif
-            break;
-        }
-        case STATE_AVOID_ADVANCED: {
-            #if USE_ULTRASONIC
-            obstacle.resetHead();
-            int frontDistance = obstacle.readFrontDistance();
-            if (frontDistance > SAFE_DISTANCE_CM) { 
-                car.setSpeed(nav.adaptiveForwardSpeed(frontDistance));
-                car.moveForward();
-                delay(frontDistance > CAUTION_DISTANCE_CM ? 35 : 45);
-            } else {
-                nav.escapeObstacle(lastTurnWasLeft);
+            
+            case STATE_CRAWLER:
+                crawlerMode.update();
+                break;
+                
+            case STATE_FALLEN:
+                bipedMode.update(); // Wait for recovery in biped mode
+                break;
+                
+            case STATE_SUN_SEEK: {
+                carMode.update();
+                #if USE_ULTRASONIC
+                if (obstacle.readFrontDistance() < 25) {
+                    car.stop();
+                    delay(200);
+                    car.turnRight(); delay(500);
+                    car.stop();
+                } else {
+                    car.setSpeed(SPEED_SLOW);
+                    car.moveForward();
+                }
+                #endif
+                break;
             }
-            #endif
-            break;
-        }
-        case STATE_FALLEN: {
-            #if ENABLE_TRANSFORM
-            servos.recoverFromFall(balance.checkFall());
-            cmdHandler.processCommand("CMD:STOP"); // Reset to stand
-            #endif
-            break;
-        }
-        case STATE_CRAWLER: break;
-        case STATE_SUN_SEEK: {
-            // Sun seeking is mostly handled by the AI brain sending direction commands.
-            // But we add a safety layer here.
-            #if USE_ULTRASONIC
-            if (obstacle.readFrontDistance() < 25) {
-                car.stop();
-                delay(200);
-                car.turnRight(); delay(500);
-                car.stop();
-            } else {
-                car.setSpeed(SPEED_SLOW);
-                car.moveForward();
-            }
-            #endif
-            break;
         }
     }
-
-    // 5. Update Hardware Subsystems
-    nav.updateSmoothMotors();
-    servos.update();
-    systemMgr.updateTelemetry();
-    systemMgr.checkBatterySafety();
 
     delay(5); 
 }
