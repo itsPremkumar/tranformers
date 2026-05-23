@@ -46,7 +46,7 @@ inline String getDashboardHTML(SurroundControl* surround) {
     html += "<div class='card'><div class='section-title' style='display:flex;justify-content:space-between;align-items:center'>";
     html += "<span>Movement Control</span>";
     html += "<select id='mode' style='background:#1a1a2e;color:#00f2fe;border:1px solid #00f2fe;border-radius:5px;font-size:0.7em'>";
-    html += "<option value='latch'>CRUISE</option><option value='momentary'>HOLD</option></select></div>";
+    html += "<option value='latching'>LATCHING</option><option value='momentary'>MOMENTARY</option></select></div>";
     html += "<div class='grid-3'>";
     html += "<div></div><button class='btn btn-move' onmousedown='m(\"forward\")' onmouseup='s()' onmouseleave='s()'><span class='icon'>▲</span><span class='label'>Forward</span></button><div></div>";
     html += "<button class='btn btn-move' onmousedown='m(\"left\")' onmouseup='s()' onmouseleave='s()'><span class='icon'>◀</span><span class='label'>Left</span></button>";
