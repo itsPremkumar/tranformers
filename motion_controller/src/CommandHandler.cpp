@@ -28,6 +28,36 @@ CommandHandler::CommandHandler(MotorControl& car, Balance& balance, ObstacleAvoi
 
 void CommandHandler::processCommand(String cmd) {
     cmd.trim();
+    if (cmd == "CMD:EMERGENCY_STOP" || cmd == "CMD:STOP") {
+        _car.emergencyBrake();
+        _nav.stopNavigation();
+        _servos.stopAction(); 
+        _transform.stopTransition();
+        #if CURRENT_HARDWARE_PROFILE == PROFILE_CAR_ONLY
+        _currentState = STATE_CAR;
+        #else
+        _currentState = STATE_STAND;
+        #endif
+        _isMovingForward = false;
+        _isTurning = false;
+        _isAidingGyro = false;
+        _lastHeartbeatReceived = millis(); 
+        return;
+    }
+    if (cmd == "CMD:FALL_RECOVERY") {
+        #if USE_MPU6050
+        FallDirection fall = _balance.checkFall();
+        if (fall == NO_FALL) {
+            fall = UNKNOWN_FALL;
+        }
+        _transform.recoverFromFall(fall);
+        #else
+        _transform.recoverFromFall(UNKNOWN_FALL);
+        #endif
+        _lastHeartbeatReceived = millis(); 
+        return;
+    }
+
     _lastHeartbeatReceived = millis(); 
     
     if (cmd == "BEAT") return; 

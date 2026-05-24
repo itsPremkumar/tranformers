@@ -192,10 +192,20 @@ void loop() {
         hasCmd = true;
         web.clearCommand();
     } else if (Serial.available()) {
-        cmd = Serial.readStringUntil('\n');
-        cmd.trim();
-        if (cmd.length() > 0) {
-            hasCmd = true;
+        static String rxSerialBuffer;
+        while (Serial.available()) {
+            char c = (char)Serial.read();
+            if (c == '\n') {
+                rxSerialBuffer.trim();
+                if (rxSerialBuffer.length() > 0) {
+                    cmd = rxSerialBuffer;
+                    hasCmd = true;
+                }
+                rxSerialBuffer = "";
+                break;
+            } else {
+                rxSerialBuffer += c;
+            }
         }
     }
 
@@ -264,37 +274,46 @@ void loop() {
         web.sendToAi("CMD:IDLE_OBSERVE");
     }
 
-    // 4. Process Telemetry from Motion Controller
+    // 4. Process Telemetry from Motion Controller (non-blocking)
+    static String rxMotionBuffer;
     while (Serial2.available()) {
-        String telemetry = Serial2.readStringUntil('\n');
-        telemetry.trim();
-        
-        if (telemetry.startsWith("YAW:")) {
-            currentYaw = telemetry.substring(4).toFloat();
-        } else if (telemetry.startsWith("DISTANCE:")) {
-            int dist = telemetry.substring(9).toInt();
-            web.sendToAi(telemetry);
-            swarmAI.broadcastObstacle(currentMood, currentYaw, dist);
-        } else if (telemetry.startsWith("ROUGHNESS:")) {
-            float r = telemetry.substring(10).toFloat();
-            if (r > 0.05) {
-                web.broadcast("STATUS: Rough Terrain Detected!");
-                #if USE_OLED_DISPLAY
-                displayCtrl.warningFace();
-                #endif
+        char c = (char)Serial2.read();
+        if (c == '\n') {
+            rxMotionBuffer.trim();
+            if (rxMotionBuffer.length() > 0) {
+                String telemetry = rxMotionBuffer;
+
+                if (telemetry.startsWith("YAW:")) {
+                    currentYaw = telemetry.substring(4).toFloat();
+                } else if (telemetry.startsWith("DISTANCE:")) {
+                    int dist = telemetry.substring(9).toInt();
+                    web.sendToAi(telemetry);
+                    swarmAI.broadcastObstacle(currentMood, currentYaw, dist);
+                } else if (telemetry.startsWith("ROUGHNESS:")) {
+                    float r = telemetry.substring(10).toFloat();
+                    if (r > 0.05) {
+                        web.broadcast("STATUS: Rough Terrain Detected!");
+                        #if USE_OLED_DISPLAY
+                        displayCtrl.warningFace();
+                        #endif
+                    }
+                } else if (telemetry == "CMD:BATTERY_LOW") {
+                    #if USE_OLED_DISPLAY
+                    displayCtrl.sadFace();
+                    #endif
+                    web.broadcast("STATUS: Battery Low!");
+                } else if (telemetry == "CMD:BATTERY_CRITICAL") {
+                    #if USE_OLED_DISPLAY
+                    displayCtrl.drawBitmapFace(4);
+                    #endif
+                    web.broadcast("STATUS: CRITICAL BATTERY! Shutting down...");
+                } else {
+                    web.sendToAi(telemetry);
+                }
             }
-        } else if (telemetry == "CMD:BATTERY_LOW") {
-            #if USE_OLED_DISPLAY
-            displayCtrl.sadFace();
-            #endif
-            web.broadcast("STATUS: Battery Low!");
-        } else if (telemetry == "CMD:BATTERY_CRITICAL") {
-            #if USE_OLED_DISPLAY
-            displayCtrl.drawBitmapFace(4);
-            #endif
-            web.broadcast("STATUS: CRITICAL BATTERY! Shutting down...");
+            rxMotionBuffer = "";
         } else {
-            web.sendToAi(telemetry);
+            rxMotionBuffer += c;
         }
     }
 }

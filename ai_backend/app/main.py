@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.routes.robot import router as robot_router
 from app.routes.websockets import router as websockets_router
-from app.services import check_ollama, proactive_loop, proactive_voice_loop, VOICE_ENABLED, swarm_scheduler_loop
+from app.core.manager import manager
+from app.services import check_ollama, proactive_loop, proactive_voice_loop, VOICE_ENABLED, swarm_scheduler_loop, autonomous_mission_loop
 
 # Force UTF-8 encoding for Windows consoles
 if sys.platform == "win32":
@@ -31,6 +32,7 @@ async def startup():
         
     asyncio.create_task(proactive_loop())
     asyncio.create_task(swarm_scheduler_loop())
+    asyncio.create_task(autonomous_mission_loop(manager))
     if VOICE_ENABLED:
         asyncio.create_task(proactive_voice_loop())
 

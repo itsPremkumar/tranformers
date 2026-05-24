@@ -9,7 +9,7 @@ import requests
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-from app.tools.research_engine.orchestrator import execute_advanced_research
+from app.tools.deep_research import run_research_subprocess
 from app.tools.research_engine.memory_vault import MemoryVault
 from app.tools.research_engine.query_expansion import expand_research_queries
 from app.tools.research_engine.pdf_parser import extract_pdf_content
@@ -94,8 +94,8 @@ async def run_detailed_tests():
     safe_print("\n[TEST CASE 4] Features 2 & 3: Agentic Scraper & ChromaDB Memory Vault")
     try:
         query = "Explain advanced fusion energy breakthroughs"
-        # Run research scraper loop
-        research_result = execute_advanced_research(query)
+        # Run research scraper loop in isolated subprocess
+        research_result = await run_research_subprocess(query)
         safe_print("Scraped Research Summary Snippet:")
         safe_print(research_result[:400] + "...")
         

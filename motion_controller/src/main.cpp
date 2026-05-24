@@ -20,6 +20,12 @@
 #include "CommandHandler.h"
 #include "DiagnosticServer.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+TaskHandle_t balanceTaskHandle = NULL;
+volatile bool balanceOnline = false;
+
 // ==========================================
 // Safety & Watchdog Configuration
 // ==========================================
@@ -81,6 +87,7 @@ void updateSensors();
 void processSerialCommands();
 void checkFailsafes();
 void updateRobotStateBehavior(RobotState state);
+void balanceTask(void *pvParameters);
 
 // ==========================================
 // System Setup
@@ -150,6 +157,17 @@ void setup() {
     #endif
 
     lastHeartbeatTime = millis();
+
+    // Spawn high-priority FreeRTOS balance task on Core 1 (priority 3, stack 4096)
+    xTaskCreatePinnedToCore(
+        balanceTask,
+        "BalanceTask",
+        4096,
+        NULL,
+        3,
+        &balanceTaskHandle,
+        1
+    );
 }
 
 // ==========================================
@@ -180,12 +198,6 @@ void loop() {
 // ==========================================
 
 void updateSensors() {
-    #if USE_MPU6050
-    if (balance.isOnline() && !balance.update() && USE_I2C_HEALER) {
-        systemMgr.i2cRecovery();
-    }
-    #endif
-    
     head.update();
     obstacle.update();
     systemMgr.updateTelemetry();
@@ -195,27 +207,42 @@ void updateSensors() {
 }
 
 void processSerialCommands() {
-    String cmd = "";
-    bool hasCmd = false;
+    static String rxSerialBuffer;
+    static String rxMotionBuffer;
     
-    if (Serial2.available()) {
-        cmd = Serial2.readStringUntil('\n');
-        hasCmd = true;
-    } else if (Serial.available()) {
-        cmd = Serial.readStringUntil('\n');
-        hasCmd = true;
-    }
-
-    if (hasCmd) {
-        cmd.trim();
-        if (cmd.length() > 0) {
-            lastHeartbeatTime = millis(); // Refresh safety timeout
-            
-            if (cmd != "BEAT") {
-                Serial.println("Exec: " + cmd);
-                Serial2.println("ACK:" + cmd); 
-                cmdHandler.processCommand(cmd);
+    while (Serial2.available()) {
+        char c = (char)Serial2.read();
+        if (c == '\n') {
+            rxMotionBuffer.trim();
+            if (rxMotionBuffer.length() > 0) {
+                lastHeartbeatTime = millis(); // Refresh safety timeout
+                if (rxMotionBuffer != "BEAT") {
+                    Serial.println("Exec: " + rxMotionBuffer);
+                    Serial2.println("ACK:" + rxMotionBuffer); 
+                    cmdHandler.processCommand(rxMotionBuffer);
+                }
             }
+            rxMotionBuffer = "";
+        } else {
+            rxMotionBuffer += c;
+        }
+    }
+    
+    while (Serial.available()) {
+        char c = (char)Serial.read();
+        if (c == '\n') {
+            rxSerialBuffer.trim();
+            if (rxSerialBuffer.length() > 0) {
+                lastHeartbeatTime = millis(); // Refresh safety timeout
+                if (rxSerialBuffer != "BEAT") {
+                    Serial.println("Exec: " + rxSerialBuffer);
+                    Serial2.println("ACK:" + rxSerialBuffer); 
+                    cmdHandler.processCommand(rxSerialBuffer);
+                }
+            }
+            rxSerialBuffer = "";
+        } else {
+            rxSerialBuffer += c;
         }
     }
 }
@@ -337,5 +364,24 @@ void updateRobotStateBehavior(RobotState currentState) {
                 break;
             }
         }
+    }
+}
+
+void balanceTask(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(10); // 100Hz = 10ms
+    
+    for (;;) {
+        #if USE_MPU6050
+        bool ok = balance.update();
+        balanceOnline = ok && balance.isOnline();
+        if (!ok && USE_I2C_HEALER) {
+            systemMgr.i2cRecovery();
+        }
+        #else
+        balanceOnline = false;
+        #endif
+        
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
