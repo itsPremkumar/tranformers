@@ -39,3 +39,5 @@ Omni-Morph is an open-source framework for building modular transformer robots p
 - [Technical Documentation](docs/Omni-Morph_TECHNICAL_DOCUMENTATION.md)
 - [AI Logic](docs/ai_super_brain.md)
 - [V2.5 Advanced Brain & OTA Upgrades](docs/advanced_features_v2.md)
+- [Jetson Nano Upgrade Blueprint](docs/JETSON_NANO_UPGRADE_BLUEPRINT.md)
+- [Jetson Nano Codebase Impact](docs/JETSON_NANO_CODEBASE_IMPACT.md)

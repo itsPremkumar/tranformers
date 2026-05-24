@@ -144,6 +144,8 @@ The AI Backend can run on your laptop for testing with a local USB camera and lo
 *   ⚡ [**Autonomous Charging**](./docs/autonomous_charging_blueprint.md): Self-docking and power management.
 *   🛡️ [**Diagnostics & Safety**](./docs/diagnostics_and_safety.md): Test suites and emergency protocols.
 *   👋 [**Multimodal Interaction**](./docs/multimodal_interaction.md): Vision, voice, and gesture control.
+*   🧠 [**Jetson Nano Upgrade Blueprint**](./docs/JETSON_NANO_UPGRADE_BLUEPRINT.md): Detailed hardware/software migration path to Jetson edge computing.
+*   🛠️ [**Jetson Nano Codebase Impact**](./docs/JETSON_NANO_CODEBASE_IMPACT.md): Refactoring checklist and impact matrix for current controllers.
 
 
 ## 🤝 Contributing
