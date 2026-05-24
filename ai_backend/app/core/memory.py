@@ -13,7 +13,9 @@ class RobotMemory(Base):
     knowledge = Column(Text, default="{}") # JSON object of key-value pairs
     last_seen = Column(DateTime, default=datetime.datetime.utcnow)
 
-engine = create_engine('sqlite:///robot_brain.db')
+import os
+db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'robot_brain.db'))
+engine = create_engine(f'sqlite:///{db_path}')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 

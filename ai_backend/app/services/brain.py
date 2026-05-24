@@ -224,7 +224,7 @@ async def process_ask_robot(prompt: str):
     elif any(k in prompt.lower() for k in search_keywords):
         from app.tools.internet import web_search
         print(f"[DEBUG] Internet Search Triggered. Searching for: {prompt}")
-        internet_results = web_search(prompt)
+        internet_results = await asyncio.to_thread(web_search, prompt)
         print(f"[DEBUG] Internet Results Length: {len(internet_results) if internet_results else 0}")
 
     # Collect Hardware Status

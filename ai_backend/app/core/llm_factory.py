@@ -12,6 +12,38 @@ from app.tools.internet import web_search, wiki_lookup, play_youtube
 from app.tools.deep_research import deep_research
 from app.core.memory import memory_manager
 
+def is_gibberish(text: str) -> bool:
+    # 1. Check for long words without spaces (excluding URLs/paths/base64 data)
+    words = text.split()
+    for word in words:
+        if len(word) > 30:
+            # Check if it looks like a URL or path or data URI
+            if word.startswith(("http://", "https://", "www.", "file://", "data:")) or "\\" in word or "/" in word:
+                continue
+            return True
+            
+    # 2. Check for repeating sub-strings (consecutive repetition)
+    # E.g., "jhskfjhskfjhskf"
+    for length in range(3, 11):
+        for i in range(len(text) - length * 3 + 1):
+            sub = text[i:i+length]
+            # check if this substring is repeated consecutively 3 or more times
+            if text[i+length:i+length*2] == sub and text[i+length*2:i+length*3] == sub:
+                return True
+                
+    # 3. Check vowel-to-consonant ratio (vowel density) for alphabetic strings
+    # English/Latin text usually has around 30-40% vowels (a, e, i, o, u, y)
+    # Gibberish like "jhskfjhskf" has 0% vowels
+    latin_letters = [c.lower() for c in text if 'a' <= c.lower() <= 'z']
+    if len(latin_letters) > 15:
+        vowels = sum(1 for c in latin_letters if c in 'aeiouy')
+        ratio = vowels / len(latin_letters)
+        if ratio < 0.15:
+            return True
+            
+    return False
+
+
 class LLMFactory:
     def __init__(self, manager):
         self.manager = manager
@@ -120,6 +152,9 @@ class LLMFactory:
         return raw_response
 
     def format_response(self, text):
+        if is_gibberish(text):
+            raise ValueError("Model output contains gibberish/hallucinations")
+
         try:
             clean = text.replace("```json", "").replace("```", "").strip()
             # Try to fix single quotes common in hallucinated JSON lists
@@ -140,7 +175,11 @@ class LLMFactory:
                 raise ValueError("Model returned an empty list, falling back to text extraction.")
                 
             return clean
-        except:
+        except Exception as e:
+            # If it's the ValueError we raised above, propagate it up
+            if isinstance(e, ValueError) and "gibberish" in str(e):
+                raise e
+
             clean_text = text.replace('"', '').replace("'", "").replace('[', '').replace(']', '').strip()
             if clean_text.startswith("SAY:"):
                 clean_text = clean_text[4:].strip()
@@ -148,6 +187,9 @@ class LLMFactory:
             # Clean up Moondream hallucinations
             clean_text = clean_text.lstrip("?").strip()
                 
+            if is_gibberish(clean_text):
+                raise ValueError("Model output contains gibberish/hallucinations")
+
             if not clean_text:
                 # If the local vision model completely failed to answer but we have internet context, use it as fallback
                 if "LIVE INTERNET SEARCH RESULTS:" in text or len(text) < 3: # hack to see if we had context
