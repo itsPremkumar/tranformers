@@ -200,7 +200,7 @@ If you use this project in your research or wish to refer to it, please use the 
 
 ```bibtex
 @software{KUMAR_Omni-Morph_2026,
-  author = {KUMAR, PREM},
+  author = {PREMKUMAR},
   title = {Omni-Morph: An Open-Source Distributed Transformation Robotics Platform},
   url = {https://github.com/itsPremkumar/tranformers},
   version = {1.0.0},
@@ -210,6 +210,7 @@ If you use this project in your research or wish to refer to it, please use the 
 
 ---
 
+<!--
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -222,6 +223,7 @@ If you use this project in your research or wish to refer to it, please use the 
   "applicationCategory": "Robotics Framework"
 }
 </script>
+-->
 
 *Built for the next generation of modular robotics. This project is a contribution to the open-source community to make real-life transformation robots a reality.*
 
