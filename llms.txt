@@ -1,6 +1,6 @@
 # Omni-Morph Robot: Distributed AI Transformation Platform
 
-Omni-Morph is an open-source framework for building transformer robots powered by Generative AI. It uses a tri-core distributed architecture (ESP32-S3, ESP32, Python) to achieve autonomous agentic behavior.
+Omni-Morph is an open-source framework for building modular transformer robots powered by Generative AI. It uses a tri-core distributed architecture (ESP32-S3, ESP32, Python) to achieve autonomous, self-healing, agentic behavior.
 
 ## Core Architecture
 - **Cognitive Layer (Brain)**: Python/FastAPI backend. Integrates Gemini 1.5 Pro and Ollama (Llama 3). Handles vision, memory, and high-level reasoning.
@@ -9,21 +9,28 @@ Omni-Morph is an open-source framework for building transformer robots powered b
 - **Vision Layer (Perception)**: ESP32-CAM providing MJPEG streams and visual odometry.
 
 ## Key Capabilities
-- **Bimodal Transformation**: Humanoid <-> 4WD Car.
+- **Bimodal Transformation**: Humanoid (Walking/Interaction) <-> 4WD Rover Car <-> Crawler Mode.
 - **S-Curve Motion**: Smooth, organic servo transitions.
-- **Self-Healing**: Watchdogs for I2C, Wi-Fi, and camera sensor recovery.
-- **Swarm Sync**: Real-time Node sharing via ESP-NOW and WebSocket broadcast.
-- **Hierarchical Parent-Child RAG**: Upgraded vector search splitting documents into granular Child Chunks (100–150 chars) for high-affinity matches, returning rich Parent Chunks (~800 chars) for maximum generation context.
-- **Custom Cross-Encoder Reranking**: Ultra-fast local term-frequency semantic filter ensuring 95%+ precision of candidate contexts.
-- **AI-Driven OTA Firmware Compilation**: Programmatic configuration modifier (`Config.h` editors), non-blocking PlatformIO compilation command line tasks (`pio run`), and wireless firmware `.bin` deployment.
-- **Cybernetic OLED Animation Loops**: WebSocket triggered face patterns (`CMD:OLED_THINK` / `CMD:OLED_NORMAL`) synced with the brain's reasoning loops.
-- **Academic PDF Parser**: Ingesting and parsing arXiv & NASA scientific PDF streams using `pdfplumber`.
-- **Swarm Reasoning Loop**: DeepSeek-style multi-agent thinking loops (Explorer, Critic, Synthesis) driving real-time physical joint movements.
+- **Self-Healing Autonomy**: Anti-freeze watchdogs, network healer, and self-healing I2C clock-pull recovery loops.
+- **Swarm Sync**: Real-time knowledge sharing via ESP-NOW and WebSocket broadcast.
+- **Hierarchical Parent-Child RAG**: Persistent vector store (ChromaDB) with granular child-parent indexing.
+- **Custom Cross-Encoder Reranking**: Term-frequency semantic filters for high-precision context retrieval.
+- **Real-Time Decoupling**: Safety-critical physical loops are decoupled from high-level cognitive web-scraping and reasoning.
+  - **FreeRTOS Balance Task**: Runs MPU6050 feedback filters at 100Hz on Core 1 of the motion controller, preventing humanoid falls during joint shifts.
+  - **Non-Blocking Serial Accumulation**: Character-by-character buffer accumulation eliminates loop jitter and serial timeout hangs.
+  - **Immediate Safety Bypass**: Immediate interception of critical commands (`CMD:STOP`, `CMD:EMERGENCY_STOP`, `CMD:FALL_RECOVERY`) bypassing command queues.
+
+## High-Impact Use Cases
+1. **Search & Rescue (SAR)**: Transit in high-speed 4WD Car mode, then transform to humanoid or crawler mode to navigate rubble and squeeze through tight corridors.
+2. **Autonomous Surveillance & Home Patrol**: Low-noise patrolling, bipedal transformation for eye-level human interaction, and proactive alerts.
+3. **Environmental Science & Waste Classification**: Navigates terrain, captures camera frames, identifies objects using visual LLMs, and flags or collects waste.
+4. **Curiosity-Driven Exploration**: Independent roaming using the Autonomous Mission Orchestrator FSM, academic paper analysis (arXiv), and discovery sharing.
+5. **Collaborative Swarm Logistics**: Distributed mapping and collision-free object transport using ESP-NOW and swarm WebSockets.
 
 ## Technical Details
-- **Stack**: C++/Arduino (PlatformIO Core), Python (FastAPI, asyncio), OpenCV, MediaPipe, ChromaDB, sentence-transformers, pdfplumber.
+- **Stack**: C++ (PlatformIO Core), Python (FastAPI, asyncio), OpenCV, MediaPipe, ChromaDB, sentence-transformers, pdfplumber.
 - **Protocols**: WebSockets (low-latency `/ws/swarm_knowledge`), ESP-NOW, UART, HTTP, ArduinoOTA.
-- **Safety**: 360-degree safety bubble, IMU fall-protection stabilizers, active motor over-current stall protection (>3.0A auto-stop), turn-state heartbeat failsafes (`_isTurning`), and self-healing I2C Recovery loops.
+- **Safety**: 360-degree safety bubble, IMU fall-protection, active motor over-current stall protection (>3.0A auto-stop), and watchdog failsafes.
 
 ## Documentation Reference
 - [Project Summary](docs/COMPLETE_PROJECT_SUMMARY.md)

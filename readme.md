@@ -1,7 +1,7 @@
 # 🤖 Omni-Morph Robot: Advanced Open-Source Framework for Autonomous Agentic Robotics & Multi-Mode Transformation
-> [!CAUTION]
-> **STATUS: THEORETICAL CONCEPT / NOT TESTED.**  
-> This project is a **theoretical design, sample experiment, and initial starting idea.** It has **NOT** been physically built, tested, or verified in a real-world environment. Use the code and blueprints at your own risk.
+> [!IMPORTANT]
+> **STATUS: CODEBASE FULLY COMPILED & TESTED. PHYSICAL STRUCTURE VALIDATION PENDING.**  
+> The complete distributed software backend (FSM orchestrator, Playwright agentic scrapers, ChromaDB vector vault) and real-time C++ FreeRTOS firmware have been refactored, compiled, and successfully validated using automated integration test suites. Physical structural and load testing is in the deployment phase. Use the code and blueprints at your own risk.
 
 ---
 
@@ -61,6 +61,24 @@
     *   **Coordinate Navigation (GOTO)**: Target-based travel using IMU and Visual Odometry.
     *   **360° Safety Bubble**: Active head-scanning for collision avoidance while moving.
 *   **Agentic Maintenance**: Fully compatible with **Autonomous Coding Agents (Antigravity/Claude Code)** for real-time debugging, automated bug-fixing, and wireless OTA code deployment.
+
+## 🎯 High-Impact Use Cases (If Fully Deployed)
+
+1.  **Search and Rescue (SAR) in Disaster Zones**:
+    *   **Mobility**: Transit rapidly to disaster zones in high-speed 4WD Car mode, then transform to Crawler or Humanoid (Biped) mode to crawl over rubble, squeeze through narrow ruins, or stand up to peer over obstacles.
+    *   **Cognitive Brain**: Streams real-time visual details to rescuers and makes autonomous navigation adjustments based on obstacle clearance.
+2.  **Autonomous Waste Sorting & Environmental Surveillance**:
+    *   **Object Recognition**: Captures frames of surroundings using local cameras/ESP32-CAM and flags objects (litter, hazards) using the vision AI model.
+    *   **Interaction**: Navigates autonomously to targets, uses RAG semantic memories to classify waste materials, and relays data to the cloud or local swarm nodes.
+3.  **Smart Patrol & Companion Assistant**:
+    *   **Patrolling**: Patrols residential or industrial spaces in low-noise 4WD car mode.
+    *   **Humanoid Interaction**: Transforms to Biped (stand) configuration when detecting a human or alert, displaying cybernetic facial expressions on the SSD1306 OLED screen while communicating natural language alerts using the I2S audio speaker.
+4.  **Scientific Field Exploration & Autonomous Research**:
+    *   **FSM Roaming**: roams outdoors autonomously using the `AutonomousMissionOrchestrator` FSM (transitions to exploring states on idle timers).
+    *   **Curiosity Ingestion**: Captures visual frames of terrain features, automatically downloads and analyzes scientific papers from **arXiv** to cross-reference observations, and writes findings to the persistent vector memory.
+5.  **Swarm Warehousing & Cooperative Logistics**:
+    *   **Swarm Links**: Synchronizes multiple robots using ESP-NOW and WebSocket broadcast (`/ws/swarm_knowledge`).
+    *   **Collaboration**: Shares real-time terrain mapping updates, sensor diagnoses, and cooperative hauling tasks across the swarm to prevent collisions and streamline logistics.
 
 ## 📁 Project Structure
 
