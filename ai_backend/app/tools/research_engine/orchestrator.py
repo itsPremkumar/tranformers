@@ -2,7 +2,7 @@ import os
 import json
 import time
 import re
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 from playwright.sync_api import sync_playwright
 
 from app.tools.research_engine.query_expansion import expand_research_queries

@@ -66,5 +66,7 @@ ai_backend/robot_brain.db
 ai_backend/app/data/diagnostics.txt
 ai_backend/app/data/diagnostics.xlsx
 ai_backend/app/data/scheduler.json
+# ML / AI Models
+ai_backend/models/
 
 

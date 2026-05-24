@@ -4,7 +4,7 @@ import json
 import time
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 
 # Define paths for visual debugging
 SCREENSHOTS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'debug_screenshots'))

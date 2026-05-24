@@ -1,7 +1,11 @@
 import cv2
 import asyncio
 import numpy as np
-import mediapipe as mp
+try:
+    import mediapipe as mp
+except Exception as e:
+    print(f"[VISION WARNING] Failed to import mediapipe: {e}. Gesture recognition will be disabled.")
+    mp = None
 import time
 from app.core.config import settings
 from app.core.manager import manager
@@ -13,8 +17,14 @@ class ReactiveVision:
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
         # Gesture Recognition (MediaPipe)
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.7)
+        self.mp_hands = None
+        self.hands = None
+        if mp is not None:
+            try:
+                self.mp_hands = mp.solutions.hands
+                self.hands = self.mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.7)
+            except Exception as e:
+                print(f"[VISION WARNING] Failed to initialize MediaPipe Hands: {e}. Gesture recognition disabled.")
         
         # Ball Tracking (HSV ranges for a Red Ball)
         self.ball_lower = np.array([0, 120, 70])
@@ -65,14 +75,15 @@ class ReactiveVision:
                 await self.process_generic_blob(frame)
 
             # --- GESTURE RECOGNITION (Always Active for Safety) ---
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = await asyncio.to_thread(self.hands.process, rgb_frame)
-            if results.multi_hand_landmarks:
-                for hand_landmarks in results.multi_hand_landmarks:
-                    gesture = self.detect_gesture(hand_landmarks)
-                    if gesture == "STOP":
-                        await manager.send_command("CMD:STOP")
-                        self.is_tracking = False
+            if self.hands is not None:
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = await asyncio.to_thread(self.hands.process, rgb_frame)
+                if results.multi_hand_landmarks:
+                    for hand_landmarks in results.multi_hand_landmarks:
+                        gesture = self.detect_gesture(hand_landmarks)
+                        if gesture == "STOP":
+                            await manager.send_command("CMD:STOP")
+                            self.is_tracking = False
 
             await asyncio.sleep(0.01)
         cap.release()

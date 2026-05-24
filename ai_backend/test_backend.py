@@ -15,8 +15,8 @@ if sys.platform == "win32":
     except: pass
 
 # Testing configuration
-BACKEND_URL = "http://localhost:8000"
-WS_URL = "ws://localhost:8000/ws"
+BACKEND_URL = "http://127.0.0.1:8000"
+WS_URL = "ws://127.0.0.1:8000/ws"
 
 TEST_QUESTIONS = [
     "Who is the current Chief Minister of Tamil Nadu as of May 11, 2026?",

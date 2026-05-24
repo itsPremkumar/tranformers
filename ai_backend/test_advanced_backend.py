@@ -16,8 +16,8 @@ if sys.platform == "win32":
     except: pass
 
 # Testing configuration
-BACKEND_URL = "http://localhost:8005"
-WS_URL = "ws://localhost:8005/ws"
+BACKEND_URL = "http://127.0.0.1:8005"
+WS_URL = "ws://127.0.0.1:8005/ws"
 
 ADVANCED_TESTS = [
     {
