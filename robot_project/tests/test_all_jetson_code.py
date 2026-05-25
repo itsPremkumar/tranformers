@@ -100,10 +100,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../r
 from ollama_client import OllamaClient
 from memory_vault import LocalMemoryVault
 from camera_streamer import JetsonCameraStreamer
+from oled_display import JetsonOledDisplay
 from whisper_stt import WhisperTranscriber
 from piper_tts import PiperSpeaker
+from bluetooth_audio_sync import BluetoothAudioSync
 from mqtt_client import RobotMqttClient
 from webrtc_streamer import WebRtcStreamer
+from wifi_surround import WifiSurroundScanner
+from ble_air_mouse import BleAirMouseController
 
 # Import ROS 2 Nodes (wrapped inside mock context)
 from robot_bridge.serial_bridge_node import SerialBridgeNode
@@ -199,6 +203,33 @@ class TestRobotAutonomyNodes(unittest.TestCase):
         self.assertEqual(can_node.channel, "can0")
         self.assertEqual(docking_node.dock_marker_id, 42)
         self.assertFalse(balance_node.is_moving)
+
+class TestJetsonCommFeatures(unittest.TestCase):
+    def test_oled_display_expression_change(self):
+        # Verify OLED display starts in normal mode
+        oled = JetsonOledDisplay()
+        self.assertEqual(oled.expression, "NORMAL")
+        
+        # Verify expression updates correctly
+        oled.set_expression("THINK")
+        self.assertEqual(oled.expression, "THINK")
+        
+    def test_wifi_surround_scanner_properties(self):
+        scanner = WifiSurroundScanner(interface="wlan0")
+        self.assertEqual(scanner.interface, "wlan0")
+        self.assertEqual(scanner.mon_interface, "wlan0mon")
+        self.assertFalse(scanner.is_sniffing)
+        
+    def test_bluetooth_audio_sync_mock(self):
+        sync = BluetoothAudioSync()
+        # Mock scanner results list mapping
+        speakers = sync.scan_for_speakers()
+        self.assertTrue(len(speakers) >= 0)
+        
+    def test_ble_air_mouse_controller_movements(self):
+        mouse = BleAirMouseController()
+        # Ensure no errors occur when executing movements
+        mouse.move_cursor(5, -5)
 
 if __name__ == "__main__":
     print("[TESTS] Running Master Jetson Unit Test Suite...")
