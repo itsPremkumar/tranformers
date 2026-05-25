@@ -1,0 +1,28 @@
+# GPU-Accelerated container for Jetson AI and OpenCV modules
+FROM nvcr.io/nvidia/l4t-base:r35.2.1
+
+# Configure environment
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install core packages
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-opencv \
+    python3-dev \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
+WORKDIR /app
+
+# Install python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY . .
+
+# Run the app
+CMD ["python3", "-m", "app.main"]

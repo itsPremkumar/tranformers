@@ -1,0 +1,32 @@
+# ROS 2 Humble Container for NVIDIA Jetson (ARM64)
+FROM dustynv/ros:humble-pytorch-l4t-r35.2.1
+
+# Configure environment
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RCUTILS_LOGGING_USE_STDOUT=1
+ENV RCUTILS_COLORIZED_OUTPUT=1
+
+# Install additional build and runtime dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    ros-humble-cv-bridge \
+    ros-humble-diagnostic-updater \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python modules for bridges
+RUN pip3 install --no-cache-dir pyserial python-can
+
+# Set up workspace
+WORKDIR /ros2_ws
+COPY ./src ./src
+
+# Build ROS 2 workspace
+RUN . /opt/ros/humble/setup.sh && \
+    colcon build --symlink-install
+
+# Copy setup entrypoint
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["ros2", "launch", "robot_brain", "robot_system.launch.py"]

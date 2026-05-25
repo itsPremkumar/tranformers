@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CycloneDDS xmlns="https://cdds.brain.pub/schema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://cdds.brain.pub/schema https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd">
+    <Domain id="any">
+        <General>
+            <NetworkInterfaceAddress>lo</NetworkInterfaceAddress>
+            <AllowMulticast>true</AllowMulticast>
+            <MaxMessageSize>65500B</MaxMessageSize>
+            <FragmentSize>1400B</FragmentSize>
+        </General>
+        <Discovery>
+            <Peers>
+                <Peer address="localhost"/>
+            </Peers>
+            <ParticipantIndex>auto</ParticipantIndex>
+        </Discovery>
+        <Internal>
+            <SocketReceiveBufferSize>1048576B</SocketReceiveBufferSize>
+            <SocketSendBufferSize>1048576B</SocketSendBufferSize>
+        </Internal>
+    </Domain>
+</CycloneDDS>

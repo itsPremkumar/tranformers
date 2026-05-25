@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # 1. ROS 2 Workspace and Hardware Bridge
+  ros2_nodes:
+    build:
+      context: ../ros2_ws
+      dockerfile: ../deployment/Dockerfile.ros2
+    container_name: robot_ros2_core
+    network_mode: "host"
+    ipc: host
+    privileged: true
+    volumes:
+      - /dev:/dev
+      - ../configs/cyclonedds.xml:/etc/cyclonedds.xml
+    environment:
+      - CYCLONEDDS_URI=/etc/cyclonedds.xml
+    restart: unless-stopped
+    depends_on:
+      - ollama
+
+  # 2. Local Offline LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: robot_ollama_engine
+    network_mode: "host"
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ollama_storage:/root/.ollama
+    restart: unless-stopped
+
+  # 3. Dynamic Web UI portal (Proxying telemetry and controls)
+  web_server:
+    image: nginx:alpine
+    container_name: robot_web_portal
+    ports:
+      - "80:80"
+    volumes:
+      - ../configs/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+volumes:
+  ollama_storage:

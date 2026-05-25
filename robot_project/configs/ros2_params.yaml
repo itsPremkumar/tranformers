@@ -1,0 +1,18 @@
+# Global parameter values for robot nodes
+serial_bridge_node:
+  ros__parameters:
+    port: "/dev/ttyRobotMotion"
+    baudrate: 115200
+    heartbeat_interval: 1.0
+
+face_tracker_node:
+  ros__parameters:
+    camera_topic: "/camera/image_raw"
+    enable_cv_preview: false
+    pan_p_gain: 0.05
+    tilt_p_gain: 0.05
+
+llm_agent_node:
+  ros__parameters:
+    ollama_url: "http://localhost:11434/api/generate"
+    model_name: "llama3:8b"

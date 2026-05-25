@@ -1,0 +1,20 @@
+# NavigateToPose.action
+# Action for high-level navigation to a target pose
+
+# Goal
+geometry_msgs/PoseStamped target_pose
+string behavior_tree_profile # e.g. "careful", "fast", "avoid_obstacles"
+
+---
+# Result
+bool success
+string final_status
+float32 time_elapsed_seconds
+int32 obstacles_avoided
+
+---
+# Feedback
+geometry_msgs/PoseStamped current_pose
+float32 distance_remaining_meters
+float32 speed_mps
+string current_subgoal

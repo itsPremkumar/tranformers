@@ -1,0 +1,11 @@
+# /etc/udev/rules.d/99-robot.rules
+# Static USB device mappings for Jetson Nano / Orin Nano
+
+# ESP32 Motion Controller (CP2102 USB-to-UART Bridge)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", SYMLINK+="ttyRobotMotion", MODE="0666"
+
+# Respeaker Mic Array
+SUBSYSTEM=="sound", ATTRS{idVendor}=="2886", ATTRS{idProduct}=="0018", SYMLINK+="voiceMicArray", MODE="0666"
+
+# Intel RealSense D435 Depth Camera
+SUBSYSTEM=="usb", ATTRS{idVendor}=="8086", ATTRS{idProduct}=="0b07", MODE="0666"

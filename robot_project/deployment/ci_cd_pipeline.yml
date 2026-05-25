@@ -1,0 +1,64 @@
+# .github/workflows/ci_cd_pipeline.yml
+name: Robot Jetson Deployment Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Linters
+        run: |
+          pip install flake8 black
+
+      - name: Run Black Formatter Check
+        run: black --check robot_project/ros2_ws/src/
+
+      - name: Run Flake8 Linter
+        run: flake8 robot_project/ros2_ws/src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  build-and-push:
+    needs: lint-and-format
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU (for ARM64 cross-compilation)
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push ROS 2 Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./robot_project/ros2_ws
+          file: ./robot_project/deployment/Dockerfile.ros2
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/robot-ros2-core:latest
+            ghcr.io/${{ github.repository }}/robot-ros2-core:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

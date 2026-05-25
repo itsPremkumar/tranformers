@@ -1,0 +1,13 @@
+# TriggerTransformation.srv
+# Service to trigger transformation sequence between humanoid and car modes
+
+# Request
+uint8 TARGET_HUMANOID = 0
+uint8 TARGET_CAR = 1
+uint8 target_mode
+
+---
+# Response
+bool success
+string message
+float32 transformation_time_seconds

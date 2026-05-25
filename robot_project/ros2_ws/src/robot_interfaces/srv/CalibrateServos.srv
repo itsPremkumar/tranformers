@@ -1,0 +1,12 @@
+# CalibrateServos.srv
+# Service to set calibration offsets for joint servos
+
+# Request
+uint8 servo_id        # 0 to 18 index of the target servo
+int32 calibration_offset # Offset value in microseconds/steps
+
+---
+# Response
+bool success
+string message
+int32 updated_offset

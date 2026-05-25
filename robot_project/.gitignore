@@ -1,0 +1,39 @@
+# ==========================================
+# Git Ignore rules for Omni-Morph Jetson Upgrades
+# ==========================================
+
+# 1. Local Python Caches and Virtual Environments
+**/__pycache__/
+**/*.pyc
+.env
+.venv/
+env/
+venv/
+
+# 2. ROS 2 colcon Workspace Build Outputs
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+ros2_ws/.colcon/
+
+# 3. Dynamic IP Cache & Database files
+.jetson_ip_cache
+*.db
+*.db-journal
+test_vault.db
+
+# 4. Large Downloaded AI Model Binaries (Whisper/Piper/YOLO)
+jetson/speech/models/
+*.bin
+*.onnx
+*.engine
+
+# 5. Telemetry Logs & Temporary Media Assets
+logs/*.log
+*.wav
+*.mp3
+*.jpg
+*.png
+*.mp4
+response.wav
+test_audio.wav
