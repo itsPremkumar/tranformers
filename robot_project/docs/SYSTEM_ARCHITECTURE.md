@@ -316,7 +316,8 @@ robot_project/
 │   ├── 99-robot.rules           # static symlinks for USB dev nodes
 │   └── ros2_params.yaml         # Global node variables parameter backup
 ├── docs/                        # Architectural documents
-│   └── DEVELOPMENT_WORKFLOW.md  # Detailed workflows and testing procedures
+│   ├── DEVELOPMENT_WORKFLOW.md  # Detailed workflows and testing procedures
+│   └── COMM_CONTROLLER_GAP_ANALYSIS.md # Porting guides for ESP32 comm features
 ├── tests/                       # Automated HIL validation tests
 │   └── test_system_integration.py # Simulated loopback telemetry checker
 ├── scripts/                     # Shell setup files
