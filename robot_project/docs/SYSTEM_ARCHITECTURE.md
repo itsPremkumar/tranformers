@@ -314,6 +314,7 @@ robot_project/
 │   └── test_system_integration.py # Simulated loopback telemetry checker
 ├── scripts/                     # Shell setup files
 │   ├── setup_jetson.sh          # Auto setup and configuration loader
+│   ├── setup_networking.sh      # Wi-Fi AP, Client, and Failover router setup
 │   └── run_all.sh               # Main orchestrator docker script launcher
 └── logs/                        # Diagnostics runtime logs
 ```
