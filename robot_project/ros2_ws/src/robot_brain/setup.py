@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             'llm_agent = robot_brain.llm_agent_node:main',
             'behavior_tree = robot_brain.behavior_tree_node:main',
+            'behavior_tree_executor = robot_brain.behavior_tree_executor:main',
         ],
     },
 )

@@ -268,16 +268,23 @@ robot_project/
 │       │   │   └── can_bridge_node.py
 │       │   ├── setup.py
 │       │   └── package.xml
-│       ├── robot_perception/    # OpenCV and gesture processing package
+│       ├── robot_perception/    # OpenCV, ArUco, and gesture processing package
 │       │   ├── robot_perception/
 │       │   │   ├── face_tracker_node.py
-│       │   │   └── gesture_detector_node.py
+│       │   │   ├── gesture_detector_node.py
+│       │   │   └── aruco_docking_node.py # Vision guided docking approach
 │       │   ├── setup.py
 │       │   └── package.xml
-│       ├── robot_brain/         # Decision-making and launch nodes
+│       ├── robot_motion/        # Closed-loop balance & PID stability package
+│       │   ├── robot_motion/
+│       │   │   └── balance_control_node.py # Gyro assist straight-drive & fall alert
+│       │   ├── setup.py
+│       │   └── package.xml
+│       ├── robot_brain/         # Decision-making, Behavior Tree, and launch nodes
 │       │   ├── robot_brain/
 │       │   │   ├── llm_agent_node.py
-│       │   │   └── behavior_tree_node.py
+│       │   │   ├── behavior_tree_node.py
+│       │   │   └── behavior_tree_executor.py # Ticks behavior tree rules
 │       │   ├── launch/
 │       │   │   └── robot_system.launch.py
 │       │   ├── setup.py

@@ -1,0 +1,46 @@
+<!-- behavior_tree_definition for Omni-Morph Autonomy -->
+<root BTCPP_format="4">
+    <BehaviorTree ID="MainRobotAutonomyLoop">
+        <Fallback name="SystemPriorityEngine">
+            
+            # 1. Critical Fall recovery
+            <Sequence name="FallRecoverySafety">
+                <Condition ID="IsRobotFallen"/>
+                <Action ID="ExecuteStaticGetUpSequence"/>
+            </Sequence>
+
+            # 2. Emergency Obstacle Halt
+            <Sequence name="EmergencyCollisionAvoidance">
+                <Condition ID="IsObstacleCritical"/>
+                <Action ID="HaltMotorsImmediate"/>
+                <Action ID="ScanSurroundingsForEscapePath"/>
+            </Sequence>
+
+            # 3. Autonomous Low Battery Docking Sequence
+            <Sequence name="SelfPreservationCharging">
+                <Condition ID="IsBatteryLow"/>
+                <Fallback name="DockingStrategy">
+                    <Sequence name="VisualDocking">
+                        <Condition ID="IsDockArUcoVisible"/>
+                        <Action ID="ExecuteVisualDockingApproach"/>
+                    </Sequence>
+                    <Sequence name="DockSearch">
+                        <Action ID="ExecuteSearchRotation"/>
+                    </Sequence>
+                </Fallback>
+            </Sequence>
+
+            # 4. Standard Operation Loop (LLM / Waypoint navigation)
+            <Sequence name="NormalMissionExecution">
+                <Condition ID="HasActiveWaypoint"/>
+                <Action ID="NavigateToWaypoint"/>
+            </Sequence>
+            
+            # 5. Idle Exploration Loop
+            <Sequence name="CuriosityExploration">
+                <Action ID="RoamAroundSafeBoundaries"/>
+            </Sequence>
+
+        </Fallback>
+    </BehaviorTree>
+</root>
