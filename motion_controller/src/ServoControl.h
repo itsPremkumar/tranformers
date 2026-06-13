@@ -59,9 +59,10 @@ public:
     bool isActionRunning() const { return _currentAction != ACTION_NONE; }
 
 private:
-    Adafruit_PWMServoDriver _pwm;
+    Adafruit_PWMServoDriver _pwm1; // Board 1: 0x40
+    Adafruit_PWMServoDriver _pwm2; // Board 2: 0x41
     
-    static const int NUM_SERVOS = 16;
+    static const int NUM_SERVOS = 32;
     static const int SERVOMIN = 100;
     static const int SERVOMAX = 500;
     

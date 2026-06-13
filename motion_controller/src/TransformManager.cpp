@@ -12,9 +12,9 @@ void TransformManager::transformToCar() {
         _currentState = TRANSITION_TO_CAR;
         _step = 0;
         _lastStepTime = millis();
-        // Start Step 0: Fold legs
-        _servos.moveServoSmooth(2, 30);
-        _servos.moveServoSmooth(3, 30);
+        // Start Step 0: Initial clearance setup
+        _servos.moveServoSmooth(14, 90);
+        _servos.moveServoSmooth(20, 90);
     }
 }
 
@@ -74,21 +74,50 @@ void TransformManager::processTransitionStep() {
     
     switch (_currentState) {
         case TRANSITION_TO_CAR: {
+            // Channel Mapping (Simulated):
+            // 24: Waist Pitch
+            // 14: L Shoulder Yaw, 20: R Shoulder Yaw
+            // 15: L Elbow, 21: R Elbow
+            // 2: L Hip Pitch, 8: R Hip Pitch
+            // 3: L Knee, 9: R Knee
+            // 4: L Ankle, 10: R Ankle, 26: Roof Hinge
+            
             if (_step == 0 && now - _lastStepTime >= 300) {
-                _servos.moveServoSmooth(4, 20); // Fold arms
-                _servos.moveServoSmooth(5, 160);
+                // Step 1: Fold Waist
+                _servos.moveServoSmooth(24, 0); // Fold waist forward 90 deg
                 _step = 1;
                 _lastStepTime = now;
-            } else if (_step == 1 && now - _lastStepTime >= 300) {
-                _servos.moveServoSmooth(6, 150); // Rotate body
-                _servos.moveServoSmooth(7, 30);
+            } else if (_step == 1 && now - _lastStepTime >= 500) {
+                // Step 2: Arms Tuck (Shoulder Yaw)
+                _servos.moveServoSmooth(14, 0);  // L inward
+                _servos.moveServoSmooth(20, 180); // R inward
                 _step = 2;
                 _lastStepTime = now;
-            } else if (_step == 2 && now - _lastStepTime >= 300) {
-                _servos.moveServoSmooth(8, 0);   // Final lock
-                _servos.moveServoSmooth(9, 180);
+            } else if (_step == 2 && now - _lastStepTime >= 500) {
+                // Step 3: Fold Elbows
+                _servos.moveServoSmooth(15, 0);
+                _servos.moveServoSmooth(21, 180);
+                _step = 3;
+                _lastStepTime = now;
+            } else if (_step == 3 && now - _lastStepTime >= 500) {
+                // Step 4: Fold Hip Pitch Backwards
+                _servos.moveServoSmooth(2, 0);
+                _servos.moveServoSmooth(8, 180);
+                _step = 4;
+                _lastStepTime = now;
+            } else if (_step == 4 && now - _lastStepTime >= 500) {
+                // Step 5: Fold Knees 180 Flush
+                _servos.moveServoSmooth(3, 180);
+                _servos.moveServoSmooth(9, 0);
+                _step = 5;
+                _lastStepTime = now;
+            } else if (_step == 5 && now - _lastStepTime >= 600) {
+                // Step 6: Final Lock (Ankles & Roof Hinge)
+                _servos.moveServoSmooth(4, 90);
+                _servos.moveServoSmooth(10, 90);
+                _servos.moveServoSmooth(26, 0); // Roof flap down
                 _currentState = TRANSITION_NONE; // Complete
-                Serial.println("[TRANSFORM] Car Shape Transition Complete.");
+                Serial.println("[TRANSFORM] v9.0 Car Shape Transition Complete.");
             }
             break;
         }

@@ -221,6 +221,10 @@
         function sendCmd(cmd) {
             logConsole(`CMD SENT: CMD:${cmd}`);
             if (isLocal) {
+                if (cmd === 'TRANSFORM') {
+                    startTransformSimulation();
+                    return;
+                }
                 activeDirection = cmd;
                 if (cmd === 'STOP') {
                     simAmp = 0.2;
@@ -354,6 +358,11 @@
                 document.getElementById('lbl-pan').innerText = simPan + '°';
                 document.getElementById('slider-tilt').value = simTilt;
                 document.getElementById('lbl-tilt').innerText = simTilt + '°';
+                // Update Servo Grid
+                for (let i = 0; i < 27; i++) {
+                    const el = document.getElementById(`sv-${i}`);
+                    if (el) el.innerText = servoAngles[i] + '°';
+                }
                 return;
             }
 
@@ -389,7 +398,38 @@
                 })
                 .catch(err => {});
         }
+        let servoAngles = new Array(27).fill(90);
         
+        function startTransformSimulation() {
+            logConsole("[TRANSFORM] Starting sequence...");
+            let step = 0;
+            const seq = setInterval(() => {
+                if (step === 0) {
+                    servoAngles[24] = 0; // Waist pitch
+                    logConsole("Step 1: Fold Waist");
+                } else if (step === 1) {
+                    servoAngles[14] = 0; servoAngles[20] = 180; // Shoulder yaw
+                    logConsole("Step 2: Arms Tuck");
+                } else if (step === 2) {
+                    servoAngles[15] = 0; servoAngles[21] = 180; // Elbows
+                    logConsole("Step 3: Fold Elbows");
+                } else if (step === 3) {
+                    servoAngles[2] = 0; servoAngles[8] = 180; // Hip pitch
+                    logConsole("Step 4: Fold Hips");
+                } else if (step === 4) {
+                    servoAngles[3] = 180; servoAngles[9] = 0; // Knees
+                    logConsole("Step 5: Fold Knees");
+                } else if (step === 5) {
+                    servoAngles[4] = 90; servoAngles[10] = 90; servoAngles[26] = 0; // Ankles & Roof
+                    logConsole("Step 6: Final Lock");
+                } else if (step > 5) {
+                    clearInterval(seq);
+                    logConsole("Transformation Complete.");
+                }
+                step++;
+            }, 500);
+        }
+
         window.onload = function() {
             if (isLocal) {
                 document.getElementById('sim-indicator').style.display = 'inline-block';
@@ -525,6 +565,18 @@
             </div>
         </div>
         
+        <div class="card">
+            <div class="section-title">27-Servo Simulation Map</div>
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 0.65rem; text-align: center;">
+                <!-- Generate 27 divs via inline script for simplicity -->
+                <script>
+                    for(let i=0; i<27; i++) {
+                        document.write(`<div style="background:#0d1117; padding:4px; border:1px solid #1f2937; border-radius:4px;"><span style="color:#64748b">CH${i}</span><br><b style="color:var(--primary)" id="sv-${i}">90°</b></div>`);
+                    }
+                </script>
+            </div>
+        </div>
+
         <div class="card">
             <div class="section-title">Direct Utilities</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">

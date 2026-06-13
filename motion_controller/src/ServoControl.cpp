@@ -1,7 +1,7 @@
 #include "ServoControl.h"
 #include "Config.h"
 
-ServoControl::ServoControl(uint8_t addr) : _pwm(addr) {
+ServoControl::ServoControl(uint8_t addr) : _pwm1(0x40), _pwm2(0x41) {
     for (int i = 0; i < NUM_SERVOS; i++) {
         _servoPos[i] = 90;
         _targetPos[i] = 90;
@@ -11,13 +11,20 @@ ServoControl::ServoControl(uint8_t addr) : _pwm(addr) {
 }
 
 void ServoControl::begin() {
-    _pwm.begin();
-    _pwm.setPWMFreq(50); // Standard analog servo frequency
+    _pwm1.begin();
+    _pwm1.setPWMFreq(50); // Standard analog servo frequency
+    
+    _pwm2.begin();
+    _pwm2.setPWMFreq(50); 
     
     delay(100);
     // Initialize all servos to 90 degrees
     for (int i = 0; i < NUM_SERVOS; i++) {
-        _pwm.setPWM(i, 0, angleToPulse(90));
+        if (i < 16) {
+            _pwm1.setPWM(i, 0, angleToPulse(90));
+        } else {
+            _pwm2.setPWM(i - 16, 0, angleToPulse(90));
+        }
         _servoPos[i] = 90;
         _lastMoveTime[i] = millis();
     }
@@ -30,7 +37,11 @@ int ServoControl::angleToPulse(int angle) {
 void ServoControl::wakeServos() {
     if (!_isAsleep) return;
     for (int i = 0; i < NUM_SERVOS; i++) {
-        _pwm.setPWM(i, 0, angleToPulse(_servoPos[i]));
+        if (i < 16) {
+            _pwm1.setPWM(i, 0, angleToPulse(_servoPos[i]));
+        } else {
+            _pwm2.setPWM(i - 16, 0, angleToPulse(_servoPos[i]));
+        }
     }
     _isAsleep = false;
     Serial.println("[SERVO] Waking all servos.");
@@ -50,7 +61,11 @@ void ServoControl::updateSleep() {
 
     if (allIdle && _currentAction == ACTION_NONE) {
         for (int i = 0; i < NUM_SERVOS; i++) {
-            _pwm.setPWM(i, 0, 4096); // Fully OFF for PCA9685
+            if (i < 16) {
+                _pwm1.setPWM(i, 0, 4096); // Fully OFF for PCA9685
+            } else {
+                _pwm2.setPWM(i - 16, 0, 4096);
+            }
         }
         _isAsleep = true;
         Serial.println("[SERVO] Anti-Zitter Active (Sleep).");
@@ -77,7 +92,11 @@ void ServoControl::update() {
                 if (_servoPos[i] < _targetPos[i]) _servoPos[i]++;
                 else _servoPos[i]--;
                 
-                _pwm.setPWM(i, 0, angleToPulse(_servoPos[i]));
+                if (i < 16) {
+                    _pwm1.setPWM(i, 0, angleToPulse(_servoPos[i]));
+                } else {
+                    _pwm2.setPWM(i - 16, 0, angleToPulse(_servoPos[i]));
+                }
                 _lastMoveTime[i] = now;
             }
         }
