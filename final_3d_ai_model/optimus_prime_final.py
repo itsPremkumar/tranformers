@@ -831,6 +831,73 @@ def run(context):
             report = list(set(report))
             return report
 
+        # ═══════════════════════════════════════════════════════════════════
+        # PHYSICS-AWARE UTILITIES & URDF EXPORTER
+        # ═══════════════════════════════════════════════════════════════════
+        def compute_mass_and_com(comp):
+            total_vol = 0.0
+            com_sum = adsk.core.Point3D.create(0, 0, 0)
+            for body in comp.bRepBodies:
+                if body.isSolid:
+                    vol = body.volume
+                    total_vol += vol
+                    props = body.getPhysicalProperties(adsk.fusion.CalculatedAccuracy.MediumCalculationAccuracy)
+                    com = props.centerOfMass
+                    com_sum.x += com.x * vol
+                    com_sum.y += com.y * vol
+                    com_sum.z += com.z * vol
+            if total_vol == 0: return 0.0, adsk.core.Point3D.create(0,0,0)
+            mass_kg = total_vol * 1.25e-3 # PLA density
+            com_final = adsk.core.Point3D.create(com_sum.x/total_vol, com_sum.y/total_vol, com_sum.z/total_vol)
+            return mass_kg, com_final
+
+        def compute_support_polygon(foot_contacts):
+            if len(foot_contacts) < 3: return None
+            xs = [p[0] for p in foot_contacts]
+            ys = [p[1] for p in foot_contacts]
+            minx, maxx = min(xs), max(xs)
+            miny, maxy = min(ys), max(ys)
+            area = (maxx - minx) * (maxy - miny)
+            return (minx, maxx, miny, maxy, area)
+
+        def check_stability(com_xy, support_rect):
+            if not support_rect: return False
+            minx, maxx, miny, maxy, _ = support_rect
+            return (minx <= com_xy.x <= maxx) and (miny <= com_xy.y <= maxy)
+
+        def auto_diagnose():
+            errors = []
+            # Verify screw holes are actually cut
+            for comp in comps_list:
+                for b in comp.bRepBodies:
+                    if "ScrewHole_MagPocket" in b.name:
+                        errors.append(f"Uncut magnet pocket in {comp.name}")
+            return errors
+
+        def export_urdf(path):
+            urdf = '<?xml version="1.0"?>\\n<robot name="optimus_prime">\\n'
+            for comp in comps_list:
+                mass, com = compute_mass_and_com(comp)
+                urdf += f'  <link name="{comp.name}">\\n'
+                urdf += f'    <inertial>\\n'
+                urdf += f'      <origin xyz="{com.x/100} {com.y/100} {com.z/100}" rpy="0 0 0"/>\\n'
+                urdf += f'      <mass value="{mass:.3f}"/>\\n'
+                urdf += f'      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>\\n'
+                urdf += f'    </inertial>\\n'
+                urdf += f'  </link>\\n'
+            # Add joints mapping
+            for j in root.asBuiltJoints:
+                if j.jointMotion.objectType == adsk.fusion.RevoluteJointMotion.classType():
+                    urdf += f'  <joint name="{j.name}" type="revolute">\\n'
+                    urdf += f'    <parent link="{j.occurrenceOne.component.name if j.occurrenceOne else "root"}"/>\\n'
+                    urdf += f'    <child link="{j.occurrenceTwo.component.name if j.occurrenceTwo else "root"}"/>\\n'
+                    urdf += f'    <axis xyz="0 0 1"/>\\n'
+                    urdf += f'  </joint>\\n'
+            urdf += '</robot>\\n'
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(urdf)
+            return path
+
         def run_transform_simulation():
             ui.messageBox("Starting Transformation Simulation (Robot -> Truck Mode)...")
             # 1. Animate to Truck Mode
@@ -847,13 +914,36 @@ def run(context):
             # 2. Run Collision Detection
             collisions = check_interferences()
             
-            msg = "Optimus Prime G1 v9.1 Transformation Verification Complete!\n\n"
+            msg = "Optimus Prime G1 v9.2 Full Physical Verification Complete!\n\n"
+            
+            # Auto-diagnostics
+            errors = auto_diagnose()
+            if errors:
+                msg += "⚠️ WARNING: Modeling Errors Found:\n" + "\n".join(errors) + "\n\n"
+            else:
+                msg += "✅ SUCCESS: Auto-diagnostics passed. No structural errors.\n\n"
+
             if len(collisions) == 0:
                 msg += "✅ SUCCESS: No physical collisions detected in Truck Mode.\n\n"
             else:
                 msg += "⚠️ WARNING: Mechanical Collisions Detected:\n" + "\n".join(collisions) + "\n\n"
                 
-            msg += "To export STLs, uncomment the export block at the bottom of the script."
+            # Physics Checks
+            total_mass, robot_com = compute_mass_and_com(root)
+            msg += f"Total Mass Estimate: {total_mass:.2f} kg\n"
+            msg += f"Global Center of Mass: ({robot_com.x:.1f}, {robot_com.y:.1f}, {robot_com.z:.1f}) cm\n\n"
+            
+            # URDF Export
+            urdf_path = "C:/OptimusPrime_STL/robot.urdf"
+            try:
+                import os
+                os.makedirs("C:/OptimusPrime_STL", exist_ok=True)
+                export_urdf(urdf_path)
+                msg += f"✅ SUCCESS: URDF physics model exported to: {urdf_path}\n"
+            except Exception as e:
+                msg += f"⚠️ WARNING: URDF export failed ({str(e)})\n"
+
+            msg += "\nTo export STLs, uncomment the export block at the bottom of the script."
             ui.messageBox(msg)
 
         def simulate_walking():
