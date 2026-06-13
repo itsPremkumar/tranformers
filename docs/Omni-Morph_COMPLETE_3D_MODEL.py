@@ -31,7 +31,7 @@ app = None
 design = None
 root_comp = None
 
-class Omni-MorphBuilder:
+class OmniMorphBuilder:
     """Main class for building the Omni-Morph Robot"""
     
     def __init__(self):
@@ -711,7 +711,7 @@ ESTIMATED BUILD TIME: 90-120 hours (2-3 weeks)
 def run(context):
     """Main execution function"""
     try:
-        builder = Omni-MorphBuilder()
+        builder = OmniMorphBuilder()
         
         if not builder.initialize(context):
             return
