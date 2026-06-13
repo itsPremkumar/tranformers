@@ -147,29 +147,32 @@ def run(context):
 
         def cut_cavity(comp, tool_body, isKeepToolBodies=False):
             """Cuts tool_body from all structural bodies in the comp."""
-            targets = adsk.core.ObjectCollection.create()
+            tools = adsk.core.ObjectCollection.create()
+            tools.add(tool_body)
+            success = False
             for b in comp.bRepBodies:
                 if b == tool_body: continue
                 # Do not cut out of markers, pins, or visual servos
                 if b.name and any(tag in b.name for tag in ["Marker", "Pivot", "MtA", "MtB", "Axle_Pivot", "Horn", "Pin", "_Vis"]):
                     continue
-                targets.add(b)
-            if targets.count == 0:
-                if not isKeepToolBodies:
-                    tool_body.deleteMe()
-                return False
-            tools = adsk.core.ObjectCollection.create()
-            tools.add(tool_body)
-            try:
-                combineInput = comp.features.combineFeatures.createInput(targets, tools)
-                combineInput.operation = adsk.fusion.CombineOperation.CutFeatureOperation
-                combineInput.isKeepToolBodies = isKeepToolBodies
-                comp.features.combineFeatures.add(combineInput)
-                return True
-            except Exception:
-                if not isKeepToolBodies:
-                    tool_body.deleteMe()
-                return False
+                try:
+                    combineInput = comp.features.combineFeatures.createInput(b, tools)
+                    combineInput.operation = adsk.fusion.CombineOperation.CutFeatureOperation
+                    combineInput.isKeepToolBodies = True
+                    comp.features.combineFeatures.add(combineInput)
+                    success = True
+                except Exception:
+                    pass
+            
+            if not isKeepToolBodies:
+                try:
+                    if tool_body.parentFeature:
+                        tool_body.parentFeature.deleteMe()
+                    else:
+                        tool_body.deleteMe()
+                except Exception:
+                    pass
+            return success
 
         def split_body_into_halves(comp, body, split_plane_axis='y', offset=0.0):
             planes = comp.constructionPlanes
@@ -828,7 +831,8 @@ def run(context):
             report = list(set(report))
             return report
 
-        def run_diagnostic_suite():
+        def run_transform_simulation():
+            ui.messageBox("Starting Transformation Simulation (Robot -> Truck Mode)...")
             # 1. Animate to Truck Mode
             animate_joint("Waist_Cluster", 90, axis='pitch')
             
@@ -843,7 +847,7 @@ def run(context):
             # 2. Run Collision Detection
             collisions = check_interferences()
             
-            msg = "Optimus Prime G1 v9.0 Kinematic Verification Complete!\n\n"
+            msg = "Optimus Prime G1 v9.1 Transformation Verification Complete!\n\n"
             if len(collisions) == 0:
                 msg += "✅ SUCCESS: No physical collisions detected in Truck Mode.\n\n"
             else:
@@ -852,7 +856,62 @@ def run(context):
             msg += "To export STLs, uncomment the export block at the bottom of the script."
             ui.messageBox(msg)
 
-        run_diagnostic_suite()
+        def simulate_walking():
+            ui.messageBox("Starting Kinematic Walking Simulation...")
+            # Helper to animate multiple joints simultaneously
+            def animate_group(targets, steps=10):
+                active_joints = [] # list of (motion, start_rad, end_rad, axis)
+                for j_name, t_deg, axis in targets:
+                    j = root.asBuiltJoints.itemByName(j_name)
+                    if j:
+                        mo = j.jointMotion
+                        t_rad = math.radians(t_deg)
+                        if mo.objectType == adsk.fusion.RevoluteJointMotion.classType():
+                            active_joints.append((mo, mo.rotationValue, t_rad, 'rev'))
+                        elif mo.objectType == adsk.fusion.BallJointMotion.classType():
+                            if axis == 'pitch': active_joints.append((mo, mo.pitchValue, t_rad, 'pitch'))
+                            elif axis == 'yaw': active_joints.append((mo, mo.yawValue, t_rad, 'yaw'))
+                            elif axis == 'roll': active_joints.append((mo, mo.rollValue, t_rad, 'roll'))
+                
+                for i in range(1, steps + 1):
+                    t = i / steps
+                    for mo, s_rad, e_rad, ax in active_joints:
+                        val = s_rad + (e_rad - s_rad) * t
+                        if ax == 'rev': mo.rotationValue = val
+                        elif ax == 'pitch': mo.pitchValue = val
+                        elif ax == 'yaw': mo.yawValue = val
+                        elif ax == 'roll': mo.rollValue = val
+                    adsk.doEvents()
+
+            for _ in range(2): # 2 walk cycles
+                # Phase 1: Right step forward
+                animate_group([
+                    ("R_Hip_Cluster", -30, 'pitch'), ("L_Hip_Cluster", 15, 'pitch'),
+                    ("R_Shoulder_Cluster", 30, 'pitch'), ("L_Shoulder_Cluster", -30, 'pitch'),
+                    ("R_Knee", 30, '')
+                ])
+                # Phase 2: Plant Right
+                animate_group([
+                    ("R_Hip_Cluster", 0, 'pitch'), ("L_Hip_Cluster", 0, 'pitch'),
+                    ("R_Shoulder_Cluster", 0, 'pitch'), ("L_Shoulder_Cluster", 0, 'pitch'),
+                    ("R_Knee", 0, '')
+                ])
+                # Phase 3: Left step forward
+                animate_group([
+                    ("L_Hip_Cluster", -30, 'pitch'), ("R_Hip_Cluster", 15, 'pitch'),
+                    ("L_Shoulder_Cluster", 30, 'pitch'), ("R_Shoulder_Cluster", -30, 'pitch'),
+                    ("L_Knee", 30, '')
+                ])
+                # Phase 4: Plant Left
+                animate_group([
+                    ("L_Hip_Cluster", 0, 'pitch'), ("R_Hip_Cluster", 0, 'pitch'),
+                    ("L_Shoulder_Cluster", 0, 'pitch'), ("R_Shoulder_Cluster", 0, 'pitch'),
+                    ("L_Knee", 0, '')
+                ])
+
+        # Execute simulations
+        simulate_walking()
+        run_transform_simulation()
 
         # --- STL AUTO-EXPORT (Uncomment to use) ---
         # export_folder = "C:/OptimusPrime_STL"
