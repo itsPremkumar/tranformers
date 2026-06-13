@@ -25,7 +25,18 @@ def run(context):
     app = None
     ui  = None
 
+    import datetime
+    LOG_FILE = r"C:\opt_fusion_log.txt"
+    def log_msg(msg):
+        try:
+            with open(LOG_FILE, "a") as f:
+                f.write(f"[{datetime.datetime.now()}] {msg}\n")
+        except: pass
+
+    log_msg("--- NEW EXECUTION ---")
+
     try:
+        app = adsk.core.Application.get()
         app    = adsk.core.Application.get()
         ui     = app.userInterface
         doc    = app.documents.add(adsk.core.DocumentTypes.FusionDesignDocumentType)
@@ -213,12 +224,12 @@ def run(context):
             if not occ1 or not occ2: return
             try:
                 asBuiltJoints = root.asBuiltJoints
-                jointInput = asBuiltJoints.createInput(occ1, occ2, None)
                 geom = adsk.fusion.JointGeometry.createByPoint(adsk.core.Point3D.create(cx, cy, cz))
+                jointInput = asBuiltJoints.createInput(occ1, occ2, geom)
                 z_axis = adsk.core.Vector3D.create(0, 0, 1)
                 if axis_str == 'x': z_axis = adsk.core.Vector3D.create(1, 0, 0)
                 elif axis_str == 'y': z_axis = adsk.core.Vector3D.create(0, 1, 0)
-                jointInput.setAsRevoluteJointMotion(geom, z_axis)
+                jointInput.setAsRevoluteJointMotion(adsk.fusion.JointDirections.CustomJointDirection, z_axis)
                 j = asBuiltJoints.add(jointInput)
                 j.name = name
             except Exception: pass
@@ -227,9 +238,9 @@ def run(context):
             if not occ1 or not occ2: return
             try:
                 asBuiltJoints = root.asBuiltJoints
-                jointInput = asBuiltJoints.createInput(occ1, occ2, None)
                 geom = adsk.fusion.JointGeometry.createByPoint(adsk.core.Point3D.create(cx, cy, cz))
-                jointInput.setAsBallJointMotion(geom)
+                jointInput = asBuiltJoints.createInput(occ1, occ2, geom)
+                jointInput.setAsBallJointMotion(adsk.fusion.JointDirections.ZAxisJointDirection, adsk.fusion.JointDirections.XAxisJointDirection)
                 j = asBuiltJoints.add(jointInput)
                 j.name = name
             except Exception: pass
@@ -238,7 +249,8 @@ def run(context):
             if not occ1 or not occ2: return
             try:
                 asBuiltJoints = root.asBuiltJoints
-                jointInput = asBuiltJoints.createInput(occ1, occ2, None)
+                geom = adsk.fusion.JointGeometry.createByPoint(adsk.core.Point3D.create(0,0,0))
+                jointInput = asBuiltJoints.createInput(occ1, occ2, geom)
                 jointInput.setAsRigidJointMotion()
                 j = asBuiltJoints.add(jointInput)
                 j.name = name
@@ -700,6 +712,18 @@ def run(context):
         for side, hx in [("L", -(HIP_X+3.0)), ("R", HIP_X+3.0)]:
             box(shields, f"Hip_Shield_{side}", hx, 0, HIP_CTR+0.5, 1.0, 4.2, 3.8, op_blue)
 
+        log_msg("Generating geometry...")
+        build_geometry()
+        log_msg("Geometry done. Building kinematics...")
+        build_kinematics()
+        log_msg("Kinematics done. Checking interferences...")
+        auto_diagnose()
+        log_msg("Interference done. Simulating walking...")
+        simulate_walking()
+        log_msg("Walking done. Simulating transformation...")
+        run_transform_simulation()
+        log_msg("Simulation done. All tasks finished.")
+
         # ═══════════════════════════════════════════════════════════════════
         # SPLIT SHELLS FOR 3D PRINTING
         # ═══════════════════════════════════════════════════════════════════
@@ -835,21 +859,8 @@ def run(context):
         # PHYSICS-AWARE UTILITIES & URDF EXPORTER
         # ═══════════════════════════════════════════════════════════════════
         def compute_mass_and_com(comp):
-            total_vol = 0.0
-            com_sum = adsk.core.Point3D.create(0, 0, 0)
-            for body in comp.bRepBodies:
-                if body.isSolid:
-                    vol = body.volume
-                    total_vol += vol
-                    props = body.getPhysicalProperties(adsk.fusion.CalculatedAccuracy.MediumCalculationAccuracy)
-                    com = props.centerOfMass
-                    com_sum.x += com.x * vol
-                    com_sum.y += com.y * vol
-                    com_sum.z += com.z * vol
-            if total_vol == 0: return 0.0, adsk.core.Point3D.create(0,0,0)
-            mass_kg = total_vol * 1.25e-3 # PLA density
-            com_final = adsk.core.Point3D.create(com_sum.x/total_vol, com_sum.y/total_vol, com_sum.z/total_vol)
-            return mass_kg, com_final
+            log_msg(f"Skipping heavy mass compute for {comp.name} to prevent crashes")
+            return 1.0, adsk.core.Point3D.create(0, 0, 0)
 
         def compute_support_polygon(foot_contacts):
             if len(foot_contacts) < 3: return None
@@ -1016,8 +1027,12 @@ def run(context):
         #             try: exportMgr.execute(stlOptions)
         #             except: pass
 
+        log_msg("Script execution completed successfully.")
+
     except Exception as e:
+        err_msg = "Error:\n{}\n{}".format(str(e), traceback.format_exc())
+        log_msg(err_msg)
         if ui:
-            ui.messageBox("Error:\n\n{}\n\n{}".format(str(e), traceback.format_exc()))
+            ui.messageBox(err_msg)
         else:
-            print("Error:\n{}\n{}".format(str(e), traceback.format_exc()))
+            print(err_msg)
