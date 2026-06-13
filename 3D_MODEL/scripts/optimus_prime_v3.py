@@ -191,6 +191,66 @@ def run(context):
             """Small cylinder for screw boss."""
             cyl(comp, "MountBoss", x, y, z, dia/2, height, "z", chrome)
 
+        def add_screw_hole(comp, cx, cy, cz, axis="y", length=3.0):
+            """M3 screw clearance/tap hole for assembling split shells."""
+            c = cyl(comp, "ScrewHole", cx, cy, cz, 0.15, length, axis)
+            cut_cavity(comp, c, False)
+
+        def add_servo_hardware(comp, tag, cx, cy, cz, axis, is_mg996):
+            if is_mg996:
+                flange_dist = 2.4
+                flange_w = 0.5
+                horn_r = 0.7
+                pilot_dia = 0.125  # 2.5mm hole
+                screw_dia = 0.15   # 3.0mm hole
+                horn_x, horn_y, horn_z = cx, cy, cz
+                if axis == "x":
+                    horn_x += 2.40; horn_z += 1.05; fx, fy, fz = cx+0.95, cy, cz
+                elif axis == "z":
+                    horn_x -= 1.10; horn_z += 2.40; fx, fy, fz = cx, cy, cz+0.95
+                else:
+                    horn_y += 2.40; horn_z += 1.05; fx, fy, fz = cx, cy+0.95, cz
+            else:
+                flange_dist = 1.35
+                flange_w = 0.0
+                horn_r = 0.4
+                pilot_dia = 0.10   # 2.0mm hole
+                screw_dia = 0.10   # 2.0mm hole
+                horn_x, horn_y, horn_z = cx, cy, cz
+                if axis == "x":
+                    horn_x += 1.40; horn_z += 0.50; fx, fy, fz = cx+0.45, cy, cz
+                elif axis == "z":
+                    horn_x -= 0.50; horn_z += 1.40; fx, fy, fz = cx, cy, cz+0.45
+                else:
+                    horn_y += 1.40; horn_z += 0.50; fx, fy, fz = cx, cy+0.45, cz
+
+            # Cut flange screws
+            fd1 = [-flange_dist, flange_dist]
+            fd2 = [-flange_w, flange_w] if flange_w > 0 else [0]
+            for d1 in fd1:
+                for d2 in fd2:
+                    if axis == "x":
+                        c = cyl(comp, f"{tag}_CutFlgS_{d1}_{d2}", fx, fy+d2, fz+d1, screw_dia, 1.5, "x")
+                    elif axis == "z":
+                        c = cyl(comp, f"{tag}_CutFlgS_{d1}_{d2}", fx+d1, fy+d2, fz, screw_dia, 1.5, "z")
+                    else:
+                        c = cyl(comp, f"{tag}_CutFlgS_{d1}_{d2}", fx+d1, fy, fz+d2, screw_dia, 1.5, "y")
+                    cut_cavity(comp, c, False)
+            
+            # Cut horn pilots
+            for d in [-horn_r, horn_r]:
+                if axis == "x":
+                    c1 = cyl(comp, f"{tag}_CutHrnS_1_{d}", horn_x, horn_y+d, horn_z, pilot_dia, 1.5, "x")
+                    c2 = cyl(comp, f"{tag}_CutHrnS_2_{d}", horn_x, horn_y, horn_z+d, pilot_dia, 1.5, "x")
+                elif axis == "z":
+                    c1 = cyl(comp, f"{tag}_CutHrnS_1_{d}", horn_x+d, horn_y, horn_z, pilot_dia, 1.5, "z")
+                    c2 = cyl(comp, f"{tag}_CutHrnS_2_{d}", horn_x, horn_y+d, horn_z, pilot_dia, 1.5, "z")
+                else:
+                    c1 = cyl(comp, f"{tag}_CutHrnS_1_{d}", horn_x+d, horn_y, horn_z, pilot_dia, 1.5, "y")
+                    c2 = cyl(comp, f"{tag}_CutHrnS_2_{d}", horn_x, horn_y, horn_z+d, pilot_dia, 1.5, "y")
+                cut_cavity(comp, c1, False)
+                cut_cavity(comp, c2, False)
+
         # ═══════════════════════════════════════════════════════════════════
         # MECHANICAL MODULES
         # ═══════════════════════════════════════════════════════════════════
@@ -200,7 +260,6 @@ def run(context):
                 b2 = box(comp, f"{tag}_VisEars",  cx+0.95,   cy, cz, 0.30, 2.20, 5.80, dark_grey)
                 cyl(comp, f"{tag}_VisHorn",  cx+2.40,   cy, cz+1.05, 0.95, 0.22, "x", white_pla)
                 m1 = marker(comp, f"{tag}_Pivot", cx+2.40, cy, cz+1.05)
-                # Cutters with CLEARANCE
                 c1 = box(comp, f"{tag}_CutBody",  cx, cy, cz, 4.05+CLEARANCE, 2.00+CLEARANCE, 4.20+CLEARANCE, None)
                 c2 = box(comp, f"{tag}_CutEars",  cx+0.95, cy, cz, 0.30+CLEARANCE, 2.20+CLEARANCE, 5.80+CLEARANCE, None)
                 cut_cavity(comp, c1, False)
@@ -210,7 +269,6 @@ def run(context):
                 b2 = box(comp, f"{tag}_VisEars",  cx, cy,        cz+0.95, 5.80, 2.20, 0.30, dark_grey)
                 cyl(comp, f"{tag}_VisHorn",  cx-1.10, cy,   cz+2.40, 0.95, 0.22, "z", white_pla)
                 m1 = marker(comp, f"{tag}_Pivot", cx-1.10, cy, cz+2.40)
-                # Cutters
                 c1 = box(comp, f"{tag}_CutBody",  cx, cy, cz, 4.05+CLEARANCE, 2.00+CLEARANCE, 4.20+CLEARANCE, None)
                 c2 = box(comp, f"{tag}_CutEars",  cx, cy, cz+0.95, 5.80+CLEARANCE, 2.20+CLEARANCE, 0.30+CLEARANCE, None)
                 cut_cavity(comp, c1, False)
@@ -220,11 +278,11 @@ def run(context):
                 b2 = box(comp, f"{tag}_VisEars",  cx, cy+0.95,   cz,      4.05, 0.30, 2.20, dark_grey)
                 cyl(comp, f"{tag}_VisHorn",  cx, cy+2.40,   cz+1.05, 0.95, 0.22, "y", white_pla)
                 m1 = marker(comp, f"{tag}_Pivot", cx, cy+2.40, cz+1.05)
-                # Cutters
                 c1 = box(comp, f"{tag}_CutBody",  cx, cy, cz, 4.05+CLEARANCE, 4.20+CLEARANCE, 2.00+CLEARANCE, None)
                 c2 = box(comp, f"{tag}_CutEars",  cx, cy+0.95, cz, 4.05+CLEARANCE, 0.30+CLEARANCE, 2.20+CLEARANCE, None)
                 cut_cavity(comp, c1, False)
                 cut_cavity(comp, c2, False)
+            add_servo_hardware(comp, tag, cx, cy, cz, axis, True)
 
         def mg90s(comp, tag, cx, cy, cz, axis="x"):
             if axis == "x":
@@ -232,7 +290,6 @@ def run(context):
                 b2 = box(comp, f"{tag}_VisEars",  cx+0.45, cy, cz, 0.20, 1.30, 3.20, op_blue)
                 cyl(comp, f"{tag}_VisHorn",  cx+1.40, cy, cz+0.50, 0.55, 0.18, "x", white_pla)
                 m1 = marker(comp, f"{tag}_Pivot", cx+1.40, cy, cz+0.50)
-                # Cutters
                 c1 = box(comp, f"{tag}_CutBody",  cx, cy, cz, 2.30+CLEARANCE, 1.20+CLEARANCE, 2.30+CLEARANCE, None)
                 c2 = box(comp, f"{tag}_CutEars",  cx+0.45, cy, cz, 0.20+CLEARANCE, 1.30+CLEARANCE, 3.20+CLEARANCE, None)
                 cut_cavity(comp, c1, False)
@@ -242,7 +299,6 @@ def run(context):
                 b2 = box(comp, f"{tag}_VisEars",  cx, cy, cz+0.45, 3.20, 1.30, 0.20, op_blue)
                 cyl(comp, f"{tag}_VisHorn",  cx-0.50, cy, cz+1.40, 0.55, 0.18, "z", white_pla)
                 m1 = marker(comp, f"{tag}_Pivot", cx-0.50, cy, cz+1.40)
-                # Cutters
                 c1 = box(comp, f"{tag}_CutBody",  cx, cy, cz, 2.30+CLEARANCE, 1.20+CLEARANCE, 2.30+CLEARANCE, None)
                 c2 = box(comp, f"{tag}_CutEars",  cx, cy, cz+0.45, 3.20+CLEARANCE, 1.30+CLEARANCE, 0.20+CLEARANCE, None)
                 cut_cavity(comp, c1, False)
@@ -252,11 +308,11 @@ def run(context):
                 b2 = box(comp, f"{tag}_VisEars",  cx, cy+0.45, cz, 3.20, 0.20, 1.30, op_blue)
                 cyl(comp, f"{tag}_VisHorn",  cx, cy+1.40, cz+0.50, 0.55, 0.18, "y", white_pla)
                 m1 = marker(comp, f"{tag}_Pivot", cx, cy+1.40, cz+0.50)
-                # Cutters
                 c1 = box(comp, f"{tag}_CutBody",  cx, cy, cz, 2.30+CLEARANCE, 2.30+CLEARANCE, 1.20+CLEARANCE, None)
                 c2 = box(comp, f"{tag}_CutEars",  cx, cy+0.45, cz, 3.20+CLEARANCE, 0.20+CLEARANCE, 1.30+CLEARANCE, None)
                 cut_cavity(comp, c1, False)
                 cut_cavity(comp, c2, False)
+            add_servo_hardware(comp, tag, cx, cy, cz, axis, False)
 
         def tt_motor_wheel(comp, tag, cx, cy, cz, side=1):
             gb = box(comp, f"{tag}_VisGearbox",   cx, cy, cz, 2.30, 5.20, 1.90, yellow_met)
@@ -266,9 +322,13 @@ def run(context):
             cyl(comp, f"{tag}_VisTire",      cx+side*3.25, cy, cz, 3.25, 2.60, "x", rubber_blk)
             cyl(comp, f"{tag}_VisRim",       cx+side*3.25, cy, cz, 2.20, 2.65, "x", chrome)
             marker(comp, f"{tag}_Axle_Pivot", cx+side*3.25, cy, cz, 0.18)
-            # Cutter
+            
             c1 = box(comp, f"{tag}_CutGearbox", cx, cy, cz, 2.30+CLEARANCE, 5.20+CLEARANCE, 1.90+CLEARANCE, None)
             cut_cavity(comp, c1, False)
+            
+            # Rectangular D-shaft socket inside the wheel (5.4 x 3.6 mm)
+            c_d = box(comp, f"{tag}_CutDShaft", cx+side*3.25, cy, cz, 2.7, 0.54+CLEARANCE, 0.36+CLEARANCE, None)
+            cut_cavity(comp, c_d, False)
 
         def bearing_with_recess(comp, tag, cx, cy, cz, axis="x", ro=1.10, w=0.60):
             cyl(comp, f"{tag}_VisBearing_Outer", cx, cy, cz, ro, w, axis, chrome)
@@ -346,7 +406,17 @@ def run(context):
         box(torso, "Spine_Beam",         0, 0, TORSO_CTR+1.5,  1.8, 1.8, 8.0, chrome)
         cyl(torso, "Spine_Joint_Cyl",    0, 0, TORSO_CTR+1.5,  1.10, 4.2, "z", chrome)
         box(torso, "Battery_Bay",        0, 2.2, TORSO_CTR-1.5, 5.8, 2.6, 4.8, black_plastic)
+        box(torso, "Battery_Door",       0, 3.6, TORSO_CTR-1.5, 5.8, 0.2, 4.8, dark_grey)
         box(torso, "Controller_Bay",     0, 2.8, TORSO_CTR+2.2, 4.2, 1.8, 2.4, black_plastic)
+        
+        # Standoffs for ESP32 and PCA9685
+        for sx in [-1.5, 1.5]:
+            for sz in [-1.0, 1.0]:
+                cyl(torso, f"Standoff_ESP_{sx}_{sz}", sx, 3.4, TORSO_CTR+2.2+sz, 0.25, 0.6, "y", chrome)
+                cyl(torso, f"Standoff_ESP_Hole_{sx}_{sz}", sx, 3.4, TORSO_CTR+2.2+sz, 0.1, 0.6, "y", None)
+                cyl(torso, f"Standoff_PCA_{sx}_{sz}", sx*1.8, 3.4, TORSO_CTR+2.2+sz*1.4, 0.25, 0.6, "y", chrome)
+                cyl(torso, f"Standoff_PCA_Hole_{sx}_{sz}", sx*1.8, 3.4, TORSO_CTR+2.2+sz*1.4, 0.1, 0.6, "y", None)
+        
         box(torso, "Cable_Ch_L",        -3.2, 0.6, TORSO_CTR,   0.55,1.0,10.0, dark_grey)
         box(torso, "Cable_Ch_R",         3.2, 0.6, TORSO_CTR,   0.55,1.0,10.0, dark_grey)
         box(torso, "Collar_L",  -7.8, 0, SHOULDER_CTR-1.0, 5.0, 3.2, 2.8, chrome)
@@ -354,6 +424,12 @@ def run(context):
         box(torso, "TF_Flap_L",  -5.25, -0.2, TORSO_CTR+3.0, 0.40, 6.4, 6.0, op_red)
         box(torso, "TF_Flap_R",   5.25, -0.2, TORSO_CTR+3.0, 0.40, 6.4, 6.0, op_red)
         box(torso, "TF_Back_Top", 0, 4.8, TORSO_CTR+5.0, 8.0, 0.35, 5.0, op_blue)
+
+        # Torso split-shell fasteners
+        add_screw_hole(torso, -3.0, 0, TORSO_CTR+4.5, "y", 8.0)
+        add_screw_hole(torso,  3.0, 0, TORSO_CTR+4.5, "y", 8.0)
+        add_screw_hole(torso, -3.0, 0, TORSO_CTR-4.5, "y", 8.0)
+        add_screw_hole(torso,  3.0, 0, TORSO_CTR-4.5, "y", 8.0)
 
         u_bracket(torso, "Waist_Brkt", 0, 0, WAIST_CTR, 4.0, 4.2, 3.4)
         mg996r(torso, "Waist_Yaw",     0, 0, WAIST_CTR, "z")
@@ -420,6 +496,10 @@ def run(context):
             bearing_with_recess(thigh, f"{side}_Knee_Brg",  sx, 0, KNEE_CTR, "x", 1.00, 0.55)
             add_wire_channel(thigh, f"{side}_LegWire", sx, 0, THIGH_CTR, 0.5, 12.0, "z")
 
+            # Thigh split-shell fasteners
+            add_screw_hole(thigh, sx, 0, THIGH_CTR+3.0, "y", 3.0)
+            add_screw_hole(thigh, sx, 0, THIGH_CTR-3.0, "y", 3.0)
+
             shin = new_component(f"OP_Shin_{side}")
             shin_x = sx
             box(shin, "Shin_Link",   shin_x, 0, SHIN_CTR,     4.2, 5.8, 14.0, op_blue)
@@ -431,6 +511,10 @@ def run(context):
             tt_motor_wheel(shin, f"{side}_Wheel_Rear",  shin_x+m*4.0, 1.8, SHIN_CTR-3.8, side=m)
             bearing_with_recess(shin, f"{side}_Knee_Lower_Brg", shin_x, 0, KNEE_CTR-0.5, "x", 1.00, 0.55)
             add_wire_channel(shin, f"{side}_ShinWire", shin_x, 0, SHIN_CTR, 0.5, 16.0, "z")
+
+            # Shin split-shell fasteners
+            add_screw_hole(shin, shin_x, 0, SHIN_CTR+5.0, "y", 5.0)
+            add_screw_hole(shin, shin_x, 0, SHIN_CTR-1.0, "y", 5.0)
 
             foot = new_component(f"OP_Foot_{side}")
             box(foot, "Foot_Sole",    shin_x, -1.0, ANKLE_CTR-1.4, 5.8, 8.2, 1.2, op_red)
@@ -470,6 +554,9 @@ def run(context):
             bearing_with_recess(upper_arm, f"{side}_Elbow_Brg", ax, 0, ELBOW_Z-0.5, "x", 0.95, 0.52)
             add_wire_channel(upper_arm, f"{side}_UAWire", ax, 0, ELBOW_Z+4.0, 0.4, 10.0, "z")
 
+            # Upper arm fasteners
+            add_screw_hole(upper_arm, ax, 0, ELBOW_Z+3.0, "y", 3.0)
+
             forearm = new_component(f"OP_Forearm_{side}")
             box(forearm, "FA_Link",     ax, 0, WRIST_Z+3.5, 3.0, 3.6, 7.2, op_blue)
             box(forearm, "FA_Fender",   ax+m*2.0, 0, WRIST_Z+3.5, 0.50, 5.0, 8.4, op_red)
@@ -478,6 +565,9 @@ def run(context):
             mg90s(forearm, f"{side}_Wrist_Roll", ax, 0, WRIST_Z+0.8, "x")
             bearing_with_recess(forearm, f"{side}_Wrist_Brg", ax, 0, WRIST_Z+0.5, "x", 0.80, 0.44)
             add_wire_channel(forearm, f"{side}_FAWire", ax, 0, WRIST_Z+4.0, 0.4, 8.0, "z")
+
+            # Forearm fasteners
+            add_screw_hole(forearm, ax, 0, WRIST_Z+4.0, "y", 3.0)
 
             hand = new_component(f"OP_Hand_{side}")
             box(hand, "Palm",        ax, -0.8, WRIST_Z-1.2, 2.8, 3.8, 1.8, dark_grey)
