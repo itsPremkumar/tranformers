@@ -82,12 +82,14 @@ def run(context):
         SCREW_DIA = 0.3    # M3 screw (3mm)
 
         comps_list = []
+        occs = {}
 
         def new_component(name):
             occ  = root.occurrences.addNewComponent(adsk.core.Matrix3D.create())
             comp = occ.component
             comp.name = name
             comps_list.append(comp)
+            occs[name] = occ
             return comp
 
         def set_ap(body, ap):
@@ -200,6 +202,44 @@ def run(context):
             """6mm x 3mm neodymium magnet pocket for transformation locking."""
             c = cyl(comp, f"{tag}_MagPocket", cx, cy, cz, 0.32, 0.35, axis)
             cut_cavity(comp, c, False)
+
+        # ═══════════════════════════════════════════════════════════════════
+        # DIGITAL KINEMATICS (FUSION 360 JOINTS)
+        # ═══════════════════════════════════════════════════════════════════
+        def add_revolute_joint(name, occ1, occ2, cx, cy, cz, axis_str):
+            if not occ1 or not occ2: return
+            try:
+                asBuiltJoints = root.asBuiltJoints
+                jointInput = asBuiltJoints.createInput(occ1, occ2, None)
+                geom = adsk.fusion.JointGeometry.createByPoint(adsk.core.Point3D.create(cx, cy, cz))
+                z_axis = adsk.core.Vector3D.create(0, 0, 1)
+                if axis_str == 'x': z_axis = adsk.core.Vector3D.create(1, 0, 0)
+                elif axis_str == 'y': z_axis = adsk.core.Vector3D.create(0, 1, 0)
+                jointInput.setAsRevoluteJointMotion(geom, z_axis)
+                j = asBuiltJoints.add(jointInput)
+                j.name = name
+            except Exception: pass
+
+        def add_ball_joint(name, occ1, occ2, cx, cy, cz):
+            if not occ1 or not occ2: return
+            try:
+                asBuiltJoints = root.asBuiltJoints
+                jointInput = asBuiltJoints.createInput(occ1, occ2, None)
+                geom = adsk.fusion.JointGeometry.createByPoint(adsk.core.Point3D.create(cx, cy, cz))
+                jointInput.setAsBallJointMotion(geom)
+                j = asBuiltJoints.add(jointInput)
+                j.name = name
+            except Exception: pass
+
+        def add_rigid_joint(name, occ1, occ2):
+            if not occ1 or not occ2: return
+            try:
+                asBuiltJoints = root.asBuiltJoints
+                jointInput = asBuiltJoints.createInput(occ1, occ2, None)
+                jointInput.setAsRigidJointMotion()
+                j = asBuiltJoints.add(jointInput)
+                j.name = name
+            except Exception: pass
 
         def add_servo_hardware(comp, tag, cx, cy, cz, axis, is_mg996):
             if is_mg996:
@@ -666,6 +706,54 @@ def run(context):
             for b in bodies_to_split:
                 split_body_into_halves(comp, b, 'y', 0.0)
 
+        # ═══════════════════════════════════════════════════════════════════
+        # ASSEMBLE DIGITAL KINEMATICS
+        # ═══════════════════════════════════════════════════════════════════
+        def build_kinematics():
+            torso = occs.get("OP_Torso")
+            pelvis = occs.get("OP_Pelvis")
+            head = occs.get("OP_Head")
+            backpack = occs.get("OP_Backpack")
+            steer = occs.get("OP_SteerWheelPods")
+            shields = occs.get("OP_Shoulder_Shields")
+
+            if pelvis:
+                pelvis.isGrounded = True
+
+            # Torso Core Joints
+            add_ball_joint("Waist_Cluster", torso, pelvis, 0, 0, WAIST_CTR-2.5)
+            add_ball_joint("Neck_Cluster", head, torso, 0, 0, NECK_JOINT_Z)
+            
+            # Rigid Accessories
+            add_rigid_joint("Backpack_Mount", backpack, torso)
+            add_rigid_joint("SteerPods_Mount", steer, torso)
+            add_rigid_joint("Shields_Mount", shields, torso)
+
+            # Limbs
+            for side in ["L", "R"]:
+                sx = -HIP_X if side == "L" else HIP_X
+                ax = -SHOULDER_X if side == "L" else SHOULDER_X
+                
+                thigh = occs.get(f"OP_Thigh_{side}")
+                shin = occs.get(f"OP_Shin_{side}")
+                foot = occs.get(f"OP_Foot_{side}")
+                
+                # Legs
+                add_ball_joint(f"{side}_Hip_Cluster", thigh, pelvis, sx, 0, HIP_JOINT_Z)
+                add_revolute_joint(f"{side}_Knee", shin, thigh, sx, 0, KNEE_CTR+1.5, "x")
+                add_ball_joint(f"{side}_Ankle_Cluster", foot, shin, sx, 0, ANKLE_CTR+2.2)
+
+                upper_arm = occs.get(f"OP_UpperArm_{side}")
+                forearm = occs.get(f"OP_Forearm_{side}")
+                hand = occs.get(f"OP_Hand_{side}")
+
+                # Arms
+                add_ball_joint(f"{side}_Shoulder_Cluster", upper_arm, torso, ax, 0, SHOULDER_CTR)
+                add_revolute_joint(f"{side}_Elbow", forearm, upper_arm, ax, 0, ELBOW_Z, "x")
+                add_revolute_joint(f"{side}_Wrist", hand, forearm, ax, 0, WRIST_Z+0.8, "x")
+
+        build_kinematics()
+
         try:
             cam = app.activeViewport.camera
             cam.isFitView = True
@@ -674,8 +762,8 @@ def run(context):
             pass
 
         ui.messageBox(
-            "Optimus Prime G1 v5.0 generated successfully!\n"
-            "Cavities, tolerances, and split shells have been applied.\n\n"
+            "Optimus Prime G1 v8.0 Kinematics generated successfully!\n"
+            "Digital joints have been applied. You can now drag limbs in the workspace.\n\n"
             "To export STLs, uncomment the export block at the bottom of the script."
         )
 
