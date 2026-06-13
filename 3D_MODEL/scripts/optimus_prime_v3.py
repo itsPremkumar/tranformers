@@ -196,6 +196,11 @@ def run(context):
             c = cyl(comp, "ScrewHole", cx, cy, cz, 0.15, length, axis)
             cut_cavity(comp, c, False)
 
+        def magnet_pocket(comp, tag, cx, cy, cz, axis="z"):
+            """6mm x 3mm neodymium magnet pocket for transformation locking."""
+            c = cyl(comp, f"{tag}_MagPocket", cx, cy, cz, 0.32, 0.35, axis)
+            cut_cavity(comp, c, False)
+
         def add_servo_hardware(comp, tag, cx, cy, cz, axis, is_mg996):
             if is_mg996:
                 flange_dist = 2.4
@@ -365,9 +370,9 @@ def run(context):
         # ═══════════════════════════════════════════════════════════════════
         GROUND        = 0.0
         ANKLE_CTR     = 3.8
-        SHIN_CTR      = 9.5
-        KNEE_CTR      = 16.5
-        THIGH_CTR     = 22.0
+        SHIN_CTR      = 9.3       # centered in 11cm shin (equalized for truck fold)
+        KNEE_CTR      = 14.8      # adjusted for equal leg segments
+        THIGH_CTR     = 20.3      # centered in 11cm thigh (equalized for truck fold)
         HIP_CTR       = 27.5
         PELVIS_CTR    = 29.5
         WAIST_CTR     = 31.5
@@ -382,7 +387,7 @@ def run(context):
         ELBOW_Z       = 34.0
         WRIST_Z       = 28.0
 
-        HIP_JOINT_Z   = 25.5
+        HIP_JOINT_Z   = 25.8      # adjusted for equal leg segments
         NECK_JOINT_Z  = 43.5
 
         # ═══════════════════════════════════════════════════════════════════
@@ -435,6 +440,13 @@ def run(context):
         mg996r(torso, "Waist_Yaw",     0, 0, WAIST_CTR, "z")
         bearing_with_recess(torso, "Waist_Bearing", 0, 0, WAIST_CTR+0.5, "z", 1.30, 0.65)
 
+        # Waist Pitch — enables torso to fold 90° forward for truck cab
+        u_bracket(torso, "WaistP_Brkt", 0, 0, WAIST_CTR-2.5, 4.0, 4.2, 3.4)
+        mg996r(torso, "Waist_Pitch",    0, 0, WAIST_CTR-2.5, "x")
+        bearing_with_recess(torso, "WaistP_Bearing", 0, 0, WAIST_CTR-2.0, "x", 1.30, 0.65)
+        magnet_pocket(torso, "WaistLock_F", 0, -2.0, WAIST_CTR-3.0, "y")
+        magnet_pocket(torso, "WaistLock_R", 0,  2.0, WAIST_CTR-3.0, "y")
+
         u_bracket(torso, "Neck_Brkt", 0, 0, NECK_JOINT_Z, 3.2, 2.8, 3.0)
         mg996r(torso, "Neck_Pitch",   0, 0, NECK_JOINT_Z, "x")
 
@@ -482,9 +494,9 @@ def run(context):
             m = -1 if side == "L" else 1
 
             thigh = new_component(f"OP_Thigh_{side}")
-            box(thigh, "Thigh_Link",   sx, 0, THIGH_CTR,  4.8, 3.8, 9.5, chrome)
-            box(thigh, "Thigh_Skin_Outer", sx+m*2.55, 0, THIGH_CTR, 0.45, 4.2, 9.5, op_red)
-            box(thigh, "Thigh_Skin_Front", sx, -2.1,   THIGH_CTR,   4.8, 0.38, 9.5, op_blue)
+            box(thigh, "Thigh_Link",   sx, 0, THIGH_CTR,  4.8, 3.8, 11.0, chrome)
+            box(thigh, "Thigh_Skin_Outer", sx+m*2.55, 0, THIGH_CTR, 0.45, 4.2, 11.0, op_red)
+            box(thigh, "Thigh_Skin_Front", sx, -2.1,   THIGH_CTR,   4.8, 0.38, 11.0, op_blue)
 
             u_bracket(thigh, f"{side}_HipP_Brkt", sx, 0, HIP_JOINT_Z+0.5, 4.0, 3.2, 3.2)
             mg996r(thigh, f"{side}_Hip_Pitch", sx, 0, HIP_JOINT_Z, "x")
@@ -500,21 +512,33 @@ def run(context):
             add_screw_hole(thigh, sx, 0, THIGH_CTR+3.0, "y", 3.0)
             add_screw_hole(thigh, sx, 0, THIGH_CTR-3.0, "y", 3.0)
 
+            # Knee fold magnet locks (thigh side)
+            magnet_pocket(thigh, f"{side}_KneeLockT_Upper", sx, -1.5, KNEE_CTR+1.0, "x")
+            magnet_pocket(thigh, f"{side}_KneeLockT_Lower", sx,  1.5, KNEE_CTR+1.0, "x")
+
             shin = new_component(f"OP_Shin_{side}")
             shin_x = sx
-            box(shin, "Shin_Link",   shin_x, 0, SHIN_CTR,     4.2, 5.8, 14.0, op_blue)
-            box(shin, "Shin_Armor",  shin_x, -2.6, SHIN_CTR,  3.0, 0.32,10.5, chrome)
-            box(shin, "Shin_Rear",   shin_x,  2.6, SHIN_CTR,  1.8, 0.32,12.5, dark_grey)
-            box(shin, "Shin_Beam",   shin_x, 0.4, SHIN_CTR,   1.6, 2.0, 13.0, dark_metal)
+            box(shin, "Shin_Link",   shin_x, 0, SHIN_CTR,     4.2, 5.8, 11.0, op_blue)
+            box(shin, "Shin_Armor",  shin_x, -2.6, SHIN_CTR,  3.0, 0.32, 9.0, chrome)
+            box(shin, "Shin_Rear",   shin_x,  2.6, SHIN_CTR,  1.8, 0.32, 9.5, dark_grey)
+            box(shin, "Shin_Beam",   shin_x, 0.4, SHIN_CTR,   1.6, 2.0, 10.0, dark_metal)
 
-            tt_motor_wheel(shin, f"{side}_Wheel_Front", shin_x+m*4.0, 1.8, SHIN_CTR+3.5, side=m)
-            tt_motor_wheel(shin, f"{side}_Wheel_Rear",  shin_x+m*4.0, 1.8, SHIN_CTR-3.8, side=m)
+            tt_motor_wheel(shin, f"{side}_Wheel_Front", shin_x+m*4.0, 1.8, SHIN_CTR+2.5, side=m)
+            tt_motor_wheel(shin, f"{side}_Wheel_Rear",  shin_x+m*4.0, 1.8, SHIN_CTR-2.5, side=m)
             bearing_with_recess(shin, f"{side}_Knee_Lower_Brg", shin_x, 0, KNEE_CTR-0.5, "x", 1.00, 0.55)
-            add_wire_channel(shin, f"{side}_ShinWire", shin_x, 0, SHIN_CTR, 0.5, 16.0, "z")
+            add_wire_channel(shin, f"{side}_ShinWire", shin_x, 0, SHIN_CTR, 0.5, 11.0, "z")
+
+            # Foot tuck clearance for truck mode
+            foot_cut = box(shin, "Foot_Tuck_Cut", shin_x, 2.6, SHIN_CTR-3.5, 5.0, 1.2, 4.0, None)
+            cut_cavity(shin, foot_cut, False)
+
+            # Knee fold magnet locks (shin side)
+            magnet_pocket(shin, f"{side}_KneeLock_Upper", shin_x, -1.5, KNEE_CTR-1.0, "x")
+            magnet_pocket(shin, f"{side}_KneeLock_Lower", shin_x,  1.5, KNEE_CTR-1.0, "x")
 
             # Shin split-shell fasteners
-            add_screw_hole(shin, shin_x, 0, SHIN_CTR+5.0, "y", 5.0)
-            add_screw_hole(shin, shin_x, 0, SHIN_CTR-1.0, "y", 5.0)
+            add_screw_hole(shin, shin_x, 0, SHIN_CTR+3.5, "y", 5.0)
+            add_screw_hole(shin, shin_x, 0, SHIN_CTR-3.5, "y", 5.0)
 
             foot = new_component(f"OP_Foot_{side}")
             box(foot, "Foot_Sole",    shin_x, -1.0, ANKLE_CTR-1.4, 5.8, 8.2, 1.2, op_red)
@@ -543,6 +567,10 @@ def run(context):
 
             box(upper_arm, "UA_Link", ax, 0, ELBOW_Z+3.0, 3.0, 3.2, 9.0, op_red)
             box(upper_arm, "UA_Skin", ax+m*1.65, 0, ELBOW_Z+3.0, 0.50, 3.2, 9.0, chrome)
+
+            # Shoulder Yaw — enables arms to fold inward for truck mode
+            mg996r(upper_arm, f"{side}_Sh_Yaw", ax, 0, SHOULDER_CTR+1.5, "z")
+            bearing_with_recess(upper_arm, f"{side}_Sh_Yaw_Brg", ax, 0, SHOULDER_CTR+2.0, "z", 1.00, 0.55)
 
             u_bracket(upper_arm, f"{side}_ShPit_Brkt", ax, 0, SHOULDER_CTR, 4.8, 3.4, 3.4)
             mg996r(upper_arm, f"{side}_Sh_Pitch", ax, 0, SHOULDER_CTR, "x")
@@ -595,17 +623,24 @@ def run(context):
         cyl(backpack,  "Exhaust_Port_L",-1.2, 6.6, TORSO_CTR+2.8, 0.38, 1.2, "y", dark_metal)
         cyl(backpack,  "Exhaust_Port_R", 1.2, 6.6, TORSO_CTR+2.8, 0.38, 1.2, "y", dark_metal)
 
+        # Backpack roof hinge — folds flap over to form truck cab roof
+        mg90s(backpack, "BP_Roof_Hinge", 0, 5.0, TORSO_CTR+5.0, "x")
+        bearing_with_recess(backpack, "BP_Roof_Brg", 0, 5.0, TORSO_CTR+5.2, "x", 0.80, 0.44)
+        magnet_pocket(backpack, "RoofLock_L", -2.5, 5.0, TORSO_CTR+5.6, "x")
+        magnet_pocket(backpack, "RoofLock_R",  2.5, 5.0, TORSO_CTR+5.6, "x")
+
         # ═══════════════════════════════════════════════════════════════════
         # ⑦ STEER WHEEL PODS
         # ═══════════════════════════════════════════════════════════════════
+        # Steer wheel pods — mounted at torso bottom (travel with cab during transformation)
         steer_pods = new_component("OP_SteerWheelPods")
-        for side, sx in [("L", -(HIP_X+5.8)), ("R", HIP_X+5.8)]:
+        for side, sx in [("L", -5.5), ("R", 5.5)]:
             m = -1 if side == "L" else 1
-            box(steer_pods, f"SteerArm_{side}",   sx, -3.5, PELVIS_CTR-0.5, 1.5, 1.2, 5.5, chrome)
-            box(steer_pods, f"SteerPod_{side}",   sx, -5.7, PELVIS_CTR-1.5, 2.8, 2.0, 3.0, dark_grey)
-            tt_motor_wheel(steer_pods, f"SteerWheel_{side}", sx, -5.7, PELVIS_CTR-1.5, side=m)
-            bearing_with_recess(steer_pods, f"Steer_Pivot_{side}", sx, -3.5, PELVIS_CTR-0.5, "z", 0.95, 0.50)
-            mg90s(steer_pods, f"Steer_Servo_{side}", sx, -4.3, PELVIS_CTR-0.5, "z")
+            box(steer_pods, f"SteerArm_{side}",   sx, -4.0, TORSO_CTR-4.5, 1.5, 1.2, 4.0, chrome)
+            box(steer_pods, f"SteerPod_{side}",   sx, -5.5, TORSO_CTR-5.0, 2.8, 2.0, 3.0, dark_grey)
+            tt_motor_wheel(steer_pods, f"SteerWheel_{side}", sx, -5.5, TORSO_CTR-5.0, side=m)
+            bearing_with_recess(steer_pods, f"Steer_Pivot_{side}", sx, -4.0, TORSO_CTR-4.5, "z", 0.95, 0.50)
+            mg90s(steer_pods, f"Steer_Servo_{side}", sx, -4.8, TORSO_CTR-4.5, "z")
 
         # ═══════════════════════════════════════════════════════════════════
         # ⑧ PANELS / SHIELDS
