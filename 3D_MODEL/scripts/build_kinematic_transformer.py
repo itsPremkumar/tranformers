@@ -117,8 +117,9 @@ def run(context):
         add_box(torso, "Front_Bumper", 0, -4.5, 15.0, 12.0, 2.0, 2.0, chrome)
         
         # COLLARBONE FIX! This pushes the shoulders outwards so arms clear the legs
-        add_box(torso, "Collarbone_L", -5.9, 0, 23.0, 4.2, 3.0, 3.0, chrome)
-        add_box(torso, "Collarbone_R", 5.9, 0, 23.0, 4.2, 3.0, 3.0, chrome)
+        # Fixed collision: Collarbone must end at X=7.90 to clear Shoulder Block at X=7.95
+        add_box(torso, "Collarbone_L", -5.85, 0, 23.0, 4.1, 3.0, 3.0, chrome)
+        add_box(torso, "Collarbone_R", 5.85, 0, 23.0, 4.1, 3.0, 3.0, chrome)
 
         add_cylinder(torso, "Spine", 0, 0, 14.5, 2.0, 3.0, "z", chrome)
         insert_mg996r(torso, "Waist_Pan", 0, 0, 15.0, "z")
@@ -176,8 +177,8 @@ def run(context):
         # ============================================================
         # KINEMATIC ARMS & HANDS
         # ============================================================
-        # NEW SHOULDER WIDTH = 9.6 (Pushes arms past the 8.25 Thigh edge!)
-        for side, shoulder_x in {"L": -9.6, "R": 9.6}.items():
+        # NEW SHOULDER WIDTH = 10.2 (Pushes arms out to create a massive 7mm gap past the Thigh!)
+        for side, shoulder_x in {"L": -10.2, "R": 10.2}.items():
             mirror = -1 if side == "L" else 1
 
             uarm_occ = root.occurrences.addNewComponent(adsk.core.Matrix3D.create())

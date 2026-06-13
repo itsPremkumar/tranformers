@@ -1,0 +1,17 @@
+==================================================
+âï¸ PHYSICS & STATICS ANALYSIS COMPLETE
+==================================================
+
+Real-World Materials Assigned:
+- Structural Shells: ABS Plastic (Density: ~1.04 g/cmÂ³)
+- Servos (MG996R/MG90S): Aluminum (Density: ~2.7 g/cmÂ³)
+- Gearboxes (TT Motors): Steel (Density: ~7.85 g/cmÂ³)
+- Tires: Rubber
+
+TOTAL MASS: 27433.00 grams (27.43 kg)
+==================================================
+CENTER OF GRAVITY (COG) COORDINATES:
+X: 0.05 cm
+Y: 0.27 cm
+Z: 10.49 cm
+==================================================
