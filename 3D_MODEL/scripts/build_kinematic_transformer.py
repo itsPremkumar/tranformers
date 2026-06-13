@@ -171,8 +171,10 @@ def run(context):
             foot_occ = root.occurrences.addNewComponent(adsk.core.Matrix3D.create())
             foot = foot_occ.component
             foot.name = f"Kinematic_Foot_{side}"
-            insert_mg90s(foot, f"{side}_Ankle_Pitch", pivot_x, 0, -9.0, "x")
-            add_box(foot, "Foot_Pad", pivot_x, -1.0, -10.5, 4.0, 6.0, 1.0, red_metal)
+            # Upgraded to heavy-duty MG996R!
+            insert_mg996r(foot, f"{side}_Ankle_Pitch", pivot_x, 0, -9.0, "x")
+            # Lowered foot pad to clear the much larger MG996R servo body
+            add_box(foot, "Foot_Pad", pivot_x, -1.0, -11.55, 4.0, 6.0, 1.0, red_metal)
 
         # ============================================================
         # KINEMATIC ARMS & HANDS
