@@ -8,17 +8,30 @@ This directory contains the fully verified, mechanically-perfect 3D CAD design f
 3D_MODEL/
 ├── README.md                           # This documentation
 ├── images/
-│   └── transformer_fusion360_model.png # Render/Screenshot of the final CAD
+│   ├── transformer_fusion360_model.png # Render of the Humanoid CAD
+│   ├── view_iso.png                    # Render of the Car Mode
+│   └── ...                             # Multi-angle renders
 ├── scripts/
-│   ├── build_production_transformer.py # The Fusion 360 Python generation script
-│   └── execute_production_build.py     # The MCP Server bridge to execute the script
+│   ├── build_production_transformer.py # Static Humanoid generation
+│   ├── build_car_mode_transformer.py   # Static Car Mode generation
+│   ├── build_kinematic_transformer.py  # Builds robot with independent components
+│   └── animate_transformation.py       # Live UI Animation script
 └── docs/
     └── MECHANICAL_DIMENSIONS.md        # Detailed dimensional breakdown
 ```
 
-## 🛠️ How to Generate the 3D Model
+## 🎬 Live UI Transformation Animation
 
-Because this is a complex 9-component assembly with precise tolerances, it is generated via a Python script rather than drawn by hand. This ensures symmetry and mathematical precision for all servo cavities.
+To verify that the robot's limbs do not collide during the physical transformation arc, a live kinematic animation script is provided.
+
+**How to watch the animation in Fusion 360:**
+1. Open **Autodesk Fusion 360**.
+2. Run `build_kinematic_transformer.py`. This builds the robot, but separates the Thighs, Shins, Arms, and Head into independent Occurrences.
+3. Once built, run `animate_transformation.py`.
+4. A message box will appear. Click OK. 
+5. The script will apply rotation matrices in a mathematical loop, physically folding the robot step-by-step on your screen exactly as the ESP32 will drive the real servos!
+
+## 🛠️ How to Generate the Static 3D Models
 
 **Method 1: Direct Execution in Fusion 360 (Recommended)**
 1. Open **Autodesk Fusion 360**.
@@ -27,12 +40,6 @@ Because this is a complex 9-component assembly with precise tolerances, it is ge
 4. Navigate to `c:\one\tranformers\3D_MODEL\scripts\` and select the `build_production_transformer.py` file.
 5. Select the script in the list and click **Run**.
 6. The script will take ~30-60 seconds to build the entire 16-servo robot.
-
-**Method 2: Execution via MCP Bridge**
-If you have the Fusion 360 MCP server running on port `27182` (enabled in Preferences -> API):
-1. Open a terminal.
-2. Run `python scripts/execute_production_build.py`.
-3. The bridge will connect to Fusion 360 and automatically execute the CAD generation script.
 
 ## ⚙️ Robot Architecture & Kinematics
 
