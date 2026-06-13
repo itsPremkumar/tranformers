@@ -761,11 +761,96 @@ def run(context):
         except Exception:
             pass
 
-        ui.messageBox(
-            "Optimus Prime G1 v8.0 Kinematics generated successfully!\n"
-            "Digital joints have been applied. You can now drag limbs in the workspace.\n\n"
-            "To export STLs, uncomment the export block at the bottom of the script."
-        )
+        # ═══════════════════════════════════════════════════════════════════
+        # ANIMATION & COLLISION DETECTION ENGINE
+        # ═══════════════════════════════════════════════════════════════════
+        def animate_joint(joint_name, target_angle_deg, steps=10, axis='pitch'):
+            import math
+            joint = root.asBuiltJoints.itemByName(joint_name)
+            if not joint: return
+            
+            motion = joint.jointMotion
+            target_rad = math.radians(target_angle_deg)
+            
+            if motion.objectType == adsk.fusion.RevoluteJointMotion.classType():
+                start_rad = motion.rotationValue
+                for i in range(steps + 1):
+                    t = i / steps
+                    motion.rotationValue = start_rad + (target_rad - start_rad) * t
+                    adsk.doEvents()
+                    
+            elif motion.objectType == adsk.fusion.BallJointMotion.classType():
+                if axis == 'pitch':
+                    start_rad = motion.pitchValue
+                    for i in range(steps + 1):
+                        t = i / steps
+                        motion.pitchValue = start_rad + (target_rad - start_rad) * t
+                        adsk.doEvents()
+                elif axis == 'yaw':
+                    start_rad = motion.yawValue
+                    for i in range(steps + 1):
+                        t = i / steps
+                        motion.yawValue = start_rad + (target_rad - start_rad) * t
+                        adsk.doEvents()
+                elif axis == 'roll':
+                    start_rad = motion.rollValue
+                    for i in range(steps + 1):
+                        t = i / steps
+                        motion.rollValue = start_rad + (target_rad - start_rad) * t
+                        adsk.doEvents()
+
+        def check_interferences():
+            bodies = adsk.core.ObjectCollection.create()
+            for comp in comps_list:
+                for body in comp.bRepBodies:
+                    if body.isSolid:
+                        bodies.add(body)
+            
+            interferenceInput = design.createInterferenceInput(bodies)
+            interferenceInput.isCoincidentFacesInterference = False
+            results = design.analyzeInterference(interferenceInput)
+            
+            report = []
+            if results and results.count > 0:
+                for i in range(results.count):
+                    res = results.item(i)
+                    if res.interferenceBody and res.interferenceBody.volume > 0.05:
+                        b1 = res.entityOne
+                        b2 = res.entityTwo
+                        n1 = b1.parentComponent.name if b1.parentComponent else "Unknown"
+                        n2 = b2.parentComponent.name if b2.parentComponent else "Unknown"
+                        # Ignore collisions within the same component
+                        if n1 != n2:
+                            report.append(f"- {n1} vs {n2} ({res.interferenceBody.volume:.2f} cm³)")
+            
+            report = list(set(report))
+            return report
+
+        def run_diagnostic_suite():
+            # 1. Animate to Truck Mode
+            animate_joint("Waist_Cluster", 90, axis='pitch')
+            
+            for side in ["L", "R"]:
+                animate_joint(f"{side}_Shoulder_Cluster", 90 if side=="L" else -90, axis='yaw')
+                animate_joint(f"{side}_Shoulder_Cluster", 90, axis='pitch')
+                animate_joint(f"{side}_Elbow", 90)
+                animate_joint(f"{side}_Hip_Cluster", 90, axis='pitch')
+                animate_joint(f"{side}_Knee", 180)
+                animate_joint(f"{side}_Ankle_Cluster", 90, axis='pitch')
+
+            # 2. Run Collision Detection
+            collisions = check_interferences()
+            
+            msg = "Optimus Prime G1 v9.0 Kinematic Verification Complete!\n\n"
+            if len(collisions) == 0:
+                msg += "✅ SUCCESS: No physical collisions detected in Truck Mode.\n\n"
+            else:
+                msg += "⚠️ WARNING: Mechanical Collisions Detected:\n" + "\n".join(collisions) + "\n\n"
+                
+            msg += "To export STLs, uncomment the export block at the bottom of the script."
+            ui.messageBox(msg)
+
+        run_diagnostic_suite()
 
         # --- STL AUTO-EXPORT (Uncomment to use) ---
         # export_folder = "C:/OptimusPrime_STL"
