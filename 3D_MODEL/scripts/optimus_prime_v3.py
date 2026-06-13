@@ -161,6 +161,27 @@ def run(context):
             """White cube pivot/mount marker."""
             return box(comp, name, cx, cy, cz, size, size, size, white_pla)
 
+        def auto_cut(comp, tool_body):
+            """Cut the tool_body out of structural parts in the same component."""
+            targets = adsk.core.ObjectCollection.create()
+            for b in comp.bRepBodies:
+                if b != tool_body and not any(tag in b.name for tag in ["Body", "Ears", "Gearbox", "Bearing", "MotorCan", "Horn", "Pivot", "MtA", "MtB", "Shaft", "Hub", "Tire", "Rim", "Pin"]):
+                    targets.add(b)
+            if targets.count == 0: return
+            tools = adsk.core.ObjectCollection.create()
+            tools.add(tool_body)
+            try:
+                combineInput = comp.features.combineFeatures.createInput(targets, tools)
+                combineInput.operation = adsk.fusion.CombineOperation.CutFeatureOperation
+                combineInput.isKeepToolBodies = True
+                comp.features.combineFeatures.add(combineInput)
+            except Exception:
+                pass
+
+        def add_mounting_boss(comp, x, y, z, dia=0.5, height=0.4):
+            """Small cylinder for screw boss."""
+            cyl(comp, "MountBoss", x, y, z, dia/2, height, "z", chrome)
+
         # ═══════════════════════════════════════════════════════════════════
         # MECHANICAL MODULE HELPERS
         # ═══════════════════════════════════════════════════════════════════
@@ -172,39 +193,51 @@ def run(context):
             axis = rotation output axis direction.
             """
             if axis == "x":
-                box(comp, f"{tag}_Body",  cx,        cy, cz, 4.05, 2.00, 4.20, grey_plastic)
-                box(comp, f"{tag}_Ears",  cx+0.95,   cy, cz, 0.30, 2.20, 5.80, dark_grey)
+                b1 = box(comp, f"{tag}_Body",  cx,        cy, cz, 4.05, 2.00, 4.20, grey_plastic)
+                b2 = box(comp, f"{tag}_Ears",  cx+0.95,   cy, cz, 0.30, 2.20, 5.80, dark_grey)
                 cyl(comp, f"{tag}_Horn",  cx+2.40,   cy, cz+1.05, 0.95, 0.22, "x", white_pla)
                 marker(comp, f"{tag}_Pivot", cx+2.40, cy, cz+1.05)
                 marker(comp, f"{tag}_MtA",   cx-1.2,  cy+1.0, cz+1.7)
                 marker(comp, f"{tag}_MtB",   cx-1.2,  cy-1.0, cz+1.7)
+                auto_cut(comp, b1)
+                auto_cut(comp, b2)
             elif axis == "z":
-                box(comp, f"{tag}_Body",  cx, cy,        cz,      4.05, 2.00, 4.20, grey_plastic)
-                box(comp, f"{tag}_Ears",  cx, cy,        cz+0.95, 5.80, 2.20, 0.30, dark_grey)
+                b1 = box(comp, f"{tag}_Body",  cx, cy,        cz,      4.05, 2.00, 4.20, grey_plastic)
+                b2 = box(comp, f"{tag}_Ears",  cx, cy,        cz+0.95, 5.80, 2.20, 0.30, dark_grey)
                 cyl(comp, f"{tag}_Horn",  cx-1.10, cy,   cz+2.40, 0.95, 0.22, "z", white_pla)
                 marker(comp, f"{tag}_Pivot", cx-1.10, cy, cz+2.40)
+                auto_cut(comp, b1)
+                auto_cut(comp, b2)
             else:  # axis == "y"
-                box(comp, f"{tag}_Body",  cx, cy,        cz,      4.05, 4.20, 2.00, grey_plastic)
-                box(comp, f"{tag}_Ears",  cx, cy+0.95,   cz,      4.05, 0.30, 2.20, dark_grey)
+                b1 = box(comp, f"{tag}_Body",  cx, cy,        cz,      4.05, 4.20, 2.00, grey_plastic)
+                b2 = box(comp, f"{tag}_Ears",  cx, cy+0.95,   cz,      4.05, 0.30, 2.20, dark_grey)
                 cyl(comp, f"{tag}_Horn",  cx, cy+2.40,   cz+1.05, 0.95, 0.22, "y", white_pla)
                 marker(comp, f"{tag}_Pivot", cx, cy+2.40, cz+1.05)
+                auto_cut(comp, b1)
+                auto_cut(comp, b2)
 
         # ── MG90S micro servo (2.30 × 1.20 × 2.30 cm body) ──────────────
         def mg90s(comp, tag, cx, cy, cz, axis="x"):
             if axis == "x":
-                box(comp, f"{tag}_Body",  cx, cy, cz, 2.30, 1.20, 2.30, op_blue)
-                box(comp, f"{tag}_Ears",  cx+0.45, cy, cz, 0.20, 1.30, 3.20, op_blue)
+                b1 = box(comp, f"{tag}_Body",  cx, cy, cz, 2.30, 1.20, 2.30, op_blue)
+                b2 = box(comp, f"{tag}_Ears",  cx+0.45, cy, cz, 0.20, 1.30, 3.20, op_blue)
                 cyl(comp, f"{tag}_Horn",  cx+1.40, cy, cz+0.50, 0.55, 0.18, "x", white_pla)
                 marker(comp, f"{tag}_Pivot", cx+1.40, cy, cz+0.50)
+                auto_cut(comp, b1)
+                auto_cut(comp, b2)
             elif axis == "z":
-                box(comp, f"{tag}_Body",  cx, cy, cz, 2.30, 1.20, 2.30, op_blue)
-                box(comp, f"{tag}_Ears",  cx, cy, cz+0.45, 3.20, 1.30, 0.20, op_blue)
+                b1 = box(comp, f"{tag}_Body",  cx, cy, cz, 2.30, 1.20, 2.30, op_blue)
+                b2 = box(comp, f"{tag}_Ears",  cx, cy, cz+0.45, 3.20, 1.30, 0.20, op_blue)
                 cyl(comp, f"{tag}_Horn",  cx-0.50, cy, cz+1.40, 0.55, 0.18, "z", white_pla)
                 marker(comp, f"{tag}_Pivot", cx-0.50, cy, cz+1.40)
+                auto_cut(comp, b1)
+                auto_cut(comp, b2)
             else:
-                box(comp, f"{tag}_Body",  cx, cy, cz, 2.30, 2.30, 1.20, op_blue)
-                box(comp, f"{tag}_Ears",  cx, cy+0.45, cz, 3.20, 0.20, 1.30, op_blue)
+                b1 = box(comp, f"{tag}_Body",  cx, cy, cz, 2.30, 2.30, 1.20, op_blue)
+                b2 = box(comp, f"{tag}_Ears",  cx, cy+0.45, cz, 3.20, 0.20, 1.30, op_blue)
                 cyl(comp, f"{tag}_Horn",  cx, cy+1.40, cz+0.50, 0.55, 0.18, "y", white_pla)
+                auto_cut(comp, b1)
+                auto_cut(comp, b2)
 
         # ── TT DC gear-motor + wheel (full assembly) ─────────────────────
         def tt_motor_wheel(comp, tag, cx, cy, cz, side=1):
@@ -213,19 +246,21 @@ def run(context):
             The gearbox output shaft exits from side*+X face.
             Wheel centre is 3.25 cm from gearbox centre along X.
             """
-            box(comp,  f"{tag}_Gearbox",   cx, cy, cz, 2.30, 5.20, 1.90, yellow_met)
+            b1 = box(comp,  f"{tag}_Gearbox",   cx, cy, cz, 2.30, 5.20, 1.90, yellow_met)
             cyl(comp,  f"{tag}_MotorCan",  cx, cy-3.00, cz, 0.90, 2.10, "y", chrome)
             cyl(comp,  f"{tag}_Shaft",     cx+side*1.75, cy, cz, 0.20, 3.50, "x", chrome)
             cyl(comp,  f"{tag}_Hub",       cx+side*3.25, cy, cz, 0.80, 2.60, "x", dark_metal)
             cyl(comp,  f"{tag}_Tire",      cx+side*3.25, cy, cz, 3.25, 2.60, "x", rubber_blk)
             cyl(comp,  f"{tag}_Rim_Inner", cx+side*3.25, cy, cz, 2.20, 2.65, "x", chrome)
             marker(comp, f"{tag}_Axle_Pivot", cx+side*3.25, cy, cz, 0.18)
+            auto_cut(comp, b1)
 
         # ── Bearing housing placeholder ───────────────────────────────────
         def bearing(comp, tag, cx, cy, cz, axis="x", ro=1.10, w=0.60):
-            cyl(comp, f"{tag}_Bearing_Outer", cx, cy, cz, ro,          w, axis, chrome)
+            b1 = cyl(comp, f"{tag}_Bearing_Outer", cx, cy, cz, ro,          w, axis, chrome)
             cyl(comp, f"{tag}_Bearing_Inner", cx, cy, cz, ro*0.58,     w*0.80, axis, dark_grey)
             cyl(comp, f"{tag}_Bearing_Bore",  cx, cy, cz, ro*0.32,     w*1.10, axis, chrome)
+            auto_cut(comp, b1)
 
         # ── U-bracket for servo (double-sided pivot frame) ─────────────────
         def u_bracket(comp, tag, cx, cy, cz, lx, ly, lz, ap=None):
