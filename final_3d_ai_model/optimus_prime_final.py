@@ -109,6 +109,7 @@ def run(context):
                 except Exception: pass
 
         def box(comp, name, cx, cy, cz, lx, ly, lz, ap=None):
+            adsk.doEvents()
             temp = adsk.fusion.TemporaryBRepManager.get()
             obb  = adsk.core.OrientedBoundingBox3D.create(
                 adsk.core.Point3D.create(cx, cy, cz),
@@ -177,10 +178,9 @@ def run(context):
             
             if not isKeepToolBodies:
                 try:
-                    if tool_body.parentFeature:
-                        tool_body.parentFeature.deleteMe()
-                    else:
-                        tool_body.deleteMe()
+                    tool_body.isLightBulbOn = False
+                    if "_Vis" not in tool_body.name:
+                        tool_body.name += "_Vis"
                 except Exception:
                     pass
             return success
@@ -712,17 +712,6 @@ def run(context):
         for side, hx in [("L", -(HIP_X+3.0)), ("R", HIP_X+3.0)]:
             box(shields, f"Hip_Shield_{side}", hx, 0, HIP_CTR+0.5, 1.0, 4.2, 3.8, op_blue)
 
-        log_msg("Generating geometry...")
-        build_geometry()
-        log_msg("Geometry done. Building kinematics...")
-        build_kinematics()
-        log_msg("Kinematics done. Checking interferences...")
-        auto_diagnose()
-        log_msg("Interference done. Simulating walking...")
-        simulate_walking()
-        log_msg("Walking done. Simulating transformation...")
-        run_transform_simulation()
-        log_msg("Simulation done. All tasks finished.")
 
         # ═══════════════════════════════════════════════════════════════════
         # SPLIT SHELLS FOR 3D PRINTING
@@ -1010,7 +999,7 @@ def run(context):
                     ("L_Knee", 0, '')
                 ])
 
-        # Execute simulations
+        log_msg("Executing simulations...")
         simulate_walking()
         run_transform_simulation()
 
