@@ -279,9 +279,9 @@ def run(context):
         box(torso, "Chest_Plate",        0, -4.15, TORSO_CTR+0.5, 8.2, 0.30, 3.5, chrome)
         cyl(torso,  "Autobot_Badge",     0, -4.52, TORSO_CTR+0.5, 0.70, 0.10, "y", op_red)
 
-        box(torso, "Inner_Frame",        0, 0, TORSO_CTR,      7.2, 5.8, 10.6, dark_metal)
-        box(torso, "Spine_Beam",         0, 0, TORSO_CTR,      1.8, 1.8, 11.2, chrome)
-        cyl(torso,  "Spine_Joint_Cyl",   0, 0, TORSO_CTR,      1.10, 4.2, "z", chrome)
+        box(torso, "Inner_Frame",        0, 0, TORSO_CTR+1.5,  7.2, 5.8, 8.0, dark_metal)
+        box(torso, "Spine_Beam",         0, 0, TORSO_CTR+1.5,  1.8, 1.8, 8.0, chrome)
+        cyl(torso,  "Spine_Joint_Cyl",   0, 0, TORSO_CTR+1.5,  1.10, 4.2, "z", chrome)
 
         box(torso, "Battery_Bay",        0, 2.2, TORSO_CTR-1.5, 5.8, 2.6, 4.8, black_plastic)
         box(torso, "Controller_Bay",     0, 2.8, TORSO_CTR+2.2, 4.2, 1.8, 2.4, black_plastic)
@@ -337,10 +337,10 @@ def run(context):
         box(pelvis, "Hip_Armor_R",       7.0, 0, PELVIS_CTR,   1.0, 5.0, 4.0, chrome)
         box(pelvis, "Crotch_Plate",      0,-2.8, PELVIS_CTR-1.2,5.0, 0.28, 2.2, op_red)
 
-        mg996r(pelvis, "L_Hip_Yaw",  -HIP_X, 0, HIP_CTR, "z")
-        mg996r(pelvis, "R_Hip_Yaw",   HIP_X, 0, HIP_CTR, "z")
-        bearing(pelvis,"L_Hip_Yaw_Brg", -HIP_X-2.2, 0, HIP_CTR+0.3, "z", 1.10, 0.62)
-        bearing(pelvis,"R_Hip_Yaw_Brg",  HIP_X+2.2, 0, HIP_CTR+0.3, "z", 1.10, 0.62)
+        mg996r(pelvis, "L_Hip_Yaw",  -HIP_X, 0, HIP_CTR-2.4, "z")
+        mg996r(pelvis, "R_Hip_Yaw",   HIP_X, 0, HIP_CTR-2.4, "z")
+        bearing(pelvis,"L_Hip_Yaw_Brg", -HIP_X-2.2, 0, HIP_CTR, "z", 1.10, 0.62)
+        bearing(pelvis,"R_Hip_Yaw_Brg",  HIP_X+2.2, 0, HIP_CTR, "z", 1.10, 0.62)
 
         # ═══════════════════════════════════════════════════════════════════
         # ④ LEGS
@@ -449,11 +449,11 @@ def run(context):
         steer_pods = new_component("OP_SteerWheelPods")
         for side, sx in [("L", -(HIP_X+5.8)), ("R", HIP_X+5.8)]:
             m = -1 if side == "L" else 1
-            box(steer_pods, f"SteerArm_{side}",   sx, 0, PELVIS_CTR-0.5, 1.5, 1.2, 5.5, chrome)
-            box(steer_pods, f"SteerPod_{side}",   sx, 2.2, PELVIS_CTR-1.5, 2.8, 2.0, 3.0, dark_grey)
-            tt_motor_wheel(steer_pods, f"SteerWheel_{side}", sx, 2.2, PELVIS_CTR-1.5, side=m)
-            bearing(steer_pods, f"Steer_Pivot_{side}", sx, 0, PELVIS_CTR-0.5, "z", 0.95, 0.50)
-            mg90s(steer_pods, f"Steer_Servo_{side}", sx, 0.8, PELVIS_CTR-0.5, "z")
+            box(steer_pods, f"SteerArm_{side}",   sx, 3.5, PELVIS_CTR-0.5, 1.5, 1.2, 5.5, chrome)
+            box(steer_pods, f"SteerPod_{side}",   sx, 5.7, PELVIS_CTR-1.5, 2.8, 2.0, 3.0, dark_grey)
+            tt_motor_wheel(steer_pods, f"SteerWheel_{side}", sx, 5.7, PELVIS_CTR-1.5, side=m)
+            bearing(steer_pods, f"Steer_Pivot_{side}", sx, 3.5, PELVIS_CTR-0.5, "z", 0.95, 0.50)
+            mg90s(steer_pods, f"Steer_Servo_{side}", sx, 4.3, PELVIS_CTR-0.5, "z")
 
         # ═══════════════════════════════════════════════════════════════════
         # ⑧ PANELS / SHIELDS
