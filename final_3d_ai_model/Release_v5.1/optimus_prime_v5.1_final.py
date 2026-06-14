@@ -969,6 +969,7 @@ def run(context):
                         elif ax == 'pitch': mo.pitchValue = val
                         elif ax == 'yaw': mo.yawValue = val
                         elif ax == 'roll': mo.rollValue = val
+                    app.activeViewport.refresh()
                     adsk.doEvents()
 
             for _ in range(2): # 2 walk cycles
