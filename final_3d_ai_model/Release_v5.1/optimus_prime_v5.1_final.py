@@ -580,8 +580,6 @@ def run(context):
 
             tt_motor_wheel(shin, f"{side}_Wheel_Front", shin_x+m*2.0, 3.5, SHIN_CTR+4.0, side=m)
             tt_motor_wheel(shin, f"{side}_Wheel_Rear",  shin_x+m*2.0, 3.5, SHIN_CTR-4.0, side=m)
-            wheel_clearance = cyl(shin, f"{side}_WheelClear", shin_x+m*2.0, 3.5, SHIN_CTR, 3.25, 10.0, "x", None)
-            cut_cavity(shin, wheel_clearance, False)
             bearing_with_recess(shin, f"{side}_Knee_Lower_Brg", shin_x, 0, KNEE_CTR-0.5, "x", 1.00, 0.55)
             add_wire_channel(shin, f"{side}_ShinWire", shin_x, 0, SHIN_CTR, 0.5, 11.0, "z")
 
