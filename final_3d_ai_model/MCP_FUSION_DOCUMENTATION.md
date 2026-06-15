@@ -1,8 +1,9 @@
 ﻿# Autodesk Fusion 360 MCP Automation - Optimus Prime Project
 
-This folder contains the complete, verified Python codebase for parametrically generating the Optimus Prime G1 3D model directly inside Autodesk Fusion 360, along with the **Model Context Protocol (MCP)** tools used to execute scripts remotely.
+**Reference Repository for MCP Setup:** [ai-autodesk-fusion-mcp](https://github.com/itsPremkumar/ai-autodesk-fusion-mcp)
+*All MCP connection logic in this project is built referencing the official architecture guidelines from this repository.*
 
-This folder is structured to be a **standalone project** for Fusion 360 API and MCP integration.
+This folder contains the complete, verified Python codebase for parametrically generating the Optimus Prime G1 3D model directly inside Autodesk Fusion 360, along with the **Model Context Protocol (MCP)** tools used to execute scripts remotely.
 
 ---
 
@@ -10,91 +11,55 @@ This folder is structured to be a **standalone project** for Fusion 360 API and 
 
 `	ext
 final_3d_ai_model/
-├── Release_v5.1/
-│   ├── optimus_prime_v5.1_final.py   # The master build script (170+ parts, kinematics)
-│   └── Optimus_Live_Animation.py     # Native Fusion 360 animation script
+├── Release_v7.0/ (THE ULTIMATE VERSION)
+│   ├── optimus_prime_v7.0_builder.py   # Master build script (Geometry + Kinematics)
+│   └── Optimus_v7.0_Animator.py        # Live Animation + Auto-Collision Diagnostics
+├── Release_v6.0_user_code.py           # Legacy All-in-One code
 ├── mcp_tools/
-│   └── run_full.py                   # MCP wrapper to execute the master build script remotely
-└── MCP_FUSION_DOCUMENTATION.md       # This file
+│   ├── run_v6_py.py                    # Robust Python MCP runner (Bypasses Memory Crash)
+│   └── run_v7.py                       # Python MCP runner for v7
+└── MCP_FUSION_DOCUMENTATION.md         # This file
 `
 
 ---
 
-## 🔌 What is MCP (Model Context Protocol)?
+## 🚀 Execution Rules (CRITICAL)
 
-The Model Context Protocol (MCP) allows external Python scripts (or AI assistants) to execute code *directly* inside a running instance of Autodesk Fusion 360 without manually opening the "Scripts and Add-ins" menu.
+Before executing any script natively or via MCP, you **MUST** ensure you are inside a valid 3D Design workspace. 
 
-It works by running a local background server (usually on 127.0.0.1:27182). We send standard **JSON-RPC** HTTP payloads to this port containing raw Python scripts. The server injects the script into Fusion 360's API environment and returns the result.
-
-### Standard MCP Connection Template
-To execute *any* code inside Fusion 360 remotely, we use this boilerplate template (as seen in mcp_tools/run_full.py):
-
-`python
-import json
-import http.client
-
-# 1. Read your Fusion 360 script
-with open("your_fusion_script.py", "r", encoding="utf-8") as f:
-    fusion_code = f.read()
-
-# 2. Connect to the local MCP server running on port 27182
-conn = http.client.HTTPConnection("127.0.0.1", 27182, timeout=300)
-session_id = None
-req_id = 0
-
-def send_rpc(method, params=None):
-    global session_id, req_id
-    req_id += 1
-    payload = {"jsonrpc": "2.0", "method": method, "id": req_id}
-    if params: payload["params"] = params
-    
-    headers = {"Content-Type": "application/json"}
-    if session_id: headers["Mcp-Session-Id"] = session_id
-    
-    conn.request("POST", "/mcp", json.dumps(payload), headers)
-    resp = conn.getresponse()
-    
-    for h, v in resp.getheaders():
-        if h.lower() == "mcp-session-id": session_id = v
-    return json.loads(resp.read().decode("utf-8"))
-
-# 3. Initialize Connection
-send_rpc("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "MCP_Runner", "version": "1.0"}})
-conn.request("POST", "/mcp", json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}), {"Content-Type": "application/json", "Mcp-Session-Id": session_id})
-conn.getresponse().read()
-
-# 4. Execute the Script inside Fusion 360
-response = send_rpc("tools/call", {"name": "fusion_mcp_execute", "arguments": {"featureType": "script", "object": {"script": fusion_code}}})
-print("Execution Result:", response)
-`
+⚠️ **Do not run scripts while sitting on the Fusion 360 "Home" dashboard tab.** 
+If you execute an MCP script from the Home tab, the Python API crashes silently in the background because pp.activeProduct evaluates to None (there is no canvas to draw on).
+✅ **Solution:** Always click New... to open an empty 3D grid before triggering an MCP run.
 
 ---
 
-## 🚀 Execution Workflows
+## 🧠 Why We Use Python for the MCP Connection (The Memory Crash)
 
-### 1. Building the Model Remotely (MCP)
-To build the complete Optimus Prime model from scratch, run the MCP wrapper from your command line:
+When sending massive 1000+ line Python scripts (like Release_v6.0_user_code.py which is ~84 KB) over the local MCP connection (http://127.0.0.1:27182/mcp), you cannot use standard PowerShell commands like Invoke-RestMethod combined with ConvertTo-Json. 
+
+**The Problem:** PowerShell's JSON converter runs out of memory (System.OutOfMemoryException) when attempting to parse and escape an 84-kilobyte script block into a valid JSON-RPC packet, causing the background process to silently die before it even sends the code to Fusion.
+
+**The Solution:** We explicitly utilize a native Python script (mcp_tools/run_v6_py.py) utilizing the urllib and json libraries. Python handles massive string encodings instantly and securely negotiates the Mcp-Session-Id headers.
+
+---
+
+## ⚙️ How to Run via MCP (Remote Execution)
+
+To build the complete Optimus Prime model and run simulations remotely from your terminal:
+
 `ash
-python mcp_tools/run_full.py
+# Example: Triggering the v6 script using your local Python installation
+"C:\Users\PREM KUMAR\AppData\Local\Programs\Python\Python312\python.exe" C:\one\tranformers\final_3d_ai_model\mcp_tools\run_v6_py.py
 `
-**What happens:** This grabs the massive optimus_prime_v5.1_final.py file, wraps it in the JSON-RPC payload, and forces Fusion 360 to open a new tab and build all 170+ components automatically.
 
-### 2. Live Animation (Native vs. MCP)
-**The Problem with MCP Animation:** When you execute a script via the MCP server, it runs inside an HTTP request handler on Fusion 360's main thread. This completely freezes the UI viewport from refreshing until the script finishes. You will not see live walking frames; it will just snap to the final position.
-
-**The Solution (Native Scripting):** 
-To view the live walking simulation natively without freezing:
-1. Open Fusion 360.
-2. Go to **Utilities > Scripts and Add-ins** (Shift + S).
-3. Click the + icon and select Release_v5.1/Optimus_Live_Animation.py.
-4. Click **Run**.
-Because this executes directly on the UI thread without background HTTP blocking, dsk.doEvents() works perfectly and the viewport renders every kinematic frame.
+*This will immediately send the massive script via 	ools/call over the network into Fusion 360, where you will see it natively generate the model and run the simulation loops.*
 
 ---
 
-## 🛠️ Optimus Prime (Release v5.1) Technical Specs
-* **Assembly Type**: Parametric Multi-Body Component Architecture
-* **Joints**: 13 Active Revolute/Ball Joints
-* **Clearance Tolerance**: 0.2mm standard, physical wheel offsets verified.
-* **Auto-Diagnostics**: Built-in script functions calculate mass, Center of Mass, interference collisions, and un-cut pockets at compile-time.
-* **Outputs**: Generates a standard obot.urdf physical kinematic map for external physics simulations.
+## 🌟 The Ultimate v7.0 Architecture
+
+While 6.0 places both the geometry builder and the animation loop into one file (forcing a 2-minute rebuild just to see it walk), the **v7.0** folder separates them cleanly.
+
+1. **Build the Geometry:** Run Release_v7.0/optimus_prime_v7.0_builder.py once.
+2. **Run the Animations:** Run Release_v7.0/Optimus_v7.0_Animator.py whenever you want. This instantly runs the walking simulation and the truck transformation, followed by an automatic execution of the check_interferences() diagnostic tool.
+
